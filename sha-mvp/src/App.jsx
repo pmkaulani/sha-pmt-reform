@@ -206,6 +206,10 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
           <FieldSelect label="Floor material" value={d.floorMaterial} onChange={v=>upd("floorMaterial",v)} options={[["TILES","Tiles"],["CEMENT","Cement"],["MUD","Mud"],["WOOD","Wood"],["OTHER","Other"]]}/>
           <FieldNumber label="Rooms" value={d.rooms} onChange={v=>upd("rooms",Math.max(1,Math.round(v)))} min={1} max={20}/>
         </div>
+        <div style={{fontSize:12,padding:"12px 14px",background:S.terraD,borderRadius:6,border:`1px solid ${S.terraBd}`,color:S.terra,lineHeight:1.5,display:"flex",gap:8,alignItems:"flex-start"}}>
+          <Info size={16} style={{flexShrink:0,marginTop:2}}/>
+          <span><strong>Error By Design:</strong> The current algorithm penalizes households with stone walls or concrete floors, ignoring that in rural areas these are often illiquid ancestral family homes. The AGI Model v2.1 completely removes these biased proxy variables.</span>
+        </div>
       </div>}
 
       {/* Step 2: Services */}
@@ -226,6 +230,10 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
       {step===3&&<div style={{display:"grid",gap:12}}>
         <div style={{fontSize:13,color:S.muted,fontWeight:500}}>Select all assets the household owns</div>
         <AssetGrid assets={d.assets} toggle={toggleAsset}/>
+        <div style={{fontSize:12,padding:"12px 14px",background:S.terraD,borderRadius:6,border:`1px solid ${S.terraBd}`,color:S.terra,lineHeight:1.5,display:"flex",gap:8,alignItems:"flex-start"}}>
+          <Info size={16} style={{flexShrink:0,marginTop:2}}/>
+          <span><strong>Proxy Bias Alert:</strong> The current system aggressively punishes ownership of basic items like bicycles and radios, driving up exclusion errors. Our proposed model strictly targets high-value, digitally-verifiable assets.</span>
+        </div>
         {d.assets.includes("CAR") && (
           <div style={{marginTop: 8, padding: 16, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
             <FieldSelect label="Vehicle Type & Age" value={d.vehicleType || "STANDARD_OLD"} onChange={v=>upd("vehicleType",v)} options={[["STANDARD_OLD","Standard Car (Older than 7 yrs)"], ["STANDARD_NEW","Standard Car (Newer than 7 yrs)"], ["LUXURY","Luxury / SUV"], ["COMMERCIAL","Commercial (Matatu / Pick-up)"]]}/>
