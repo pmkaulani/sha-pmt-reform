@@ -471,9 +471,9 @@ function USSDTab({results}) {
     {title:"SHAP Explanation · *147*4#",content:[
       {t:"SHA — Explanation",y:true},{t:"—".repeat(22),y:false},
       {t:`Assessment: KSh ${nxt.monthly}/mo`,col:"#4ADE80"},{t:"",y:false},
-      {t:"Key factors determining this:",y:false},
+      {t:"Key factors (AGI Model v2.1):",y:false},
       {t:`Household: ${results.d.householdSize} members`,y:false},
-      {t:`Dwelling: ${results.d.dwellingType.toLowerCase()}`,y:false},
+      {t:`Retained Bal: KSh ${results.d.avgRetainedBalance.toLocaleString()}`,y:false},
       {t:`Assets: ${results.d.assets.length} declared`,y:false},{t:"",y:false},
       {t:"Full detail: sha.go.ke/why",col:"#38BDF8"},{t:"1. Appeal  0. Back",y:false},
     ]},
@@ -1034,7 +1034,7 @@ export default function SHADemo() {
       
       // Calculate fraud risk with this assessment
       const fraudRisk = calculateFraudRisk(inputs, {
-        ntsaCarExists: inputs.assets.includes('CAR'),
+        ntsaCarExists: inputs.assets.includes('CAR') || inputs.isNtsaVerified,
         kraIncomeLevel: undefined,
       });
       
