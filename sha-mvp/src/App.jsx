@@ -361,7 +361,7 @@ function ComparisonTab({results}) {
         <div className="grid-2">
           {[
             {src:"IPRS Registry",status:"VERIFIED",detail:"Identity confirmed against national register",ok:true},
-            {src:"NTSA Transport Database",status:d.assets.includes("CAR")?"MATCH: Vehicle Found":"CLEAR: No Vehicles",detail:d.assets.includes("CAR")?"Vehicle ownership verified via chassis registry":"No registered vehicles found in database",ok:true},
+            {src:"NTSA Transport Database",status:(d.assets.includes("CAR") || d.isNtsaVerified)?"MATCH: Vehicle Found":"CLEAR: No Vehicles",detail:(d.assets.includes("CAR") || d.isNtsaVerified)?"Vehicle ownership verified via chassis registry":"No registered vehicles found in database",ok:true},
             {src:"Financial Trace (MNOs)",status:d.assets.includes("SMARTPHONE")?"MEDIUM FLOW":"LOW FLOW",detail:"30-day transaction analysis (consolidated across all SIMs)",ok:true},
             {src:"KRA eTIMS",status:d.receivesAid?"EXEMPT":"EXAMINED",detail:d.receivesAid?"Tax-exempt: Recognized social assistance recipient":"Tax record cross-reference completed",ok:true},
           ].map(sig=>(
