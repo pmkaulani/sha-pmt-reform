@@ -145,4 +145,4 @@ KCA University | 2507765@students.kcau.ac.ke
 
 ---
 
-*This project responds to the High Court's March 19, 2026 unconstitutionality ruling, the CAJ Order #CAJ/2026/05/0847, and the pending Awino petition transferred to the Constitutional and Human Rights Division at Milimani.*
+*This project responds to the High Court's March 19, 2026 structural interdict requiring corrective measures, the CAJ Order #CAJ/2026/05/0847, and the pending Awino petition transferred to the Constitutional and Human Rights Division at Milimani.*
