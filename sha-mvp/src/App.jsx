@@ -362,8 +362,8 @@ function ComparisonTab({results}) {
           {[
             {src:"IPRS Registry",status:"VERIFIED",detail:"Identity confirmed against national register",ok:true},
             {src:"NTSA Transport Database",status:(d.assets.includes("CAR") || d.isNtsaVerified)?"MATCH: Vehicle Found":"CLEAR: No Vehicles",detail:(d.assets.includes("CAR") || d.isNtsaVerified)?"Vehicle ownership verified via chassis registry":"No registered vehicles found in database",ok:true},
-            {src:"Financial Trace (MNOs)",status:d.assets.includes("SMARTPHONE")?"MEDIUM FLOW":"LOW FLOW",detail:"30-day transaction analysis (consolidated across all SIMs)",ok:true},
-            {src:"KRA eTIMS",status:d.receivesAid?"EXEMPT":"EXAMINED",detail:d.receivesAid?"Tax-exempt: Recognized social assistance recipient":"Tax record cross-reference completed",ok:true},
+            {src:"Financial Trace (MNOs)",status:d.isGroupTreasurer?"HIGH FLOW (CHAMA)":"LOW FLOW",detail:d.isGroupTreasurer?"Bulk transaction volume detected indicative of group fund management":"Standard 30-day transaction analysis (consolidated across all SIMs)",ok:true},
+            {src:"KRA eTIMS",status:d.hasKraPin?"MATCH: Active PIN":"CLEAR: No Active PIN",detail:d.hasKraPin?"Tax returns and eTIMS invoices successfully matched":"No formal tax records found in registry",ok:true},
           ].map(sig=>(
             <div key={sig.src} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 16px",background:S.surface,borderRadius:8,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
               <CheckCircle2 size={18} color={S.blue} style={{marginTop:2,flexShrink:0}}/>
