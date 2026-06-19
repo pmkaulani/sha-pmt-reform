@@ -78,6 +78,9 @@ The AGI model applies **7 evidence-based deductions** before the legally mandate
 
 ## Running the MVP
 
+**🌍 [Try the Live Interactive Demo Here](https://pmkaulani.github.io/sha-pmt-reform/)**
+
+Or run it locally:
 ```bash
 cd sha-mvp
 npm install
