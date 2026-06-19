@@ -637,19 +637,22 @@ export function calculateFraudRisk(d, contextData = {}) {
 
   // FLAG 12: Asset-Lifestyle Incongruity
   // If household claims indigence but has multiple high-value lifestyle indicators
+  // NOTE: We deliberately do NOT use wallMaterial, roofMaterial, or floorMaterial here.
+  // Those are the exact intrusive PMT proxies our reform removes. Fraud detection must
+  // rely on digitally-verifiable signals, not housing inspection proxies.
   if (d.avgRetainedBalance < 3000 && d.receivesAid) {
     let lifestyleSignals = 0;
     if (d.assets.includes('CAR') && d.vehicleType !== 'STANDARD_OLD') lifestyleSignals++;
-    if (d.wallMaterial === 'STONE' || d.wallMaterial === 'BRICK') lifestyleSignals++;
-    if (d.roofMaterial === 'TILES') lifestyleSignals++;
-    if (d.floorMaterial === 'TILES') lifestyleSignals++;
-    if (d.lightingEnergy === 'ELECTRICITY' && d.landAcreage > 5) lifestyleSignals++;
+    if (d.hasKraPin) lifestyleSignals++; // Has formal business but claims indigence
+    if (d.grossMpesaMonthly > 50000) lifestyleSignals++; // High transaction volume
+    if (d.assets.includes('CAR') && d.assets.includes('COMPUTER') && d.assets.includes('SMARTPHONE')) lifestyleSignals++; // Multiple high-value assets
     if (d.isNtsaVerified && d.assets.includes('CAR')) lifestyleSignals++;
+    if (d.landAcreage > 5 && !ASAL_COUNTIES[d.county]) lifestyleSignals++; // Large non-arid landholding
     
     if (lifestyleSignals >= 3) {
       fraudFlags.push({
         name: 'Asset-Lifestyle Incongruity',
-        reason: `Claims indigence (receives aid, KSh ${d.avgRetainedBalance} balance) but has ${lifestyleSignals} high-value lifestyle indicators (housing, vehicles, land). Possible asset concealment.`,
+        reason: `Claims indigence (receives aid, KSh ${d.avgRetainedBalance} balance) but has ${lifestyleSignals} high-value digitally-verifiable indicators (KRA, NTSA, M-Pesa, assets). Possible asset concealment.`,
         confidence: 0.78,
         severity: 'HIGH',
         action: 'Schedule home visit and asset verification; compare with county land registry (DPA §35)'
