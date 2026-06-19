@@ -148,19 +148,16 @@ export function calculateProposedModel(d, adminParams = {}) {
   baseIncome += motoValue;
 
   // --- HOUSING & INFRASTRUCTURE ---
-  // Flaw 11: Ancestral Home Trap
-  let housingScore = 0;
-  if (d.wallMaterial === 'STONE' || d.wallMaterial === 'BRICK') housingScore += 120000;
-  if (d.roofMaterial === 'TILES') housingScore += 150000;
-  
-  if (housingScore > 0 && d.ownershipStatus === 'FAMILY' && !hasHighWealthSignal) {
-    let inheritedDeduction = housingScore * 0.5;
-    deductions.push({ name: 'Ancestral Home Exemption', amount: inheritedDeduction, reason: 'Inherited housing without cashflow' });
-    housingScore -= inheritedDeduction;
-  }
-  baseIncome += housingScore;
+  // EXCLUDED BY DESIGN: Housing variables (wallMaterial, roofMaterial, floorMaterial)
+  // are NOT used in the proposed AGI model. These are the exact intrusive PMT proxies
+  // that the 'Error by Design' investigation proved are unreliable wealth indicators:
+  //   - Flaw 11 (Ancestral Home Trap): Stone walls/tile roofs on inherited homes
+  //     do not reflect current income or ability to pay.
+  //   - Flaw 18 (Electricity as Luxury): Basic infrastructure ≠ wealth signal.
+  // Using them here would contradict the core thesis of our reform proposal.
+  // Housing has ZERO impact on the AGI calculation.
 
-  // Flaw 18: Electricity is basic infrastructure, not luxury. Ignored.
+  factors.push({ name: 'Housing Variables (Wall/Roof/Floor)', impact: 'None', direction: 'neutral', description: 'EXCLUDED — intrusive PMT proxies proven unreliable by Error by Design investigation (Flaws 11, 18)', isFlaw: true, isIgnored: true });
   factors.push({ name: 'Electricity Connectivity', impact: 'None', direction: 'neutral', description: 'Excluded as wealth proxy (Last Mile Connectivity)', isFlaw: true, isIgnored: true });
 
   // --- LIVELIHOOD (LAND & LIVESTOCK) ---

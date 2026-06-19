@@ -164,7 +164,7 @@ function AssetGrid({assets,toggle}) {
 
 const STEPS=["Demographics","Housing","Services","Assets","Livelihood","Triangulation"];
 
-function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying}) {
+function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasConsented,setHasConsented}) {
   const go=(n)=>setStep(Math.max(0,Math.min(5,n)));
   return (
     <div style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:12,padding:24,boxShadow:"0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)"}}>
@@ -265,9 +265,15 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying}) {
         <button onClick={()=>go(step-1)} disabled={step===0} style={{padding:"10px 20px",borderRadius:6,border:`1px solid ${S.borderUp}`,background:S.surface,color:step===0?S.borderUp:S.text,fontSize:14,fontWeight:500,cursor:step===0?"default":"pointer",fontFamily:"inherit",transition:"all .2s"}}>← Back</button>
         {step<5
           ?<button onClick={()=>go(step+1)} style={{padding:"10px 24px",borderRadius:6,border:"none",background:S.blue,color:"#FFF",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 4px rgba(2,132,199,0.2)",transition:"all .2s"}}>Next →</button>
-          :<button onClick={onClassify} disabled={classifying} style={{padding:"10px 24px",borderRadius:6,border:"none",background:classifying?S.borderUp:S.sage,color:classifying?S.muted:"#FFF",fontSize:14,fontWeight:600,cursor:classifying?"default":"pointer",fontFamily:"inherit",boxShadow:classifying?"none":"0 2px 4px rgba(5,150,105,0.2)",transition:"all .2s"}}>
-            {classifying?"Computing…":"Run Classification →"}
-          </button>
+          :<div style={{display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8}}>
+             <label style={{display:"flex", alignItems:"center", gap:8, fontSize:12, color:S.text, cursor:"pointer"}}>
+               <input type="checkbox" checked={hasConsented} onChange={(e)=>setHasConsented(e.target.checked)} />
+               I consent to cross-referencing my data with KRA, NTSA, and MNOs.
+             </label>
+             <button onClick={onClassify} disabled={classifying || !hasConsented} style={{padding:"10px 24px",borderRadius:6,border:"none",background:classifying||!hasConsented?S.borderUp:S.sage,color:classifying||!hasConsented?S.muted:"#FFF",fontSize:14,fontWeight:600,cursor:classifying||!hasConsented?"default":"pointer",fontFamily:"inherit",boxShadow:classifying||!hasConsented?"none":"0 2px 4px rgba(5,150,105,0.2)",transition:"all .2s"}}>
+               {classifying?"Computing…":"Run Classification →"}
+             </button>
+           </div>
         }
       </div>
     </div>
@@ -474,6 +480,14 @@ function USSDTab({results}) {
       {t:`   KSh ${Math.ceil(nxt.monthly/30)}`,col:"#4ADE80"},
       {t:"Paybill: 200222  0. Back",y:false},
     ]},
+    {title:"Appeal · *147*3#",content:[
+      {t:"SHA — Instant Appeal",y:true},{t:"—".repeat(22),y:false},
+      {t:`Your tier: ${nxt.tier}`,y:false},
+      {t:"Re-verify my data via:",y:false},{t:"",y:false},
+      {t:"1. KRA PIN",y:false},{t:"2. M-Pesa Velocity",y:false},{t:"3. NTSA Assets",y:false},{t:"",y:false},
+      {t:"Result is immediate.",col:"#94A3B8"},
+      {t:"0. Back",y:false},
+    ]},
   ];
   const sc=screens[screen];
   return (
@@ -615,16 +629,16 @@ function MetricsTab() {
           <div style={{background:S.sageD,padding:16,borderRadius:8,border:`1px solid ${S.sageBd}`}}>
             <div style={{fontSize:12,fontWeight:700,color:S.sage,marginBottom:12,textTransform:"uppercase"}}>Proposed AGI System (The Rescue)</div>
             <div style={{display:"grid",gap:8,fontSize:13,color:S.text}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Registered members</span><span style={{fontWeight:600}}>22 Million</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Compliance rate</span><span style={{fontWeight:700,color:S.sage}}>60%+</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>13.2 Million</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 870/mo</span></div>
-              <div style={{borderTop:`1px solid ${S.sageBd}`,paddingTop:8,display:"flex",justifyContent:"space-between",fontWeight:700}}><span>Annual Revenue</span><span style={{color:S.sage,fontSize:16}}>KSh 138 B</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Eligible population</span><span style={{fontWeight:600}}>15.5 Million</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Compliance rate</span><span style={{fontWeight:700,color:S.sage}}>60%</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>9.3 Million</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 575/mo</span></div>
+              <div style={{borderTop:`1px solid ${S.sageBd}`,paddingTop:8,display:"flex",justifyContent:"space-between",fontWeight:700}}><span>Annual Revenue</span><span style={{color:S.sage,fontSize:16}}>KSh 64 B</span></div>
             </div>
           </div>
         </div>
         <div style={{marginTop:16,padding:12,background:S.blueD,borderRadius:6,border:`1px solid ${S.blueBd}`,fontSize:12,color:S.text,lineHeight:1.5}}>
-          <strong style={{color:S.blue}}>Key Insight:</strong> The proposed system collects a <strong>lower average premium</strong> (KSh 870 vs KSh 1,500) but generates <strong>59.7% more total revenue</strong> because 13.2 million citizens willingly pay a fair amount, versus only 5 million under the current punitive system. This is the insurance equivalent of the Laffer Curve — beyond a certain premium threshold, higher prices reduce total collection.
+          <strong style={{color:S.blue}}>Key Insight:</strong> The proposed system collects a <strong>lower average premium</strong> (KSh 575 vs KSh 1,500) but achieves <strong>dramatically higher compliance</strong> — 9.3 million citizens willingly paying a fair amount, versus only 5 million under the current punitive system. At 60% compliance (matching Rwanda's CBHI benchmark), projected annual revenue reaches KSh 64B. This is the insurance equivalent of the Laffer Curve — beyond a certain premium threshold, higher prices reduce total collection.
         </div>
       </div>
     </div>
@@ -1237,7 +1251,7 @@ export default function SHADemo() {
             </div>
 
             {/* Form */}
-            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying}/>
+            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasConsented={hasConsented} setHasConsented={setHasConsented}/>
 
           </div>
 
