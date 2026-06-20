@@ -683,6 +683,34 @@ export function calculateFraudRisk(d, contextData = {}) {
     }
   }
 
+  // FLAG 13: Multi-SIM Concealment
+  // Citizen declares one phone number with low balance, but Safaricom API shows multiple active SIMs under their ID
+  if (contextData.safaricomActiveSims > 1 && d.avgRetainedBalance < 5000) {
+    fraudFlags.push({
+      name: 'Multi-SIM Concealment Risk',
+      reason: `Citizen declared low liquidity, but Safaricom registry shows ${contextData.safaricomActiveSims} active SIM cards under their National ID. Possible wealth splitting.`,
+      confidence: 0.85,
+      severity: 'HIGH',
+      action: 'Aggregate balances across all registered MSISDNs via API'
+    });
+    confidenceScores.push(0.85);
+    overallRiskScore += 0.85;
+  }
+
+  // FLAG 14: Unverified Chama Treasurer Claim
+  // Claims fiduciary exemption but API shows no registered group
+  if (d.isGroupTreasurer && contextData.safaricomChamaRegistered === false) {
+    fraudFlags.push({
+      name: 'Unverified Fiduciary Claim',
+      reason: `Claims Chama treasurer role for 80% liquidity exemption, but Safaricom/SACCO API shows no registered group linked to this ID/Phone.`,
+      confidence: 0.95,
+      severity: 'CRITICAL',
+      action: 'Deny fiduciary exemption until Chama registration certificate is provided'
+    });
+    confidenceScores.push(0.95);
+    overallRiskScore += 0.95;
+  }
+
   // Calculate overall fraud risk percentile (0-100)
   let fraudRiskPercentile = 0;
   if (confidenceScores.length > 0) {
