@@ -292,7 +292,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
 // RESULTS TABS
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ComparisonTab({results}) {
+function ComparisonTab({results, adminParams}) {
   const {current:cur,next:nxt,d} = results;
   const diff = cur.monthly - nxt.monthly;
   const overcharged = diff > 0;
@@ -365,23 +365,34 @@ function ComparisonTab({results}) {
 
       {/* Data fusion signals */}
       <div>
-        <Label>Layer 3 · Asynchronous Data Fusion Signals</Label>
-        <div className="grid-2">
-          {[
-            {src:"IPRS Registry",status:"VERIFIED",detail:"Identity confirmed against national register",ok:true},
-            {src:"NTSA Transport Database",status:(d.assets.includes("CAR") || d.isNtsaVerified)?"MATCH: Vehicle Found":"CLEAR: No Vehicles",detail:(d.assets.includes("CAR") || d.isNtsaVerified)?"Vehicle ownership verified via chassis registry":"No registered vehicles found in database",ok:true},
-            {src:"Financial Trace (MNOs)",status:d.isGroupTreasurer?"HIGH FLOW (CHAMA)":"LOW FLOW",detail:d.isGroupTreasurer?"Bulk transaction volume detected indicative of group fund management":"Standard 30-day transaction analysis (consolidated across all SIMs)",ok:true},
-            {src:"KRA eTIMS",status:d.hasKraPin?"MATCH: Active PIN":"CLEAR: No Active PIN",detail:d.hasKraPin?"Tax returns and eTIMS invoices successfully matched":"No formal tax records found in registry",ok:true},
-          ].map(sig=>(
-            <div key={sig.src} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 16px",background:S.surface,borderRadius:8,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
-              <CheckCircle2 size={18} color={S.blue} style={{marginTop:2,flexShrink:0}}/>
-              <div>
-                <div style={{fontSize:13,fontWeight:600,color:S.text}}>{sig.src} <span style={{fontWeight:500,color:S.muted}}>· {sig.status}</span></div>
-                <div style={{fontSize:12,color:S.muted,marginTop:4,lineHeight:1.5}}>{sig.detail}</div>
-              </div>
-            </div>
-          ))}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <Label style={{marginBottom:0}}>Layer 3 · Asynchronous Data Fusion Signals</Label>
+          {adminParams?.triangulationOffline && <span style={{fontSize:11,fontWeight:700,background:S.amber,color:"#FFF",padding:"2px 8px",borderRadius:12}}>FALLBACK MODE</span>}
         </div>
+        
+        {adminParams?.triangulationOffline ? (
+          <div style={{background:"#FEF3C7",padding:"16px",borderRadius:8,border:"1px solid #FDE68A"}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#B45309",marginBottom:4}}>⚠️ Triangulation APIs Offline</div>
+            <div style={{fontSize:13,color:"#92400E",lineHeight:1.5}}>The system has engaged the <strong>Secondary Proxy Layer</strong>. Wealth is currently being approximated using physical assets, land, livestock, and dependency ratios. If the citizen claims indigence and has zero digital footprint, they will be flagged as a <strong>Digital Ghost</strong> and routed for mandatory physical CHP verification.</div>
+          </div>
+        ) : (
+          <div className="grid-2">
+            {[
+              {src:"IPRS Registry",status:"VERIFIED",detail:"Identity confirmed against national register",ok:true},
+              {src:"NTSA Transport Database",status:(d.assets.includes("CAR") || d.isNtsaVerified)?"MATCH: Vehicle Found":"CLEAR: No Vehicles",detail:(d.assets.includes("CAR") || d.isNtsaVerified)?"Vehicle ownership verified via chassis registry":"No registered vehicles found in database",ok:true},
+              {src:"Financial Trace (MNOs)",status:d.isGroupTreasurer?"HIGH FLOW (CHAMA)":"LOW FLOW",detail:d.isGroupTreasurer?"Bulk transaction volume detected indicative of group fund management":"Standard 30-day transaction analysis (consolidated across all SIMs)",ok:true},
+              {src:"KRA eTIMS",status:d.hasKraPin?"MATCH: Active PIN":"CLEAR: No Active PIN",detail:d.hasKraPin?"Tax returns and eTIMS invoices successfully matched":"No formal tax records found in registry",ok:true},
+            ].map(sig=>(
+              <div key={sig.src} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 16px",background:S.surface,borderRadius:8,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
+                <CheckCircle2 size={18} color={S.blue} style={{marginTop:2,flexShrink:0}}/>
+                <div>
+                  <div style={{fontSize:13,fontWeight:600,color:S.text}}>{sig.src} <span style={{fontWeight:500,color:S.muted}}>· {sig.status}</span></div>
+                  <div style={{fontSize:12,color:S.muted,marginTop:4,lineHeight:1.5}}>{sig.detail}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -825,6 +836,16 @@ function FraudRiskTab({results}) {
         </div>
       </div>
 
+      {results.next && results.next.requiresChpVerification && (
+        <div style={{padding:"20px",background:"#FEF2F2",border:"2px solid #DC2626",borderRadius:12,display:"flex",gap:16,alignItems:"flex-start"}}>
+          <AlertTriangle size={24} color="#DC2626" style={{flexShrink:0}}/>
+          <div>
+            <div style={{fontSize:16,fontWeight:700,color:"#991B1B",marginBottom:4}}>DIGITAL GHOST DETECTED: CHP Verification Required</div>
+            <div style={{fontSize:14,color:"#991B1B",lineHeight:1.5}}>This citizen claims indigence but has a zero digital footprint (No KRA, No NTSA, Zero M-Pesa). To prevent cash-based tax evasion, they have been granted a provisional KSh 300 subsidy pending physical verification by a Community Health Promoter within 90 days.</div>
+          </div>
+        </div>
+      )}
+
       {/* Overall Risk Score */}
       <div style={{padding:"24px",background:getSeverityBgColor(fraud.severityLevel),border:`2px solid ${getSeverityColor(fraud.severityLevel)}`,borderRadius:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
@@ -1001,7 +1022,8 @@ export default function SHADemo() {
   const [adminParams, setAdminParams] = useState({
     carValue: 350000,
     urbanCostOfLiving: 12000,
-    fulizaPenalty: 5000
+    fulizaPenalty: 5000,
+    triangulationOffline: false
   });
 
   const upd=(k,v)=>setInputs(p=>({...p,[k]:v}));
@@ -1293,7 +1315,7 @@ export default function SHADemo() {
                   ))}
                 </div>
 
-                {activeTab==="comparison"&&<ComparisonTab results={results}/>}
+                {activeTab==="comparison"&&<ComparisonTab results={results} adminParams={adminParams}/>}
                 {activeTab==="fairness"&&<FairnessTab results={results}/>}
                 {activeTab==="fraud"&&<FraudRiskTab results={results}/>}
                 {activeTab==="shap"&&<SHAPTab results={results} adminParams={adminParams}/>}

@@ -84,8 +84,10 @@ export function calculateProposedModel(d, adminParams = {}) {
   // --- TRIANGULATION: INCOME & LIQUIDITY ---
   // Flaw 1, 2, 6: Use 12-month rolling avgRetainedBalance, not gross velocity.
   // Flaw 6: Chama Treasurer Fiduciary Exception
-  let effectiveBalance = d.avgRetainedBalance || 0;
-  if (d.isGroupTreasurer) {
+  let isOffline = adminParams.triangulationOffline || false;
+  let effectiveBalance = isOffline ? 0 : (d.avgRetainedBalance || 0);
+  
+  if (!isOffline && d.isGroupTreasurer) {
     effectiveBalance *= 0.2; // Discount 80% as fiduciary funds
     deductions.push({ name: 'Fiduciary Exemption', amount: (d.avgRetainedBalance * 0.8) * 12, reason: 'Chama Treasurer Trap' });
     factors.push({ name: 'Group Treasurer', impact: 'High', direction: 'down', description: 'Discounted retained balance by 80%', isFlaw: false });
@@ -106,12 +108,16 @@ export function calculateProposedModel(d, adminParams = {}) {
   }
 
   // Base income is extrapolated from retained liquidity plus formal declarations
-  baseIncome += (effectiveBalance * 12);
-  factors.push({ name: 'Retained Liquidity', impact: 'High', direction: 'up', description: 'Based on 12-month rolling avg balance, ignoring velocity', isFlaw: false });
+  if (!isOffline) {
+    baseIncome += (effectiveBalance * 12);
+    factors.push({ name: 'Retained Liquidity', impact: 'High', direction: 'up', description: 'Based on 12-month rolling avg balance, ignoring velocity', isFlaw: false });
+  } else {
+    factors.push({ name: 'Fallback Protocol Active', impact: 'High', direction: 'neutral', description: 'Triangulation offline. Relying on Secondary Physical Proxies.', isFlaw: false });
+  }
 
   // Flaw 3: Digital Credit Punishment
   // Active Fuliza defaults/digital debt strictly deduct from liquidity
-  if (d.fulizaDefaults && d.fulizaDefaults > 0) {
+  if (!isOffline && d.fulizaDefaults && d.fulizaDefaults > 0) {
     let cappedDefaults = Math.min(10, d.fulizaDefaults);
     let fulizaPenalty = adminParams.fulizaPenalty ?? 5000;
     let debtDeduction = cappedDefaults * fulizaPenalty;
@@ -240,6 +246,19 @@ export function calculateProposedModel(d, adminParams = {}) {
     else tier = "MIDDLE";
   }
 
+  // Fallback Protocol: Digital Ghost Detection
+  // If user operates purely in cash with zero digital footprint and zero physical assets
+  let isDigitalGhost = false;
+  let requiresChpVerification = false;
+  if (!isOffline && !d.hasKraPin && !d.isNtsaVerified && (d.grossMpesaMonthly || 0) < 1000 && d.assets.length === 0) {
+    isDigitalGhost = true;
+  }
+  
+  if (isDigitalGhost && isIndigent) {
+    requiresChpVerification = true;
+    factors.push({ name: 'Digital Ghost / CHP Protocol', impact: 'High', direction: 'neutral', description: 'Zero digital footprint. Provisional subsidy granted pending physical CHP verification within 90 days.', isFlaw: false });
+  }
+
   return {
     estimatedAnnualIncome: baseIncome,
     adjustedGrossIncome: agi,
@@ -247,6 +266,8 @@ export function calculateProposedModel(d, adminParams = {}) {
     band: isIndigent ? 1 : 2,
     tier: tier,
     isIndigent: isIndigent,
+    isDigitalGhost: isDigitalGhost,
+    requiresChpVerification: requiresChpVerification,
     factors: factors,
     modelName: 'SHA PMT v2.1 Optimization',
     deductions: deductions,

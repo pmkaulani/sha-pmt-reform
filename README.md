@@ -114,9 +114,14 @@ SHA's official defense cited Colombia's Sisben and Indonesia's DTKS as validatio
 
 The AGI model integrates the missing components from both systems: continuous retraining (via KIHBS 2025/26), multi-layer verification (Triangulation), and community-level fallback (CHP protocol).
 
-## MNO-Agnostic Architecture
+## MNO-Agnostic Architecture & Fallback Protocol
 
-While Safaricom (M-Pesa) holds significant market share, the Triangulation engine is explicitly designed as an **MNO-agnostic gateway**. To comply with the Communications Authority of Kenya's data portability mandates, the system integrates via an aggregation layer that supports Safaricom, Airtel, and Telkom equally. This prevents a single commercial entity from acting as a chokepoint or single point of failure for national healthcare classification.
+While Safaricom (M-Pesa) holds significant market share, the Triangulation engine is explicitly designed as an **MNO-agnostic gateway**. To comply with the Communications Authority of Kenya's data portability mandates, the system integrates via an aggregation layer that supports Safaricom, Airtel, and Telkom equally. 
+
+**Disaster Recovery (Triangulation Fallback):**
+To ensure the system remains mathematically sound during API outages (KRA, NTSA, or MNO gateway failures), or when assessing citizens who operate purely in cash (zero digital footprint), the system features a built-in **Fallback Protocol**:
+1. **Secondary Proxy Layer:** The algorithm automatically shifts its weighting entirely to verifiable physical capital (Land, Livestock, Commercial Vehicles, Major Appliances) while retaining demographic protections.
+2. **Digital Ghost Protocol:** If a citizen claims indigence but has absolutely zero digital footprint and zero physical assets, they are flagged as a "Digital Ghost". They are granted a provisional KSh 300 subsidy but automatically routed for **mandatory physical verification by a Community Health Promoter (CHP)** within 90 days, mimicking Indonesia's DTKS validation layer and preventing cash-based tax evasion.
 
 ### System Architecture
 
@@ -133,6 +138,7 @@ flowchart TD
     end
     
     AGI --> Fraud{Fraud Engine \n12 Flags}
+    Fraud -- Digital Ghost --> CHP[CHP Physical Verification]
     Fraud -- Flagged --> Manual[Manual Review \nCHP/DPA §35]
     Fraud -- Cleared --> Tier(Tier Classification \nKSh 300 - KSh 5,000)
     Tier --> SHAP[SHAP Explainability \n*147*4#]
