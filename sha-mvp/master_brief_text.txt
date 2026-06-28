@@ -1,0 +1,502 @@
+SHA PMT v2.1 — Means-Testing Reform
+
+Comprehensive Briefing: Gaps, Evidence & Solutions
+
+Peter M. Kaulani  |  KCA University  |  June 2026
+
+
+
+The Social Health Authority’s Proxy Means Testing (PMT) algorithm is failing Kenyans at scale. The May 2026 joint Africa Uncensored / Lighthouse Reports investigation "Error by Design" proved with field data that the current Lasso-based PMT overestimates income for the poorest households. Of more than 20 million SHA-registered citizens, only 5 million are regularly paying premiums. Ninety-two percent of private providers report financial distress from delayed reimbursements. The system is bleeding trust and revenue simultaneously.
+
+This briefing documents what has been built, what was found upon deep audit, what evidence was missed, and the exact fixes needed for a bulletproof reform proposal that survives parliamentary scrutiny.
+
+1.  WHAT WAS BUILT — THE AGI MODEL V2.1
+
+
+
+SHA PMT v2.1 replaces intrusive housing proxies with a four-source triangulation engine: Safaricom M-Pesa retained balance, KRA PIN registration, NTSA TIMS vehicle registry, and self-declared household data. Deductions are applied to produce an Adjusted Gross Income (AGI). The legally mandated 2.75% rate is applied to AGI, not gross income.
+
+
+
+Module
+
+What It Does
+
+Status
+
+Retained Liquidity Income
+
+12-month rolling avg balance x12 = proxy annual income
+
+Implemented
+
+Chama Treasurer Exemption
+
+80% fiduciary discount on retained balance
+
+Implemented
+
+Subsistence Digital User Discount
+
+High M-Pesa velocity + low avg transaction + low balance triggers 60% discount
+
+Implemented
+
+Urban Cost-of-Living (3-tier)
+
+Tier 1 KSh 18K, Tier 2 KSh 10K, Rural KSh 4K/month deduction
+
+Implemented
+
+Rent Ceiling Deduction
+
+Actual rent deducted, capped at tier ceiling (not flat value)
+
+Implemented
+
+Dependency Allowance
+
+8% AGI per dependent, non-linear, capped at 35-40%
+
+Implemented
+
+ASAL Land/Livestock Discount
+
+85% arid / 50% semi-arid discount on land and livestock valuation
+
+Implemented
+
+CHE Exemption (Chronic Illness)
+
+40% AGI deduction for chronic illness burden
+
+Implemented
+
+PWD Exemption (Art. 54)
+
+30% AGI deduction for NCPWD-registered individuals
+
+Implemented
+
+Pensioner / Child-HH Override
+
+Automatic indigent routing for age 65+ or HH head under 21
+
+Implemented
+
+Fraud Detection Engine
+
+18 automated flags cross-checking NTSA, KRA, Safaricom
+
+Implemented
+
+Revenue Stress Test (5 scenarios)
+
+Compliance model 30%-90% with breakeven analysis and cited sources
+
+Implemented
+
+Equalized Odds Test
+
+Inter-group FPR disparity checker with 3% pass threshold
+
+Implemented
+
+Audit Trail / DPA Compliance
+
+Tiered retention policy per DPA 2019 Section 39
+
+Implemented
+
+
+
+2.  WHAT WAS OVERLOOKED — TEN CRITICAL GAPS
+
+
+
+2.1  Code vs. Documentation Mismatch — The Soft-Landing Formula
+
+CRITICAL BUG (Embarrassment Risk) gen_assumptions.cjs documents a soft-landing formula: max(300, (agi - 131,000) x 0.01). This does NOT exist in AlgorithmSimulation.js, which uses raw 2.75%. At AGI = KSh 200,000 the documented formula gives KSh 690/month, the code gives KSh 458/month. Any engineer, analyst, or journalist reading both files will spot this immediately.
+
+
+
+Fix: Either implement the soft-landing formula, or remove it from the Assumptions Register and document why raw 2.75% was chosen (it is mathematically smooth: 2.75% of 131,000 = exactly KSh 300.20). The mismatch is the problem, not the choice of formula.
+
+2.2  SHA Act 2023 Legal Tension — Gross vs. Adjusted Income
+
+HIGHEST LEGAL RISK Section 27 of the Social Health Insurance Act 2023 mandates 2.75% of "gross household income." The AGI model applies 2.75% to an adjusted figure after significant deductions. A government lawyer can attack the entire proposal on this single point: you are proposing to collect less than the statutory minimum. This is not addressed in any of the 20 existing documents.
+
+
+
+Fix: Option A: Argue "income" in Section 27 must be interpreted through Article 43 (right to health) and Article 27(4) (non-discrimination) to mean ability-to-pay income. Requires a legal opinion. Option B: Frame deductions as "assessed liability reductions" applied after the 2.75% is computed. Both need a one-page constitutional law memo before any submission.
+
+2.3  Seasonal Worker Zero-Balance Exploit
+
+MEDIUM-HIGH RISK (Fraud Surface) When lowSeasonRetainedBalance is declared as 0, Math.min(effectiveBalance, 0) = 0 produces annual income = 0, guaranteeing indigent classification. No floor exists, no verification flag fires. It is a free pass to subsidy for anyone who learns about it.
+
+
+
+Fix: Apply KSh 500 minimum floor and trigger requiresChpVerification = true for zero declarations. See Section 4, Fix 1 for exact code.
+
+2.4  SACCO Account Referenced But Ignored in AGI
+
+MEDIUM RISK (Wealth Signal Gap) hasSaccoAccount appears in Digital Ghost detection but contributes nothing to AGI. A citizen with KSh 2M in SACCO share capital and zero M-Pesa balance is classified indigent. Kenya has 5.7 million SACCO members. SHA opponents will cite this as a major uncovered wealth gap.
+
+
+
+Fix: When hasSaccoAccount = true, require declared SACCO share capital as an input field. Add 50% of declared capital to AGI (other 50% treated as illiquid savings). Cross-validate via KUSSCO API when available.
+
+2.5  Revenue Impact Field Is Methodologically Unsound
+
+MEDIUM RISK (Credibility) calculateProposedModel() returns revenueImpact = (monthlyContribution x 12) x 1.15, a flat 15% compliance uplift applied per-household with no cited source. This is not how revenue modelling works. A KIPPRA reviewer will reject the entire submission if this appears in a presentation.
+
+
+
+Fix: Delete revenueImpact from per-household output entirely. Revenue projections belong exclusively in generateRevenueStressTest() with its five cited-source scenarios.
+
+2.6  IDInsight Pre-Deployment Report Was Never Obtained
+
+CRITICAL STRATEGIC GAP Reuters and Guardian (May 2026) revealed that SHA's own consultancy IDInsight warned the system was "inequitable for low-income households" before launch, and government deployed it anyway. This was obtained via public access request. The reform project never filed for it. It is the single most powerful evidence in existence: SHA knowingly deployed a system its own evaluators said would harm the poor.
+
+
+
+Fix: File a Public Information Request under Access to Information Act 2016, Section 8, to SHA CEO Mercy Mwangangi for the full IDInsight pre-deployment evaluation report and any SHA response. File this week. Once obtained, cite it as Exhibit A in every document.
+
+2.7  The Court Deadline Is Not Leveraged
+
+STRATEGIC GAP (Urgency Framing) The March 2026 High Court ruling declared the SHA rollout unconstitutional and issued a 90-day compliance deadline, falling this month. The court mandated quarterly progress reports and required SHA to show no patient is denied emergency care due to algorithm failures. Not one document in this project opens with this framing. That is why government has not responded.
+
+
+
+Fix: Every submission must open with: "This proposal responds to the High Court's March 2026 constitutional compliance directive requiring SHA to demonstrate that no patient is denied emergency treatment due to contribution algorithm failures. The AGI model is that remedy."
+
+2.8  County-Level Rejection of SHA PMT Not Addressed
+
+IMPLEMENTATION GAP A June 2026 NCBI peer-reviewed study found multiple Kenyan counties have abandoned the SHA PMT and are using their own targeting methods, citing exclusion risks, manipulation, and failure to capture locally-defined poverty. Counties may not adopt the AGI model without a specific county-level strategy.
+
+
+
+Fix: Add a County Government Buy-In Protocol to the Implementation Roadmap. Propose piloting in Turkana (ASAL), Kiambu (urban satellite), Mombasa (coastal urban). The ASAL discounts are a direct response to county objections; position them as county-designed features.
+
+2.9  Mixed Formal-Informal Households Not Modelled
+
+COVERAGE GAP Formal employees already have 2.75% deducted at source. The AGI model applies only to informal households. Mixed-income households (salaried spouse + informal trader) are unaddressed. This gap creates inconsistency during implementation and will be cited by SHA defenders.
+
+
+
+Fix: Define a hybrid rule: if any household member has verifiable PAYE deductions via KRA iTax API, their formal contribution is deemed satisfied. Only informal income of other members is assessed via AGI. Total = formal PAYE + AGI-based informal, subject to household maximum of 2.75% of combined income.
+
+2.10  No Confidence Intervals on Income Estimates
+
+ACADEMIC AND LEGAL RISK The algorithm produces exact point estimates (e.g. "AGI = KSh 247,500") from uncertain proxy data. Lighthouse Reports specifically criticised PMT models for treating estimates as certainties. For appeals, SHA must defend a precise number it cannot prove. KIPPRA reviewers will flag this.
+
+
+
+Fix: Assign a confidence tier (HIGH/MEDIUM/LOW) based on verified data sources and output AGI as a range: LOW: +/-35%, MEDIUM: +/-20%, HIGH: +/-10%. For appeals, the range is the reviewable bound, not the point estimate. See Section 4, Fix 3 for code.
+
+
+
+3.  FIVE SMOKING GUNS — EVIDENCE NOT YET USED
+
+
+
+Source
+
+What It Proves
+
+How to Obtain
+
+How to Deploy
+
+IDInsight Pre-Deployment Report (2024)
+
+SHA's own consultants warned it was inequitable. Government deployed it anyway.
+
+File ATIA 2016 Sec. 8 request to SHA CEO Mercy Mwangangi immediately.
+
+Exhibit A in every submission. Proves prior knowledge of harm.
+
+Africa Uncensored "Error by Design" (May 2026)
+
+Field audit proves roof material and radio ownership trigger systematic income overestimation.
+
+Open access at lighthousereports.com; request raw data from team.
+
+Cite as peer-reviewed investigative evidence alongside live MVP demo.
+
+NCBI/PMC June 2026 study
+
+Peer-reviewed: counties rejected SHA PMT due to exclusion errors and manipulation risk.
+
+Open access: ncbi.nlm.nih.gov/pmc/articles/PMC12903745
+
+Shows systemic failure already causing implementation collapse. Use in county buy-in letters.
+
+SHA CEO own statement (May 2026)
+
+Only 5M of 20M enrolled are paying. SHA's own data proves 25% compliance rate.
+
+Kenyans.co.ke / The Star, May 6, 2026.
+
+SHA's own evidence that the current model destroys revenue. Lead with this in revenue arguments.
+
+March 2026 High Court Ruling
+
+SHA unconstitutional. 90-day remedy mandated. No patient to be denied care due to algorithm failure.
+
+streamlinefeed.co.ke March 26, 2026; High Court records.
+
+Opens every document. Transforms advocacy proposal into legal compliance submission.
+
+
+
+4.  THREE ALGORITHM BUG FIXES — READY TO COMMIT
+
+
+
+Fix 1: Seasonal Worker Minimum Balance Floor
+
+// BEFORE: zero-balance exploit (Math.min(balance, 0) = 0 = free indigent pass)
+
+let seasonalBalance = Math.min(effectiveBalance, d.lowSeasonRetainedBalance);
+
+
+
+// AFTER: add floor + CHP verification flag
+
+const SEASONAL_FLOOR = 500; // KSh 500 minimum prevents zero-balance exploit
+
+const effectiveLow = Math.max(d.lowSeasonRetainedBalance, SEASONAL_FLOOR);
+
+let seasonalBalance = Math.min(effectiveBalance, effectiveLow);
+
+if (d.lowSeasonRetainedBalance === 0) {
+
+  requiresChpVerification = true;
+
+  factors.push({ name: "Zero Low-Season Balance", impact: "High",
+
+    description: "Self-declared zero requires CHP verification within 30 days.", isFlaw: false });
+
+}
+
+
+
+Fix 2: Remove Unsourced Revenue Impact Field
+
+// DELETE from calculateProposedModel() return object:
+
+//   revenueImpact: (monthlyContribution * 12) * 1.15  <-- REMOVE
+
+
+
+// Revenue projections belong ONLY in generateRevenueStressTest()
+
+// which already has 5 scenarios with cited data sources.
+
+
+
+Fix 3: Confidence Tier on Every Assessment Output
+
+// ADD before return statement in calculateProposedModel():
+
+const verifiedSources = [
+
+  d.hasKraPin,                    // KRA verified
+
+  d.isNtsaVerified,               // NTSA verified
+
+  (!isOffline && !isDigitalGhost) // Safaricom M-Pesa verified
+
+].filter(Boolean).length;
+
+
+
+const confidenceTier = verifiedSources >= 2 ? "HIGH" : verifiedSources === 1 ? "MEDIUM" : "LOW";
+
+const band = { HIGH: 0.10, MEDIUM: 0.20, LOW: 0.35 }[confidenceTier];
+
+// Add to return: confidenceTier, agiRangeLow: Math.round(agi*(1-band)), agiRangeHigh: Math.round(agi*(1+band))
+
+
+
+5.  WHICH DOCUMENT TO SEND — THE DEFINITIVE MATRIX
+
+
+
+UNIVERSAL RULE — APPLIES TO ALL RECIPIENTS Every document must now open with: "This proposal responds to the High Court's March 2026 constitutional compliance directive requiring SHA to demonstrate that no patient is denied emergency treatment due to contribution algorithm failures. The AGI model is that remedy." Without this framing, every submission reads as academic commentary that can be ignored.
+
+
+
+Recipient
+
+Lead Document
+
+Supporting Annex
+
+Tone & Opening Hook
+
+Cabinet Secretary, MoH
+
+Executive Summary (1-page)
+
+SHA Algorithm Solutions + 5 Smoking Guns table
+
+Court compliance framing. One number: 25% current payment rate vs. 60% projected under AGI model.
+
+Parliamentary Health Committee
+
+Exec Summary + CAJ 21-Day Disclosure
+
+Legal/Ethical Evaluation + Implementation Roadmap
+
+Open with March 2026 ruling. Constitutional rights (Art. 43, 27, 54).
+
+KIPPRA
+
+Assumptions Register + Algorithm v2.1 Documentation
+
+Comparative Welfare Research + Equalized Odds methodology
+
+Methodology-first. Every parameter sourced. Acknowledge the 5 remaining blind spots openly.
+
+Lighthouse Reports / Africa Uncensored
+
+SHAP Deduction Receipts + Human Impact Case Studies
+
+Live MVP demo + IDInsight ATIA request status
+
+Show before/after for all 6 household presets. Numbers over arguments.
+
+Data Protection Commissioner (ODPC)
+
+Privacy Policy + CAJ Disclosure + AI Bill Compliance
+
+Data Commissioner Briefing + audit trail architecture
+
+Do NOT lead with fraud detection. Lead with consent architecture, DPA minimisation, tiered retention.
+
+SHA CEO / Technical Team
+
+Algorithm v2.1 Documentation + Known Blind Spots
+
+This briefing (Sections 2-4)
+
+Peer-to-peer. Acknowledge blind spots first. Offer joint technical review session.
+
+World Bank / WHO
+
+International Stakeholder Strategy + Revenue Stress Test
+
+Comparative Welfare Research (Rwanda, Ethiopia, Indonesia)
+
+Revenue neutrality proof and equity metrics. Skip Kenya-specific court docs.
+
+Kenyan media
+
+Human Impact Case Studies
+
+SHAP Deduction Receipts for a single household
+
+One household. One number that changed. Before vs. after.
+
+
+
+6.  REMAINING BLIND SPOTS — WHAT CANNOT BE SOLVED YET
+
+
+
+Blind Spot
+
+Why It Cannot Be Solved
+
+Current Mitigation
+
+Mixed Formal-Informal Households
+
+SHA Act does not define the contribution split for hybrid households; KRA API cannot expose per-member salary without legislative amendment.
+
+Hybrid rule (Section 2.9) is a working approximation pending legislation.
+
+Polygamous Household Income Splitting
+
+IPRS shows multiple household linkages but cannot distinguish genuine financial integration from separate households for ASAL pastoralists.
+
+Fraud Flag 18 exists but will produce false positives for legitimate polygamous families. Needs a pastoralist exception.
+
+Diaspora Cash Remittances
+
+Physical cash or bank transfers from diaspora are invisible to the M-Pesa API. The diaspora deduction field can be gamed.
+
+Requires CBK/Treasury integration with international transfer records. Not achievable in current architecture.
+
+Informal Market Traders (Cash-Only)
+
+A trader with KSh 200K/month turnover holding all earnings as cash has zero digital footprint and self-declares KSh 0.
+
+Digital Ghost + CHP protocol exists. Requires adequate CHP staffing, a county resourcing problem outside the algorithm.
+
+KNBS Data Staleness
+
+AGI parameters use KNBS 2024 poverty line estimates. CoL tiers will become stale without annual recalibration.
+
+Recommend tying all CoL parameters to KNBS CPI in the Implementation Roadmap with an annual update cycle.
+
+
+
+7.  30-DAY ACTION PLAN — ORDERED BY IMPACT
+
+
+
+Week 1
+
+File ATIA 2016 Section 8 public information request to SHA CEO for the full IDInsight pre-deployment evaluation report. This is the single most important action. File it today.
+
+
+
+Week 1
+
+Apply the three code fixes (Sections 4.1-4.3) to AlgorithmSimulation.js. Re-run equalized odds test across all 47 counties to confirm no new disparities introduced.
+
+
+
+Week 2
+
+Send Executive Summary + SHA Algorithm Solutions to Parliamentary Health Committee. Open with the March 2026 court ruling framing. Attach the 5 Smoking Guns table as a one-page annex.
+
+
+
+Week 2
+
+Resolve the gross vs. AGI legal tension (Section 2.2) with a legal opinion. Contact LSK or a constitutional law clinic at KCA University. This is the blocking issue for government adoption.
+
+
+
+Week 3
+
+Send SHAP Deduction Receipts + Human Impact Case Studies to Lighthouse Reports team. Offer live MVP demo. Their investigative infrastructure is the fastest path to forcing a government response.
+
+
+
+Week 3
+
+Update MVP UI to display confidence tier prominently and show AGI range. SHA cannot claim algorithmic fairness without uncertainty disclosure. Add before any demo.
+
+
+
+Week 4
+
+Send Algorithm v2.1 Documentation + Known Blind Spots + this briefing to SHA technical team. Peer-to-peer tone. Offer a joint technical review session.
+
+
+
+Week 4
+
+Initiate outreach to three counties (Turkana, Kiambu, Mombasa) for pilot partnership letters. County buy-in letters attached to the next parliamentary submission strengthen credibility substantially.
+
+
+
+SHA PMT v2.1 Reform Project  |  Peter M. Kaulani  |  KCA University
+
+Working brief for reform stakeholders — June 2026
+

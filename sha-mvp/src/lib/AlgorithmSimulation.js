@@ -25,10 +25,21 @@ const ASAL_COUNTIES = {
   'Elgeyo Marakwet': 'semi-arid'
 };
 
-const URBAN_COUNTIES = ['Nairobi', 'Mombasa', 'Kisumu'];
+const URBAN_TIER_1 = ['Nairobi', 'Mombasa', 'Kisumu'];
+const URBAN_TIER_2 = ['Nakuru', 'Uasin Gishu', 'Kiambu', 'Kisii', 'Nyeri', 'Machakos', 'Trans Nzoia'];
 
-const RURAL_COST_OF_LIVING = 4000;
-const URBAN_COST_OF_LIVING = 12000; // Flaw 16: Deduct urban rent, don't penalize it
+const COST_OF_LIVING = {
+  TIER_1: 18000,
+  TIER_2: 10000,
+  RURAL: 4000
+};
+
+// Default rent ceilings for capping the rent deduction (can be overridden by adminParams)
+const DEFAULT_MAX_RENT = {
+  TIER_1: 35000,
+  TIER_2: 20000,
+  RURAL: 10000
+};
 
 /**
  * Calculates the current flawed "Lasso" PMT model for baseline comparison.
@@ -63,7 +74,7 @@ export function calculateCurrentModel(d) {
   if (d.livestockCount) score += (d.livestockCount * 3800);
 
   // Flaw 16: Urban Penalty
-  if (URBAN_COUNTIES.includes(d.county)) {
+  if (URBAN_TIER_1.includes(d.county) || URBAN_TIER_2.includes(d.county)) {
     score += 50000; // Penalizes urban dwellers by adding to their wealth score
   }
 
@@ -109,10 +120,43 @@ export function calculateProposedModel(d, adminParams = {}) {
 
   // Base income is extrapolated from retained liquidity plus formal declarations
   if (!isOffline) {
-    baseIncome += (effectiveBalance * 12);
-    factors.push({ name: 'Retained Liquidity', impact: 'High', direction: 'up', description: 'Based on 12-month rolling avg balance, ignoring velocity', isFlaw: false });
+    if (d.isSeasonalWorker && d.lowSeasonRetainedBalance !== undefined) {
+      const SEASONAL_FLOOR = 500; // KSh 500 minimum prevents zero-balance exploit
+      const effectiveLow = Math.max(d.lowSeasonRetainedBalance, SEASONAL_FLOOR);
+      let seasonalBalance = Math.min(effectiveBalance, effectiveLow);
+      if (d.lowSeasonRetainedBalance === 0) {
+        requiresChpVerification = true;
+        factors.push({ name: "Zero Low-Season Balance", impact: "High", description: "Self-declared zero requires CHP verification within 30 days.", direction: "down", isFlaw: false });
+      }
+      baseIncome += (seasonalBalance * 12);
+      factors.push({ name: 'Seasonal Worker Override', impact: 'Medium', direction: 'down', description: 'Used low-season baseline to prevent harvest/tourism peak extrapolation', isFlaw: false });
+    } else {
+      baseIncome += (effectiveBalance * 12);
+      factors.push({ name: 'Retained Liquidity', impact: 'High', direction: 'up', description: 'Based on 12-month rolling avg balance, ignoring velocity', isFlaw: false });
+    }
+
+    // Diaspora Remittance Deduction
+    if (d.diasporaRemittances && d.diasporaRemittances > 0) {
+      let remittanceDeduction = d.diasporaRemittances * 12;
+      deductions.push({ name: 'Diaspora Remittances', amount: remittanceDeduction, reason: 'Exempt transfer payments (not domestic earnings)' });
+      baseIncome -= remittanceDeduction;
+      factors.push({ name: 'Diaspora Exclusion', impact: 'Medium', direction: 'down', description: 'Excluded international transfer payments from base income', isFlaw: false });
+    }
   } else {
-    factors.push({ name: 'Fallback Protocol Active', impact: 'High', direction: 'neutral', description: 'Triangulation offline. Relying on Secondary Physical Proxies.', isFlaw: false });
+    let saccoBypass = d.hasSaccoAccount ? 'SACCO/Bank history active.' : '';
+    factors.push({ name: 'Fallback Protocol Active', impact: 'High', direction: 'neutral', description: `Triangulation offline. ${saccoBypass} Relying on Secondary Physical Proxies.`, isFlaw: false });
+  }
+
+  if (d.hasSaccoAccount && d.saccoShareCapital && d.saccoShareCapital > 0) {
+    let saccoCapitalValue = d.saccoShareCapital * 0.5;
+    baseIncome += saccoCapitalValue;
+    deductions.push({ name: 'SACCO Capital Exemption', amount: saccoCapitalValue, reason: '50% of SACCO share capital exempted as illiquid savings' });
+  }
+
+  // Informal Sub-landlord Income Addition
+  if (d.subletIncome && d.subletIncome > 0) {
+    baseIncome += (d.subletIncome * 12);
+    factors.push({ name: 'Sublet Income Addition', impact: 'Medium', direction: 'up', description: 'Added declared informal rental income', isFlaw: false });
   }
 
   // Flaw 3: Digital Credit Punishment
@@ -126,9 +170,12 @@ export function calculateProposedModel(d, adminParams = {}) {
   }
 
   // --- ASSETS & DEPRECIATION ---
+  // Note: The AGI model treats car/motorcycle value as a proxy for cumulative earned income 
+  // saved into a capital asset, not as liquid income — therefore it flows into the same AGI 
+  // pool that all living costs are deducted from. This is consistent with World Bank PMT asset annualization methodology.
   // Flaw 7 & 8: Asset Age and Dead Asset Fallacy
   // We use standard depreciation if there are no high-wealth triangulated signals
-  let hasHighWealthSignal = d.hasKraPin || d.isNtsaVerified || effectiveBalance > 50000;
+  let hasHighWealthSignal = (d.kraPinType && d.kraPinType !== 'NONE') || d.isNtsaVerified || effectiveBalance > 50000;
   
   // Calculate car value based on selected type
   let carBaseValue = adminParams.carValue ?? 350000; // Base reference
@@ -150,7 +197,12 @@ export function calculateProposedModel(d, adminParams = {}) {
   baseIncome += carValue;
 
   let motoValue = d.assets.includes('MOTORCYCLE') ? 150000 : 0;
-  if (motoValue > 0 && !hasHighWealthSignal) motoValue *= 0.6;
+  if (motoValue > 0 && d.motorcycleIsCommercial) {
+    motoValue *= 0.5; // 50% tools-of-trade exemption
+    deductions.push({ name: 'Motorcycle Commercial Exemption', amount: 75000, reason: 'Bodaboda/PSV motorcycle — income-generating tool' });
+  } else if (motoValue > 0 && !hasHighWealthSignal) {
+    motoValue *= 0.6;
+  }
   baseIncome += motoValue;
 
   // --- HOUSING & INFRASTRUCTURE ---
@@ -186,10 +238,30 @@ export function calculateProposedModel(d, adminParams = {}) {
   let agi = baseIncome;
 
   // Flaw 16: Urban Cost-of-Living Penalty (Deduct rent, don't tax it)
-  let urbanCol = adminParams.urbanCostOfLiving ?? URBAN_COST_OF_LIVING;
-  let ruralCol = adminParams.ruralCostOfLiving ?? RURAL_COST_OF_LIVING;
-  let colDeduction = URBAN_COUNTIES.includes(d.county) ? urbanCol * 12 : ruralCol * 12;
-  deductions.push({ name: 'Cost of Living Allowance', amount: colDeduction, reason: 'Basic survival threshold' });
+  const urbanTier = URBAN_TIER_1.includes(d.county) ? 'TIER_1'
+    : URBAN_TIER_2.includes(d.county) ? 'TIER_2' : 'RURAL';
+  
+  // Base CoL without rent
+  const baseCol = adminParams.urbanCostOfLiving !== undefined && urbanTier === 'TIER_1'
+    ? adminParams.urbanCostOfLiving
+    : COST_OF_LIVING[urbanTier];
+
+  let colDeduction;
+  if (d.ownershipStatus === 'RENTED' && d.monthlyRent > 0) {
+    // Dynamic admin override for ceilings, or fallback to defaults
+    const tier1Cap = adminParams.tier1RentCap ?? DEFAULT_MAX_RENT.TIER_1;
+    const tier2Cap = adminParams.tier2RentCap ?? DEFAULT_MAX_RENT.TIER_2;
+    const ruralCap = adminParams.ruralRentCap ?? DEFAULT_MAX_RENT.RURAL;
+    
+    const maxRent = urbanTier === 'TIER_1' ? tier1Cap : urbanTier === 'TIER_2' ? tier2Cap : ruralCap;
+    const cappedRent = Math.min(d.monthlyRent, maxRent);
+    
+    colDeduction = Math.max(baseCol, cappedRent) * 12;
+    deductions.push({ name: 'Rent-Adjusted Cost of Living', amount: colDeduction, reason: `Renter in ${urbanTier} — capped at KSh ${maxRent.toLocaleString()}` });
+  } else {
+    colDeduction = baseCol * 12;
+    deductions.push({ name: 'Cost of Living Allowance', amount: colDeduction, reason: `Basic survival threshold for ${urbanTier}` });
+  }
   agi -= colDeduction;
 
   // Flaw 14: Non-linear Dependency Scaling
@@ -211,11 +283,19 @@ export function calculateProposedModel(d, adminParams = {}) {
     factors.push({ name: 'CHE Exemption', impact: 'High', direction: 'down', description: 'Disposable income protected', isFlaw: false });
   }
 
+  // PWD Exemption
+  if (d.hasRegisteredDisability) {
+    let disabilityDeduction = agi * 0.3; // 30% deduction for reduced earning capacity
+    deductions.push({ name: 'Disability Exemption (Art. 54)', amount: disabilityDeduction, reason: 'Registered Person with Disability' });
+    agi -= disabilityDeduction;
+    factors.push({ name: 'PWD Override', impact: 'High', direction: 'down', description: 'Art. 54 constitutional protection — reduced earning capacity adjustment', isFlaw: false });
+  }
+
   agi = Math.max(0, agi);
 
   // OVERRIDES (Flaw 19 & 24)
   let isIndigent = false;
-  if (d.receivesAid) isIndigent = true;
+  if (d.receivesAid || d.isRefugee) isIndigent = true;
   if (d.headAge >= 65 && !d.assets.includes('CAR') && effectiveBalance < 5000) {
     isIndigent = true;
     factors.push({ name: 'Age Override', impact: 'High', direction: 'down', description: 'Pensioner Trap bypass', isFlaw: false });
@@ -225,12 +305,16 @@ export function calculateProposedModel(d, adminParams = {}) {
     factors.push({ name: 'Child-Headed Household', impact: 'High', direction: 'down', description: 'Minor override', isFlaw: false });
   }
 
-  // Flaw 13: Pro-Poor Asymmetric Constraint
-  // Erring on the side of undercharging by applying a 20% margin of error buffer to the indigent threshold
+  // Smooth Transition Constraint (Soft-Landing Smoothness)
+  // At exactly KSh 131,000, 2.75% of AGI yields KSh 300.20/month.
+  // This means the dreaded '131k hard cliff' mathematically vanishes when strictly applying
+  // 2.75% to an Adjusted Gross Income rather than a gross income proxy.
+  // As AGI crosses 131k, the contribution scales perfectly smoothly from 300 upwards,
+  // providing a natural soft-landing ramp for graduating citizens.
   const INDIGENT_THRESHOLD = 131000;
-  if (!isIndigent && agi <= (INDIGENT_THRESHOLD * 1.20)) {
+  if (!isIndigent && agi <= INDIGENT_THRESHOLD) {
     isIndigent = true;
-    factors.push({ name: 'Pro-Poor Constraint', impact: 'Medium', direction: 'down', description: 'Mathematical margin of error protection', isFlaw: false });
+    factors.push({ name: 'Pro-Poor Constraint', impact: 'Medium', direction: 'down', description: 'AGI below indigent threshold', isFlaw: false });
   }
 
   // Meta-Flaw 30: Legal 2.75% Mandate
@@ -250,7 +334,7 @@ export function calculateProposedModel(d, adminParams = {}) {
   // If user operates purely in cash with zero digital footprint and zero physical assets
   let isDigitalGhost = false;
   let requiresChpVerification = false;
-  if (!isOffline && !d.hasKraPin && !d.isNtsaVerified && (d.grossMpesaMonthly || 0) < 1000 && d.assets.length === 0) {
+  if (!isOffline && (!d.kraPinType || d.kraPinType === 'NONE') && !d.isNtsaVerified && !d.hasSaccoAccount && (d.grossMpesaMonthly || 0) < 1000 && d.assets.length === 0) {
     isDigitalGhost = true;
   }
   
@@ -258,6 +342,20 @@ export function calculateProposedModel(d, adminParams = {}) {
     requiresChpVerification = true;
     factors.push({ name: 'Digital Ghost / CHP Protocol', impact: 'High', direction: 'neutral', description: 'Zero digital footprint. Provisional subsidy granted pending physical CHP verification within 90 days.', isFlaw: false });
   }
+
+  // Consent Withheld Pathway (DPA 2019 compliance)
+  if (d.consentWithheld && !isDigitalGhost) {
+    requiresChpVerification = true;
+    factors.push({ name: 'Consent Withheld — Manual Review', impact: 'High', direction: 'neutral', description: 'Citizen exercised DPA §32 right to withhold data consent. Routed to CHP manual verification. No algorithmic penalty applied.', isFlaw: false });
+  }
+
+  const verifiedSources = [
+    (d.kraPinType && d.kraPinType !== 'NONE'),
+    d.isNtsaVerified,
+    (!isOffline && !isDigitalGhost)
+  ].filter(Boolean).length;
+  const confidenceTier = verifiedSources >= 2 ? "HIGH" : verifiedSources === 1 ? "MEDIUM" : "LOW";
+  const confidenceBand = { HIGH: 0.10, MEDIUM: 0.20, LOW: 0.35 }[confidenceTier];
 
   return {
     estimatedAnnualIncome: baseIncome,
@@ -272,7 +370,9 @@ export function calculateProposedModel(d, adminParams = {}) {
     modelName: 'SHA PMT v2.1 Optimization',
     deductions: deductions,
     fairnessPass: true,
-    revenueImpact: (monthlyContribution * 12) * 1.15 // Simulating 15% increased compliance due to fairness
+    confidenceTier: confidenceTier,
+    agiRangeLow: Math.max(0, Math.round(agi * (1 - confidenceBand))),
+    agiRangeHigh: Math.round(agi * (1 + confidenceBand))
   };
 }
 
@@ -294,22 +394,32 @@ export const PRESETS = [
       floorMaterial: 'CEMENT',
       rooms: 3,
       ownershipStatus: 'OWNED',
+      monthlyRent: 0,
+      subletIncome: 0,
       waterSource: 'RIVER',
       sanitationType: 'PIT_LATRINE',
       cookingEnergy: 'FIREWOOD',
       lightingEnergy: 'ELECTRICITY',
       assets: ['RADIO', 'SMARTPHONE'],
+      motorcycleIsCommercial: false,
       landAcreage: 0.5,
       livestockCount: 2,
       receivesAid: false,
+      isRefugee: false,
       grossMpesaMonthly: 120000,
       avgRetainedBalance: 110000,
+      isSeasonalWorker: false,
+      lowSeasonRetainedBalance: 0,
+      diasporaRemittances: 0,
       fulizaDefaults: 0,
-      hasKraPin: false,
+      kraPinType: 'NONE',
       isNtsaVerified: false,
+      hasSaccoAccount: false,
       hasChronicIllness: false,
+      hasRegisteredDisability: false,
       isGroupTreasurer: true,
-      vehicleType: 'STANDARD_OLD'
+      vehicleType: 'STANDARD_OLD',
+      consentWithheld: false
     },
   },
   {
@@ -329,22 +439,32 @@ export const PRESETS = [
       floorMaterial: 'CEMENT',
       rooms: 4,
       ownershipStatus: 'FAMILY',
+      monthlyRent: 0,
+      subletIncome: 0,
       waterSource: 'PUBLIC_TAP',
       sanitationType: 'PIT_LATRINE',
       cookingEnergy: 'FIREWOOD',
       lightingEnergy: 'ELECTRICITY',
       assets: ['RADIO', 'FEATURE_PHONE', 'BICYCLE'],
+      motorcycleIsCommercial: false,
       landAcreage: 2,
       livestockCount: 5,
       receivesAid: false,
+      isRefugee: false,
       grossMpesaMonthly: 8000,
       avgRetainedBalance: 1200,
+      isSeasonalWorker: true,
+      lowSeasonRetainedBalance: 200,
+      diasporaRemittances: 0,
       fulizaDefaults: 0,
-      hasKraPin: false,
+      kraPinType: 'NONE',
       isNtsaVerified: false,
+      hasSaccoAccount: false,
       hasChronicIllness: false,
+      hasRegisteredDisability: false,
       isGroupTreasurer: false,
-      vehicleType: 'STANDARD_OLD'
+      vehicleType: 'STANDARD_OLD',
+      consentWithheld: false
     },
   },
   {
@@ -364,22 +484,32 @@ export const PRESETS = [
       floorMaterial: 'MUD',
       rooms: 1,
       ownershipStatus: 'RENTED',
+      monthlyRent: 6000,
+      subletIncome: 0,
       waterSource: 'PUBLIC_TAP',
       sanitationType: 'VIP_LATRINE',
       cookingEnergy: 'CHARCOAL',
       lightingEnergy: 'KEROSENE',
       assets: ['SMARTPHONE', 'TV'],
+      motorcycleIsCommercial: false,
       landAcreage: 0,
       livestockCount: 0,
       receivesAid: false,
+      isRefugee: false,
       grossMpesaMonthly: 60000,
       avgRetainedBalance: 500,
+      isSeasonalWorker: false,
+      lowSeasonRetainedBalance: 0,
+      diasporaRemittances: 0,
       fulizaDefaults: 3,
-      hasKraPin: false,
+      kraPinType: 'NONE',
       isNtsaVerified: false,
+      hasSaccoAccount: false,
       hasChronicIllness: false,
+      hasRegisteredDisability: false,
       isGroupTreasurer: false,
-      vehicleType: 'STANDARD_OLD'
+      vehicleType: 'STANDARD_OLD',
+      consentWithheld: false
     },
   },
   {
@@ -399,22 +529,32 @@ export const PRESETS = [
       floorMaterial: 'TILES',
       rooms: 3,
       ownershipStatus: 'RENTED',
+      monthlyRent: 45000,
+      subletIncome: 0,
       waterSource: 'PIPED_DWELLING',
       sanitationType: 'FLUSH_TOILET',
       cookingEnergy: 'LPG',
       lightingEnergy: 'ELECTRICITY',
       assets: ['SMARTPHONE', 'TV', 'FRIDGE', 'CAR', 'COMPUTER'],
+      motorcycleIsCommercial: false,
       landAcreage: 0,
       livestockCount: 0,
       receivesAid: false,
+      isRefugee: false,
       grossMpesaMonthly: 150000,
       avgRetainedBalance: 85000,
+      isSeasonalWorker: false,
+      lowSeasonRetainedBalance: 0,
+      diasporaRemittances: 0,
       fulizaDefaults: 0,
-      hasKraPin: true,
+      kraPinType: 'PAYE',
       isNtsaVerified: true,
+      hasSaccoAccount: true,
       hasChronicIllness: false,
+      hasRegisteredDisability: false,
       isGroupTreasurer: false,
-      vehicleType: 'STANDARD_NEW'
+      vehicleType: 'STANDARD_NEW',
+      consentWithheld: false
     },
   },
   {
@@ -434,22 +574,77 @@ export const PRESETS = [
       floorMaterial: 'CEMENT',
       rooms: 4,
       ownershipStatus: 'OWNED',
+      monthlyRent: 0,
+      subletIncome: 0,
       waterSource: 'PIPED_YARD',
       sanitationType: 'PIT_LATRINE',
       cookingEnergy: 'LPG',
       lightingEnergy: 'ELECTRICITY',
       assets: ['RADIO', 'FEATURE_PHONE', 'TV'],
+      motorcycleIsCommercial: false,
       landAcreage: 1,
       livestockCount: 2,
       receivesAid: false,
+      isRefugee: false,
       grossMpesaMonthly: 1500,
       avgRetainedBalance: 800,
+      isSeasonalWorker: false,
+      lowSeasonRetainedBalance: 0,
+      diasporaRemittances: 0,
       fulizaDefaults: 0,
-      hasKraPin: false,
+      kraPinType: 'NONE',
       isNtsaVerified: false,
+      hasSaccoAccount: false,
       hasChronicIllness: true,
+      hasRegisteredDisability: false,
       isGroupTreasurer: false,
-      vehicleType: 'STANDARD_OLD'
+      vehicleType: 'STANDARD_OLD',
+      consentWithheld: false
+    },
+  },
+  {
+    name: 'Urban Satellite Renter',
+    description: 'Kiambu resident renting in Ruaka. Moderate income but high rent burden misclassified as rural.',
+    icon: '🏘️',
+    badge: 'Rent Gap Protected',
+    badgeColor: '#7c3aed',
+    inputs: {
+      county: 'Kiambu',
+      householdSize: 4,
+      headGender: 'FEMALE',
+      headAge: 32,
+      dwellingType: 'APARTMENT',
+      wallMaterial: 'STONE',
+      roofMaterial: 'IRON_SHEETS',
+      floorMaterial: 'CEMENT',
+      rooms: 2,
+      ownershipStatus: 'RENTED',
+      monthlyRent: 16000,
+      subletIncome: 0,
+      waterSource: 'PIPED_DWELLING',
+      sanitationType: 'FLUSH_TOILET',
+      cookingEnergy: 'LPG',
+      lightingEnergy: 'ELECTRICITY',
+      assets: ['SMARTPHONE', 'TV'],
+      motorcycleIsCommercial: false,
+      landAcreage: 0,
+      livestockCount: 0,
+      receivesAid: false,
+      isRefugee: false,
+      grossMpesaMonthly: 35000,
+      avgRetainedBalance: 8000,
+      isSeasonalWorker: false,
+      lowSeasonRetainedBalance: 0,
+      diasporaRemittances: 0,
+      fulizaDefaults: 1,
+      kraPinType: 'NONE',
+      isNtsaVerified: false,
+      hasSaccoAccount: false,
+      hasChronicIllness: false,
+      hasRegisteredDisability: false,
+      isGroupTreasurer: false,
+      vehicleType: 'STANDARD_OLD',
+      consentWithheld: false
     },
   }
 ];
@@ -602,7 +797,7 @@ export function calculateFraudRisk(d, contextData = {}) {
 
   // FLAG 8: KRA Pin But No Income
   // If has KRA pin (tax-registered business) but very low retained balance
-  if (d.hasKraPin && d.avgRetainedBalance < 5000 && d.householdSize <= 2) {
+  if (d.kraPinType === 'BUSINESS' && d.avgRetainedBalance < 5000 && d.householdSize <= 2) {
     fraudFlags.push({
       name: 'Business Registration Without Income',
       reason: `Has KRA pin but retained balance KSh ${d.avgRetainedBalance}. Possible shell company.`,
@@ -616,10 +811,10 @@ export function calculateFraudRisk(d, contextData = {}) {
 
   // FLAG 9: Multiple Dependents With Chronic Illness
   // If claims CHE but also claims very large household (both would be unusual together)
-  if (d.hasChronicIllness && d.householdSize > 10) {
+  if (d.hasChronicIllness && d.householdSize > 7 && !ASAL_COUNTIES[d.county]) {
     fraudFlags.push({
       name: 'Multiple Burden Claim',
-      reason: `Claims chronic illness AND household of ${d.householdSize}. Statistically rare combination; verify both claims.`,
+      reason: `Claims chronic illness AND household of ${d.householdSize} outside ASAL regions. Statistically rare combination; verify both claims.`,
       confidence: 0.55,
       severity: 'LOW',
       action: 'Request medical documentation for CHE claim'
@@ -645,15 +840,16 @@ export function calculateFraudRisk(d, contextData = {}) {
   // FLAG 11: KRA Formal Income vs. Self-Reported Mismatch
   // If KRA shows formal employment income but citizen claims near-zero retained balance
   if (contextData.kraFormalIncome && contextData.kraFormalIncome > 300000 && d.avgRetainedBalance < 5000) {
+    let flagConfidence = d.kraPinType === 'PAYE' ? 0.95 : 0.88;
     fraudFlags.push({
       name: 'KRA Formal Income Mismatch',
       reason: `KRA records show annual formal income of KSh ${contextData.kraFormalIncome.toLocaleString()} but citizen's retained M-Pesa balance is only KSh ${d.avgRetainedBalance.toLocaleString()}. Possible income concealment.`,
-      confidence: 0.88,
-      severity: 'HIGH',
+      confidence: flagConfidence,
+      severity: flagConfidence >= 0.9 ? 'CRITICAL' : 'HIGH',
       action: 'Request 6-month bank statements and KRA iTax returns for reconciliation'
     });
-    confidenceScores.push(0.88);
-    overallRiskScore += 0.88;
+    confidenceScores.push(flagConfidence);
+    overallRiskScore += flagConfidence;
   }
 
   // FLAG 12: Asset-Lifestyle Incongruity
@@ -664,7 +860,7 @@ export function calculateFraudRisk(d, contextData = {}) {
   if (d.avgRetainedBalance < 3000 && d.receivesAid) {
     let lifestyleSignals = 0;
     if (d.assets.includes('CAR') && d.vehicleType !== 'STANDARD_OLD') lifestyleSignals++;
-    if (d.hasKraPin) lifestyleSignals++; // Has formal business but claims indigence
+    if (d.kraPinType && d.kraPinType !== 'NONE') lifestyleSignals++; // Has active PIN but claims indigence
     if (d.grossMpesaMonthly > 50000) lifestyleSignals++; // High transaction volume
     if (d.assets.includes('CAR') && d.assets.includes('COMPUTER') && d.assets.includes('SMARTPHONE')) lifestyleSignals++; // Multiple high-value assets
     if (d.isNtsaVerified && d.assets.includes('CAR')) lifestyleSignals++;
@@ -686,15 +882,17 @@ export function calculateFraudRisk(d, contextData = {}) {
   // FLAG 13: Multi-SIM Concealment
   // Citizen declares one phone number with low balance, but Safaricom API shows multiple active SIMs under their ID
   if (contextData.safaricomActiveSims > 1 && d.avgRetainedBalance < 5000) {
+    let multiSimConfidence = 0.60; // Reduced from 0.85 — legitimate business/personal split
+    if (d.grossMpesaMonthly > 50000) multiSimConfidence = 0.80; // Upgrade if high volume
     fraudFlags.push({
       name: 'Multi-SIM Concealment Risk',
       reason: `Citizen declared low liquidity, but Safaricom registry shows ${contextData.safaricomActiveSims} active SIM cards under their National ID. Possible wealth splitting.`,
-      confidence: 0.85,
-      severity: 'HIGH',
+      confidence: multiSimConfidence,
+      severity: multiSimConfidence >= 0.75 ? 'HIGH' : 'MEDIUM',
       action: 'Aggregate balances across all registered MSISDNs via API'
     });
-    confidenceScores.push(0.85);
-    overallRiskScore += 0.85;
+    confidenceScores.push(multiSimConfidence);
+    overallRiskScore += multiSimConfidence;
   }
 
   // FLAG 14: Unverified Chama Treasurer Claim
@@ -711,10 +909,66 @@ export function calculateFraudRisk(d, contextData = {}) {
     overallRiskScore += 0.95;
   }
 
+  // FLAG 15: Recent County Switch
+  if (contextData.iprsCountyChangedWithin90Days) {
+    fraudFlags.push({
+      name: 'Recent County Switch',
+      reason: 'IPRS shows county of residence changed within 90 days of assessment. Possible CoL tier gaming.',
+      confidence: 0.70,
+      severity: 'MEDIUM',
+      action: 'Verify current residence with utility bills or county records'
+    });
+    confidenceScores.push(0.70);
+    overallRiskScore += 0.70;
+  }
+
+  // FLAG 16: Multi-Vehicle Mismatch
+  if (contextData.ntsaVehicleCount !== undefined && d.assets.includes('CAR')) {
+    const declaredCount = d.assets.includes('CAR') ? 1 : 0;
+    if (contextData.ntsaVehicleCount > declaredCount + 1) { // Allowing 1 extra
+      fraudFlags.push({
+        name: 'Undeclared Vehicles',
+        reason: `Citizen declared ${declaredCount} vehicle(s) but NTSA shows ${contextData.ntsaVehicleCount}. ${contextData.ntsaVehicleCount - declaredCount} vehicle(s) not disclosed.`,
+        confidence: 0.88,
+        severity: 'HIGH',
+        action: 'Request full NTSA TIMS vehicle listing; reassess total asset value'
+      });
+      confidenceScores.push(0.88);
+      overallRiskScore += 0.88;
+    }
+  }
+
+  // FLAG 17: Commercial Exemption Abuse
+  if (d.vehicleType === 'COMMERCIAL' && contextData.ntsaVehicleCategory === 'PRIVATE') {
+    fraudFlags.push({
+      name: 'False Commercial Claim',
+      reason: 'Citizen claims commercial vehicle exemption but NTSA TIMS shows vehicle registered as PRIVATE category.',
+      confidence: 0.92,
+      severity: 'CRITICAL',
+      action: 'Deny commercial exemption; recalculate at full private vehicle value'
+    });
+    confidenceScores.push(0.92);
+    overallRiskScore += 0.92;
+  }
+
+  // FLAG 18: Multi-Household Income Splitting (Polygamous / Split Families)
+  if (contextData.iprsHouseholdLinkages > 1) {
+    fraudFlags.push({
+      name: 'Multi-Household Income Splitting',
+      reason: `IPRS records show ${contextData.iprsHouseholdLinkages} linked households. Possible income splitting to claim multiple independent dependency allowances.`,
+      confidence: 0.85,
+      severity: 'HIGH',
+      action: 'Consolidate AGI across linked households before applying dependency ratio'
+    });
+    confidenceScores.push(0.85);
+    overallRiskScore += 0.85;
+  }
+
   // Calculate overall fraud risk percentile (0-100)
   let fraudRiskPercentile = 0;
   if (confidenceScores.length > 0) {
-    fraudRiskPercentile = Math.round((overallRiskScore / (confidenceScores.length * 1)) * 100);
+    const combined = 1 - confidenceScores.reduce((acc, c) => acc * (1 - c), 1);
+    fraudRiskPercentile = Math.min(100, Math.round(combined * 100));
   }
 
   return {
@@ -792,7 +1046,7 @@ export function analyzeSector(d) {
   // Determine primary sector
   const hasLivestock = d.livestockCount > 0;
   const hasLand = d.landAcreage > 0;
-  const hasBusiness = d.hasKraPin || (d.grossMpesaMonthly > 30000 && d.avgRetainedBalance > 5000);
+  const hasBusiness = d.kraPinType === 'BUSINESS' || (d.grossMpesaMonthly > 30000 && d.avgRetainedBalance > 5000);
   const hasEmployment = d.isNtsaVerified || (d.avgRetainedBalance > 20000 && d.fulizaDefaults === 0);
   const inAsal = Object.keys(ASAL_COUNTIES).includes(d.county);
 
@@ -966,7 +1220,7 @@ export function handleApiFailure(apiName, error, d) {
  * @param {string} groupingKey - The demographic key to group by (e.g., 'county', 'headGender')
  * @returns {Object} { passed: boolean, maxDisparity: number, groupResults: Object, report: string }
  */
-export function testEqualizedOdds(assessments, groupingKey = 'county') {
+export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'county') {
   if (!assessments || assessments.length === 0) {
     return { passed: false, maxDisparity: 0, groupResults: {}, report: 'No assessments provided' };
   }
@@ -1023,7 +1277,7 @@ export function testEqualizedOdds(assessments, groupingKey = 'county') {
  * @param {number} avgContribution - Average monthly contribution in KSh (default: 575)
  * @returns {Object} { scenarios: Array, breakeven: Object, summary: string }
  */
-export function generateRevenueStressTest(totalPopulation = 15500000, avgContribution = 575) {
+export function generateRevenueStressTest(totalPopulation = 15500000, avgContribution = 520) {
   const scenarios = [
     { rate: 0.30, label: 'Pessimistic', source: 'NHIF low-engagement baseline' },
     { rate: 0.45, label: 'Conservative', source: 'ILO Asia informal sector studies' },
@@ -1094,10 +1348,13 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
       householdSize: inputs.householdSize,
       headAge: inputs.headAge,
       headGender: inputs.headGender,
+      ownershipStatus: inputs.ownershipStatus,
       hasChronicIllness: inputs.hasChronicIllness,
+      hasRegisteredDisability: inputs.hasRegisteredDisability,
+      isRefugee: inputs.isRefugee,
       receivesAid: inputs.receivesAid,
       // Sensitive fields are marked for encryption
-      _encrypted: ['avgRetainedBalance', 'grossMpesaMonthly', 'fulizaDefaults', 'landAcreage', 'livestockCount']
+      _encrypted: ['avgRetainedBalance', 'grossMpesaMonthly', 'fulizaDefaults', 'landAcreage', 'livestockCount', 'monthlyRent', 'subletIncome', 'diasporaRemittances']
     },
     outputs: {
       currentModel: {

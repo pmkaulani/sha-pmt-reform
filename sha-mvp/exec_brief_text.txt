@@ -1,0 +1,382 @@
+SHA PMT v2.1 — Executive Briefing
+
+A Reform Proposal to Fix Kenya's Health Insurance Means-Testing Algorithm
+
+Peter M. Kaulani  ·  KCA University  ·  June 2026
+
+
+
+1.  THE PROBLEM
+
+
+
+The Social Health Authority (SHA), launched October 2024, sets health insurance premiums for Kenya's 83% informal-sector workforce using a Proxy Means Testing (PMT) algorithm. The investigation Error by Design (Africa Uncensored · Lighthouse Reports · The Guardian, May 2026) and a pre-deployment IDinsight report — obtained through access-to-information requests — both confirm the algorithm was known to be flawed before launch. IDinsight warned it was "inequitable, particularly for low-income households" and depended on an out-of-date 2020 survey. SHA deployed it anyway.
+
+
+
+Core Algorithm Flaws (28 identified)
+
+• M-Pesa gross velocity treated as personal income (Chama trap)
+
+• Stone walls / tile roofs add KSh 120–150K to wealth score
+
+• Electricity access penalised as "luxury" (+KSh 80K)
+
+• ASAL land and livestock valued at full national market rate
+
+• Static per-head dependent deduction (not income-proportional)
+
+• No Catastrophic Health Expenditure (CHE) deduction
+
+• No appeal mechanism embedded in model logic
+
+Documented Real-World Impact
+
+• Farmers' predicted incomes double their actual earnings (Lighthouse Reports audit)
+
+• Dialysis & cancer patients losing treatment access after overclassification
+
+• Only 3.1M of 19M+ registrants completed means-testing by Feb 2025
+
+• SHIF annual deficit: KSh 38.3 billion (Auditor-General, March 2026)
+
+• KSh 11B lost to hospital-side fraud (Oct 2024–Apr 2025): adverse selection accelerates this
+
+• Informal sector contributed only KSh 5.72B of KSh 57.7B collected in FY2025
+
+
+
+Note on KSh 11 Billion Fraud: This loss came from rogue hospitals fraudulently billing SHA on the claims side. It is a separate but related problem. The PMT reform addresses the enrollment side: correct assessments → fair premiums → more voluntary enrolment → lower adverse selection → less incentive for hospital fraud.
+
+
+
+2.  THE SOLUTION: ADJUSTABLE GROSS INCOME (AGI) MODEL
+
+Preserves the statutory 2.75% rate — fixes the 28 systemic flaws in the base it is applied to
+
+
+
+Replace intrusive housing proxy variables with digitally triangulated income signals cross-referenced via KRA, NTSA TIMS, and Safaricom M-Pesa retained balance. The SHA Act 2023 §27 rate of 2.75% is preserved. No legislative amendment is required.
+
+
+
+FEATURE
+
+CURRENT LASSO MODEL
+
+PROPOSED AGI v2.1
+
+Income Signal
+
+Gross M-Pesa velocity (over-counts)
+
+12-month avg retained balance (true liquidity)
+
+Housing Proxies
+
+Stone wall +120K, tile roof +150K to score
+
+REMOVED — Error by Design evidence
+
+Electricity Access
+
+Treated as luxury (+80K to score)
+
+EXCLUDED entirely
+
+Urban Cost of Living
+
+Penalised as wealth signal
+
+Deducted: 18K/mo (T1), 10K (T2), 4K (Rural)
+
+ASAL Land/Livestock
+
+Full national market value
+
+Arid: 85% off; Semi-arid: 50% off
+
+Household Dependents
+
+Fixed KSh 4K/head deduction
+
+8% per dependent, ASAL-adjusted cap
+
+Chronic Illness / PWD
+
+No recognition
+
+40% CHE deduction; 30% PWD (Art. 54)
+
+Bodaboda Motorcycle
+
+Full asset value
+
+50% commercial exemption (NTSA-verified)
+
+Chama Treasurer
+
+Full M-Pesa balance counted
+
+80% fiduciary liquidity exemption
+
+DPA Consent Rights
+
+No pathway
+
+§32 consent-withheld route — no penalty
+
+Fraud Detection
+
+Post-hoc, manual
+
+18-flag engine: KRA × NTSA × Safaricom
+
+Transparency
+
+No receipt
+
+SHAP deduction receipt per household
+
+
+
+3.  IMPACT: THREE HOUSEHOLDS
+
+
+
+HOUSEHOLD
+
+CURRENT LASSO
+
+AGI MODEL v2.1
+
+Mama Wanjiku
+
+Chama Treasurer, Kakamega
+
+Gross M-Pesa KSh 80K/mo as income → score KSh 768K
+
+Monthly premium: KSh 1,760
+
+→ WRONG (overcharged >5×)
+
+Retained balance KSh 2,500; 80% fiduciary exemption
+
+Effective AGI: KSh 6,000
+
+Monthly premium: KSh 300 (subsidised)
+
+→ CORRECT
+
+Mzee Kamau
+
+Pensioner, Nyeri, stone house
+
+Stone wall +120K, tile roof +150K, electricity +80K
+
+Score KSh 350K+ → Monthly: KSh 801
+
+→ WRONG (no income, penalised for ancestral home)
+
+Housing variables EXCLUDED by design
+
+Age 72, no car, balance <KSh 5K → Age override
+
+Monthly premium: KSh 300 (subsidised)
+
+→ CORRECT
+
+Nairobi Professional
+
+KRA PIN, NTSA car, high liquidity
+
+Some asset signals captured
+
+Monthly: ~KSh 500–800
+
+→ Undercharges wealthy
+
+KRA income + NTSA luxury car + high retained balance
+
+Full AGI calculation applies
+
+Monthly: KSh 900–1,200
+
+→ CORRECT (wealthier pays proportionately more)
+
+
+
+4.  FISCAL IMPACT — REVENUE PROJECTIONS
+
+
+
+The AGI model increases sustainable revenue by reducing adverse selection and raising voluntary compliance. Revenue projections use KCHS 2022 (KNBS), CPI-adjusted to 2025/26, and ILO informal sector compliance elasticity data. Average monthly contribution KSh 520 (2.75% blended AGI). Population base: 15.5M non-formally-salaried workers.
+
+
+
+Scenario
+
+Compliance
+
+Enrolled
+
+Monthly Revenue
+
+Annual Revenue
+
+Pessimistic
+
+30%
+
+4.65M
+
+KSh 2.4B
+
+KSh 29B
+
+Conservative
+
+45%
+
+6.98M
+
+KSh 3.6B
+
+KSh 43B
+
+Target (Rwanda parity)
+
+60%
+
+9.3M
+
+KSh 4.8B
+
+KSh 58B
+
+Optimistic
+
+75%
+
+11.6M
+
+KSh 6.0B
+
+KSh 72B
+
+
+
+Rwanda's Mutuelles de Santé uses income-tiered community verification (not PMT) and achieved 60% compliance. Indonesia reversed its PMT model after IDinsight documented 82% error rates. Both transitions are directly analogous to this proposal.
+
+
+
+5.  KEY TECHNICAL INNOVATIONS
+
+
+
+Triangulation Trinity: KRA × NTSA TIMS × Safaricom. Three independent government data sources audit every self-declaration. Fraud resistance is built in, not bolted on.
+
+8 Vulnerability Exemptions: PWD (30%), Bodaboda (50%), Seasonal workers, Chama treasurers, Diaspora remittances, Refugees/IDPs, SACCO bypass, Consent-withheld. Each mapped to a constitutional or legal basis.
+
+18-Flag Automated Fraud Engine: Detects phantom dependents, income splitting, false commercial claims, undeclared NTSA vehicles, multi-SIM concealment, and KRA income mismatches — all without housing inspections.
+
+Smooth Indigent Transition: 2.75% × KSh 131,000 ÷ 12 = KSh 300.21. The law's flat rate creates a mathematically smooth transition at the indigent threshold. No cliff. No jump.
+
+SHAP Deduction Receipts: Every household receives a plain-language breakdown of every factor that changed their contribution. Constitutional compliance with Art. 35 (Access to Information).
+
+Full DPA 2019 Compliance: §32 consent-withheld pathway, 2-year raw data purge / 7-year outcome retention (§39), audit record per assessment, no automated penalty without human review.
+
+
+
+6.  IMPLEMENTATION PREREQUISITES (Non-Negotiable)
+
+
+
+Step 1 — API MoU Framework (0–6 months):
+
+SHA must establish formal data-sharing Memoranda of Understanding with KRA, NTSA, and Safaricom under DPA 2019 §19. Without these three APIs, the fraud engine cannot function and the model falls back to pure self-declaration — replicating the current system's evasion vulnerability.
+
+Step 2 — Pilot County — Recommend Nakuru (6–12 months):
+
+6-month live pilot in one Tier 2 county before national rollout. Nakuru offers urban-rural mix, non-ASAL context, moderate fraud risk, and existing SHA infrastructure. Pilot generates real-world data to validate model parameters against ground truth.
+
+Step 3 — SHAP Transparency Obligation (at rollout):
+
+Every household assessment must generate a SHAP deduction receipt — a non-technical explanation of every factor affecting their contribution. Minimum requirement for Art. 35 compliance and the Access to Information Act 2016.
+
+
+
+7.  CONSTITUTIONAL & LEGAL GROUNDING
+
+
+
+Art. 27(4) — Non-discrimination
+
+Current model produces higher error rates for women, ASAL residents, and rural poor. AGI model includes equalized-odds fairness testing across all demographic groups.
+
+Art. 43 — Right to Health
+
+Overcharging that drives unaffordable premiums and disenrollment directly violates the right to the highest attainable standard of health.
+
+Art. 54 — PWD Protections
+
+30% AGI deduction for NCPWD-registered persons. No provision exists in the current model.
+
+Art. 56 — Marginalized Communities
+
+40% ASAL dependency allowance cap; 85% arid land discount. Protects pastoralist communities systematically excluded by the current model.
+
+DPA 2019
+
+Consent-withheld pathway, tiered data retention, audit records. No automated adverse decision without human-in-the-loop review.
+
+SHA Act 2023 §27 — 2.75% Rate
+
+Fully preserved. The AGI model changes the income base, not the rate. No legislative amendment is required for implementation.
+
+
+
+8.  KNOWN LIMITATIONS — HONEST ACKNOWLEDGEMENTS
+
+
+
+⚠ API Dependency Risk: Full fraud resistance requires live KRA, NTSA, and Safaricom APIs. Until MoUs are signed, fallback mode (self-declaration + mandatory manual review within 14 days) must be the operational standard.
+
+⚠ Rent Declaration: Actual monthly rent is deducted up to a capped ceiling, but rent is currently self-declared and unverifiable at scale. Mitigation: cross-reference with KPLC meter addresses and county rates databases.
+
+⚠ Cash Economy (Digital Ghosts): Estimated 5–8% of informal workers have near-zero digital footprint. These citizens receive provisional indigent classification pending CHP physical verification within 90 days. SACCO account holders bypass this hold.
+
+⚠ Chama Fiduciary Exemption: The 80% fiduciary exemption prevents Chama treasurer overcharging but is open to false claims. Fraud Flag 14 (Unverified Fiduciary Claim) detects this if Safaricom group registration API is live.
+
+
+
+9.  WHAT IS BEING REQUESTED
+
+
+
+0–3 months
+
+(Immediate)
+
+SHA to comply with Access to Information Act 2016: release full PMT algorithm pseudocode and the IDinsight pre-deployment report. CAJ 21-day disclosure window applies (§23 ATI Act).
+
+3–12 months
+
+(Medium-term)
+
+Establish KRA × NTSA × Safaricom MoU framework. Commission KIPPRA independent actuarial review of AGI model parameters. Launch pilot in Nakuru County.
+
+12–18 months
+
+(Rollout)
+
+National deployment with SHAP receipt per household. Parliamentary Health Committee review of PMT methodology. Annual KNBS fairness audit.
+
+
+
+Full Technical Documentation Available on Request
+
+SHA Algorithm v2.1 Documentation  ·  Assumptions Register  ·  SHAP Deduction Receipts (7 households)  ·  18-Flag Fraud Engine Specification  ·  Actuarial Financial Model
+
+Peter M. Kaulani  ·  KCA University, Nairobi  ·  SHA PMT Reform Initiative  ·  June 2026
+

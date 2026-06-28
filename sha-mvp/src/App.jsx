@@ -11,18 +11,18 @@ import { logger } from "./lib/Logger.js";
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
 
-const COUNTIES = ["Baringo","Bomet","Bungoma","Busia","Elgeyo Marakwet","Embu","Garissa","Homa Bay","Isiolo","Kajiado","Kakamega","Kericho","Kiambu","Kilifi","Kirinyaga","Kisii","Kisumu","Kitui","Kwale","Laikipia","Lamu","Machakos","Makueni","Mandera","Marsabit","Meru","Migori","Mombasa","Murang'a","Nairobi","Nakuru","Nandi","Narok","Nyandarua","Nyamira","Nyeri","Samburu","Siaya","Taita Taveta","Tana River","Tharaka Nithi","Trans Nzoia","Turkana","Uasin Gishu","Vihiga","Wajir","West Pokot"];
+const COUNTIES = ["Baringo","Bomet","Bungoma","Busia","Elgeyo Marakwet","Embu","Garissa","Homa Bay","Isiolo","Kajiado","Kakamega","Kericho","Kiambu","Kilifi","Kirinyaga","Kisii","Kisumu","Kitui","Kwale","Laikipia","Lamu","Machakos","Makueni","Mandera","Marsabit","Meru","Migori","Mombasa","Murang'a","Nairobi","Nakuru","Nandi","Narok","Nyandarua","Nyamira","Nyeri","Samburu","Siaya","Taita Taveta","Tana River","Tharaka-Nithi","Trans Nzoia","Turkana","Uasin Gishu","Vihiga","Wajir","West Pokot"];
 
 const DEFAULTS = {
   householdSize: 5, county: "Meru", headGender: "FEMALE", headAge: 45,
   dwellingType: "TRADITIONAL", wallMaterial: "STONE", roofMaterial: "IRON_SHEETS",
-  floorMaterial: "CEMENT", rooms: 2, ownershipStatus: "OWNED",
+  floorMaterial: "CEMENT", rooms: 2, ownershipStatus: "OWNED", monthlyRent: 0, subletIncome: 0,
   waterSource: "BOREHOLE", sanitationType: "PIT_LATRINE",
   cookingEnergy: "FIREWOOD", lightingEnergy: "ELECTRICITY",
-  assets: ["FEATURE_PHONE"], landAcreage: 2, livestockCount: 5, receivesAid: false,
-  grossMpesaMonthly: 10000, avgRetainedBalance: 2000, fulizaDefaults: 0,
-  hasKraPin: false, isNtsaVerified: false, hasChronicIllness: false, isGroupTreasurer: false,
-  vehicleType: "STANDARD_OLD"
+  assets: ["FEATURE_PHONE"], motorcycleIsCommercial: false, landAcreage: 2, livestockCount: 5, receivesAid: false, isRefugee: false,
+  grossMpesaMonthly: 10000, avgRetainedBalance: 2000, isSeasonalWorker: false, lowSeasonRetainedBalance: 0, diasporaRemittances: 0, fulizaDefaults: 0,
+  kraPinType: 'NONE', isNtsaVerified: false, hasSaccoAccount: false, saccoShareCapital: 0, hasChronicIllness: false, hasRegisteredDisability: false, isGroupTreasurer: false,
+  vehicleType: "STANDARD_OLD", consentWithheld: false
 };
 
 const SCENARIOS = Object.fromEntries(PRESETS.map(p => [
@@ -189,7 +189,11 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
           <FieldSelect label="Head gender" value={d.headGender} onChange={v=>upd("headGender",v)} options={[["MALE","Male"],["FEMALE","Female"]]}/>
           <Toggle label="Receives social aid?" value={d.receivesAid} onChange={v=>upd("receivesAid",v)}/>
         </div>
-        <Toggle label="Has Chronic Illness? (CHE)" value={d.hasChronicIllness} onChange={v=>upd("hasChronicIllness",v)}/>
+        <div style={{display:"grid",gap:10}}>
+          <Toggle label="Has Chronic Illness? (CHE)" value={d.hasChronicIllness} onChange={v=>upd("hasChronicIllness",v)} hideSpacer/>
+          <Toggle label="Registered Disability (NCPWD)?" value={d.hasRegisteredDisability} onChange={v=>upd("hasRegisteredDisability",v)} hideSpacer/>
+          <Toggle label="Refugee / IDP status?" value={d.isRefugee} onChange={v=>upd("isRefugee",v)} hideSpacer/>
+        </div>
       </div>}
 
       {/* Step 1: Housing */}
@@ -198,6 +202,12 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
           <FieldSelect label="Dwelling type" value={d.dwellingType} onChange={v=>upd("dwellingType",v)} options={[["BUNGALOW","Bungalow"],["APARTMENT","Apartment"],["TRADITIONAL","Traditional"],["SHANTY","Shanty/Informal"],["OTHER","Other"]]}/>
           <FieldSelect label="Ownership" value={d.ownershipStatus} onChange={v=>upd("ownershipStatus",v)} options={[["OWNED","Owned"],["RENTED","Rented"],["FAMILY","Family/Other"]]}/>
         </div>
+        {d.ownershipStatus === 'RENTED' && (
+          <FieldNumber label="Monthly Rent (KSh)" value={d.monthlyRent} onChange={v=>upd("monthlyRent",v)} min={0} />
+        )}
+        {d.ownershipStatus !== 'RENTED' && (
+          <FieldNumber label="Sublet Income (Monthly KSh)" value={d.subletIncome} onChange={v=>upd("subletIncome",v)} min={0} />
+        )}
         <div className="grid-2">
           <FieldSelect label="Wall material" value={d.wallMaterial} onChange={v=>upd("wallMaterial",v)} options={[["STONE","Stone"],["BRICK","Brick"],["IRON_SHEETS","Iron sheets"],["MUD","Mud"],["WOOD","Wood"],["OTHER","Other"]]}/>
           <FieldSelect label="Roof material" value={d.roofMaterial} onChange={v=>upd("roofMaterial",v)} options={[["IRON_SHEETS","Iron sheets"],["TILES","Tiles"],["CONCRETE","Concrete"],["GRASS","Grass/Thatch"],["OTHER","Other"]]}/>
@@ -234,6 +244,11 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
           <Info size={16} style={{flexShrink:0,marginTop:2}}/>
           <span><strong>Proxy Bias Alert:</strong> The current system aggressively punishes ownership of basic items like bicycles and radios, driving up exclusion errors. Our proposed model strictly targets high-value, digitally-verifiable assets.</span>
         </div>
+        {d.assets.includes("MOTORCYCLE") && (
+          <div style={{marginTop: 8, padding: 16, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
+            <Toggle label="Is this motorcycle used commercially (Bodaboda)?" value={d.motorcycleIsCommercial} onChange={v=>upd("motorcycleIsCommercial",v)} hideSpacer/>
+          </div>
+        )}
         {d.assets.includes("CAR") && (
           <div style={{marginTop: 8, padding: 16, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
             <FieldSelect label="Vehicle Type & Age" value={d.vehicleType || "STANDARD_OLD"} onChange={v=>upd("vehicleType",v)} options={[["STANDARD_OLD","Standard Car (Older than 7 yrs)"], ["STANDARD_NEW","Standard Car (Newer than 7 yrs)"], ["LUXURY","Luxury / SUV"], ["COMMERCIAL","Commercial (Matatu / Pick-up)"]]}/>
@@ -244,8 +259,16 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
 
       {/* Step 4: Livelihood */}
       {step===4&&<div style={{display:"grid",gap:16}}>
-        <FieldNumber label="Land owned (acres)" value={d.landAcreage} onChange={v=>upd("landAcreage",v)} min={0} max={100} step={0.5} note="The proposed AGI model automatically applies a massive ASAL (Arid and Semi-Arid Lands) discount to land acreage in pastoralist counties to avoid penalizing barren land."/>
-        <FieldNumber label="Livestock count (all types)" value={d.livestockCount} onChange={v=>upd("livestockCount",Math.max(0,Math.round(v)))} min={0} max={500} note="Subsistence livestock is not a reliable cash income source. The model distinguishes between commercial farming and subsistence pastoralism."/>
+        <div className="grid-2">
+          <FieldNumber label="Land owned (acres)" value={d.landAcreage} onChange={v=>upd("landAcreage",v)} min={0} max={100} step={0.5} note="The proposed AGI model automatically applies a massive ASAL (Arid and Semi-Arid Lands) discount to land acreage in pastoralist counties to avoid penalizing barren land."/>
+          <FieldNumber label="Livestock count (all types)" value={d.livestockCount} onChange={v=>upd("livestockCount",Math.max(0,Math.round(v)))} min={0} max={500} note="Subsistence livestock is not a reliable cash income source. The model distinguishes between commercial farming and subsistence pastoralism."/>
+        </div>
+        <div style={{display:"grid",gap:10,background:S.surface,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
+          <Toggle label="Is the primary earner a Seasonal Worker?" value={d.isSeasonalWorker} onChange={v=>upd("isSeasonalWorker",v)} hideSpacer/>
+          {d.isSeasonalWorker && (
+            <FieldNumber label="Low Season Retained Balance (KSh)" value={d.lowSeasonRetainedBalance} onChange={v=>upd("lowSeasonRetainedBalance",v)} min={0} note="Adjusts for highly volatile seasonal income."/>
+          )}
+        </div>
       </div>}
 
       {/* Step 5: Triangulation Data */}
@@ -253,18 +276,24 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
         <div style={{fontSize:13,color:S.text,lineHeight:1.4,marginBottom:2,padding:10,background:S.blueD,borderRadius:8,border:`1px solid ${S.blueBd}`}}>
           <strong>The Triangulation Trinity:</strong> The proposed algorithm cross-references self-reported data against KRA (Income), NTSA (Assets), and Telcos/M-Pesa (Liquidity) to catch hidden wealth and protect the poor.
         </div>
-        <div className="grid-2">
+        <div className="grid-3">
           <FieldNumber label="Gross M-Pesa (Monthly)" value={d.grossMpesaMonthly} onChange={v=>upd("grossMpesaMonthly",v)} note="Lasso treats gross velocity as income."/>
           <FieldNumber label="Avg Retained Balance (12-Mo)" value={d.avgRetainedBalance} onChange={v=>upd("avgRetainedBalance",v)} note="Proposed model checks actual liquidity."/>
+          <FieldNumber label="Diaspora Remittances (Monthly KSh)" value={d.diasporaRemittances} onChange={v=>upd("diasporaRemittances",v)} note="Excluded from AGI to encourage inward flows."/>
         </div>
         
         <FieldNumber label="Number of Fuliza Defaults" value={d.fulizaDefaults} onChange={v=>upd("fulizaDefaults",v)} max={10} note="Count of defaults, NOT the Shilling amount owed."/>
         
         <div style={{display:"grid",gap:10,background:S.surface,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
           <div style={{fontSize:12,fontWeight:600,color:S.muted,textTransform:"uppercase",letterSpacing:0.5}}>Triangulation Flags</div>
-          <Toggle label="Has KRA Pin?" value={d.hasKraPin} onChange={v=>upd("hasKraPin",v)} hideSpacer/>
+          <FieldSelect label="KRA PIN Type" value={d.kraPinType} onChange={v=>upd("kraPinType",v)} options={[["NONE","None"],["PAYE","Active PAYE"],["BUSINESS","Active Business"]]}/>
           <Toggle label="NTSA Car Registration?" value={d.isNtsaVerified} onChange={v=>upd("isNtsaVerified",v)} hideSpacer/>
           <Toggle label="Is Chama/Group Treasurer?" value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
+          <Toggle label="Has active SACCO account?" value={d.hasSaccoAccount} onChange={v=>upd("hasSaccoAccount",v)} hideSpacer/>
+          {d.hasSaccoAccount && (
+            <NumIn label="Declared SACCO Share Capital" value={d.saccoShareCapital} onChange={v=>upd("saccoShareCapital",v)} help="KSh total share capital" />
+          )}
+          <Toggle label="DPA Consent Withheld?" value={d.consentWithheld} onChange={v=>upd("consentWithheld",v)} hideSpacer/>
         </div>
       </div>}
 
@@ -381,7 +410,7 @@ function ComparisonTab({results, adminParams}) {
               {src:"IPRS Registry",status:"VERIFIED",detail:"Identity confirmed against national register",ok:true},
               {src:"NTSA Transport Database",status:(d.assets.includes("CAR") || d.isNtsaVerified)?"MATCH: Vehicle Found":"CLEAR: No Vehicles",detail:(d.assets.includes("CAR") || d.isNtsaVerified)?"Vehicle ownership verified via chassis registry":"No registered vehicles found in database",ok:true},
               {src:"Financial Trace (MNOs)",status:d.isGroupTreasurer?"HIGH FLOW (CHAMA)":"LOW FLOW",detail:d.isGroupTreasurer?"Bulk transaction volume detected indicative of group fund management":"Standard 30-day transaction analysis (consolidated across all SIMs)",ok:true},
-              {src:"KRA eTIMS",status:d.hasKraPin?"MATCH: Active PIN":"CLEAR: No Active PIN",detail:d.hasKraPin?"Tax returns and eTIMS invoices successfully matched":"No formal tax records found in registry",ok:true},
+              {src:"KRA eTIMS",status:(d.kraPinType && d.kraPinType !== 'NONE')?`MATCH: ${d.kraPinType}`:"CLEAR: No Active PIN",detail:(d.kraPinType && d.kraPinType !== 'NONE')?"Tax returns and eTIMS invoices successfully matched":"No formal tax records found in registry",ok:true},
             ].map(sig=>(
               <div key={sig.src} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 16px",background:S.surface,borderRadius:8,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
                 <CheckCircle2 size={18} color={S.blue} style={{marginTop:2,flexShrink:0}}/>
@@ -1023,6 +1052,8 @@ export default function SHADemo() {
     carValue: 350000,
     urbanCostOfLiving: 12000,
     fulizaPenalty: 5000,
+    tier1RentCap: 35000,
+    tier2RentCap: 20000,
     triangulationOffline: false
   });
 
@@ -1272,6 +1303,24 @@ export default function SHADemo() {
                   <div style={{fontSize:11,color:S.muted,marginBottom:8,lineHeight:1.4}}>Amount deducted per active Fuliza/M-Shwari default. Recognises that digital loans are debt, not income — the current system punishes people for being in financial distress.</div>
                   <input type="range" min="0" max="15000" step="500" value={adminParams.fulizaPenalty} onChange={e=>setAdminParams(p=>({...p,fulizaPenalty:parseInt(e.target.value)}))} style={{width:"100%"}}/>
                   <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:S.borderUp,marginTop:4}}><span>KSh 0</span><span>KSh 15K</span></div>
+                </div>
+                <div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                    <span style={{fontSize:13,fontWeight:600,color:S.text}}>Tier 1 Rent Cap</span>
+                    <span style={{fontSize:14,fontWeight:700,color:S.blue}}>KSh {adminParams.tier1RentCap.toLocaleString()}</span>
+                  </div>
+                  <div style={{fontSize:11,color:S.muted,marginBottom:8,lineHeight:1.4}}>Maximum allowable rent deduction for Tier 1 cities (Nairobi, Mombasa, Kisumu). Protects vulnerable urban renters while preventing luxury evasion by the wealthy.</div>
+                  <input type="range" min="10000" max="100000" step="5000" value={adminParams.tier1RentCap} onChange={e=>setAdminParams(p=>({...p,tier1RentCap:parseInt(e.target.value)}))} style={{width:"100%"}}/>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:S.borderUp,marginTop:4}}><span>KSh 10K</span><span>KSh 100K</span></div>
+                </div>
+                <div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                    <span style={{fontSize:13,fontWeight:600,color:S.text}}>Tier 2 Rent Cap</span>
+                    <span style={{fontSize:14,fontWeight:700,color:S.blue}}>KSh {adminParams.tier2RentCap.toLocaleString()}</span>
+                  </div>
+                  <div style={{fontSize:11,color:S.muted,marginBottom:8,lineHeight:1.4}}>Maximum allowable rent deduction for Tier 2 satellite cities (Nakuru, Kiambu, Machakos, etc.). Prevents high-income commuters from exploiting rural cost-of-living brackets.</div>
+                  <input type="range" min="5000" max="60000" step="1000" value={adminParams.tier2RentCap} onChange={e=>setAdminParams(p=>({...p,tier2RentCap:parseInt(e.target.value)}))} style={{width:"100%"}}/>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:S.borderUp,marginTop:4}}><span>KSh 5K</span><span>KSh 60K</span></div>
                 </div>
               </div>
               <div style={{marginTop:16,padding:10,background:S.amberD,borderRadius:6,border:`1px solid ${S.amberBd}`,fontSize:11,color:S.amber,display:"flex",gap:6,alignItems:"flex-start",lineHeight:1.4}}>
