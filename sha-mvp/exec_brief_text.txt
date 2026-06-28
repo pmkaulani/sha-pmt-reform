@@ -2,7 +2,7 @@ SHA PMT v2.1 — Executive Briefing
 
 A Reform Proposal to Fix Kenya's Health Insurance Means-Testing Algorithm
 
-Peter M. Kaulani  ·  KCA University  ·  June 2026
+Peter M. Kaulani  ·  June 2026
 
 
 
@@ -378,5 +378,5 @@ Full Technical Documentation Available on Request
 
 SHA Algorithm v2.1 Documentation  ·  Assumptions Register  ·  SHAP Deduction Receipts (7 households)  ·  18-Flag Fraud Engine Specification  ·  Actuarial Financial Model
 
-Peter M. Kaulani  ·  KCA University, Nairobi  ·  SHA PMT Reform Initiative  ·  June 2026
+Peter M. Kaulani  ·  SHA PMT Reform Initiative  ·  June 2026
 

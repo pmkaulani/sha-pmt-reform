@@ -29,8 +29,7 @@ const doc = new Document({
       new Paragraph({ children: [bold("1. AI Bill 2026 Compliance Document (AI_BILL_2026_COMPLIANCE.docx)")] }),
       new Paragraph({ children: [normal("Legal framework for AI in public health")] }),
 
-      new Paragraph({ children: [bold("2. CAJ 21-Day Disclosure Document (CAJ_21_DAY_DISCLOSURE.docx)")] }),
-      new Paragraph({ children: [normal("Court disclosure requirements")] }),
+
 
       new Paragraph({ children: [bold("3. Implementation Roadmap (IMPLEMENTATION_ROADMAP.docx)")] }),
       new Paragraph({ children: [normal("18-month phased deployment plan")] }),

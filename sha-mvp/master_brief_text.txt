@@ -2,7 +2,7 @@ SHA PMT v2.1 — Means-Testing Reform
 
 Comprehensive Briefing: Gaps, Evidence & Solutions
 
-Peter M. Kaulani  |  KCA University  |  June 2026
+Peter M. Kaulani  |  June 2026
 
 
 
@@ -438,7 +438,7 @@ Digital Ghost + CHP protocol exists. Requires adequate CHP staffing, a county re
 
 KNBS Data Staleness
 
-AGI parameters use KNBS 2024 poverty line estimates. CoL tiers will become stale without annual recalibration.
+AGI parameters use KCHS 2022 poverty line estimates (CPI-adjusted). CoL tiers will become stale without annual recalibration.
 
 Recommend tying all CoL parameters to KNBS CPI in the Implementation Roadmap with an annual update cycle.
 
@@ -468,7 +468,7 @@ Send Executive Summary + SHA Algorithm Solutions to Parliamentary Health Committ
 
 Week 2
 
-Resolve the gross vs. AGI legal tension (Section 2.2) with a legal opinion. Contact LSK or a constitutional law clinic at KCA University. This is the blocking issue for government adoption.
+Resolve the gross vs. AGI legal tension (Section 2.2) with a legal opinion. Contact LSK or a constitutional law clinic. This is the blocking issue for government adoption.
 
 
 
@@ -496,7 +496,7 @@ Initiate outreach to three counties (Turkana, Kiambu, Mombasa) for pilot partner
 
 
 
-SHA PMT v2.1 Reform Project  |  Peter M. Kaulani  |  KCA University
+SHA PMT v2.1 Reform Project  |  Peter M. Kaulani
 
 Working brief for reform stakeholders — June 2026
 

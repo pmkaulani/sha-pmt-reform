@@ -51,7 +51,6 @@ The AGI model applies **7 evidence-based deductions** before the legally mandate
 │   ├── Algorithm_Documentation.docx
 │   ├── AI_BILL_2026_COMPLIANCE.docx
 │   ├── LEGAL_ETHICAL_ARCHITECTURAL_EVALUATION.docx
-│   ├── CAJ_21_DAY_DISCLOSURE.docx
 │   ├── PRIVACY_POLICY.docx
 │   ├── KIPPRA_SUBMISSION_LETTER.docx
 │   └── ... (full document set)
@@ -83,7 +82,7 @@ The AGI model applies **7 evidence-based deductions** before the legally mandate
 - **Executive Summary** — One-page overview for decision-makers
 - **Algorithm Documentation** — Full technical specification with formulae
 - **AI Bill 2026 Compliance** — Regulatory compliance framework
-- **CAJ 21-Day Disclosure** — Algorithm disclosure filed with the Commission on Administrative Justice
+- **Legal Ethical Architectural Evaluation** — Constitutional and statutory compliance framework
 - **SHAP Deduction Receipts** — Citizen-facing explainability framework
 - **Privacy Policy** — DPA 2019 compliant data protection policy
 
@@ -150,8 +149,8 @@ flowchart TD
 ## Author
 
 **Peter M. Kaulani**
-KCA University | 2507765@students.kcau.ac.ke
+2507765@students.kcau.ac.ke
 
 ---
 
-*This project responds to the High Court's March 19, 2026 structural interdict requiring corrective measures, the CAJ Order #CAJ/2026/05/0847, and the pending Awino petition transferred to the Constitutional and Human Rights Division at Milimani.*
+*This project responds to the High Court's March 19, 2026 structural interdict requiring corrective measures, CAJ Order #CAJ/2026/05/0847 (complied with), and the ongoing Awino petition before the Constitutional and Human Rights Division at Milimani.*
