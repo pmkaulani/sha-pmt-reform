@@ -14,5 +14,13 @@ export default defineConfig({
       'Referrer-Policy': 'strict-origin-when-cross-origin',
       'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
     }
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: new URL('./index.html', import.meta.url).pathname,
+        app: new URL('./app.html', import.meta.url).pathname
+      }
+    }
   }
 })
