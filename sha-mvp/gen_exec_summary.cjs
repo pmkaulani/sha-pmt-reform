@@ -126,7 +126,7 @@ const doc = new Document({
                       spacing: { before: 0, after: 140 },
                       alignment: AlignmentType.CENTER,
                       children: [
-                        new TextRun({ text: "Peter M. Kaulani  |  KCA University  |  June 27, 2026 (Updated)", size: 17, font: "Calibri", color: "8899BB" }),
+                        new TextRun({ text: "Peter M. Kaulani  |  June 28, 2026", size: 17, font: "Calibri", color: "8899BB" }),
                       ],
                     }),
                   ],
@@ -374,12 +374,12 @@ const doc = new Document({
                     new Paragraph({ spacing: { before: 10, after: 10 }, indent: { left: 200 }, children: [
                       new TextRun({ text: "2. ", bold: true, font: "Calibri", size: 17, color: DARK }),
                       new TextRun({ text: "CAJ Order #CAJ/2026/05/0847", bold: true, font: "Calibri", size: 17, color: DARK }),
-                      new TextRun({ text: " — full algorithm disclosure by June 5, 2026", font: "Calibri", size: 17, color: MUTED }),
+                      new TextRun({ text: " — algorithm disclosure order (complied with as of June 28, 2026)", font: "Calibri", size: 17, color: MUTED }),
                     ]}),
                     new Paragraph({ spacing: { before: 10, after: 10 }, indent: { left: 200 }, children: [
                       new TextRun({ text: "3. ", bold: true, font: "Calibri", size: 17, color: DARK }),
                       new TextRun({ text: "Awino petition", bold: true, font: "Calibri", size: 17, color: DARK }),
-                      new TextRun({ text: " transferred to Constitutional & Human Rights Div., Milimani (June 9, 2026)", font: "Calibri", size: 17, color: MUTED }),
+                      new TextRun({ text: " before Constitutional & Human Rights Div., Milimani — ongoing", font: "Calibri", size: 17, color: MUTED }),
                     ]}),
                     new Paragraph({ spacing: { before: 15, after: 50 }, indent: { left: 120 }, children: [
                       new TextRun({ text: "Compliance: ", bold: true, font: "Calibri", size: 16, color: DARK }),

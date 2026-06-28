@@ -17,7 +17,7 @@ const doc = new Document({
     children: [
       new Paragraph({ text: "SHA PMT v2.1 — Assumptions and Parameters Register", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
       new Paragraph({ children: [normal("Complete Reference of All Model Constants, Sources, and Justifications")], alignment: AlignmentType.CENTER, spacing: { after: 80 } }),
-      new Paragraph({ children: [italic("Updated: June 27, 2026 | Author: Peter M. Kaulani | KCA University")], alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
+      new Paragraph({ children: [italic("Updated: June 28, 2026 | Author: Peter M. Kaulani")], alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
 
       // --- 1. Legal ---
       new Paragraph({ text: "1. Legal Parameters", heading: HeadingLevel.HEADING_2 }),

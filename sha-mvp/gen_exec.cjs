@@ -10,7 +10,7 @@ const doc = new Document({
     children: [
       new Paragraph({ text: "SHA PMT v2.1 — Executive Summary", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
       new Paragraph({ children: [normal("One-Page Briefing for Cabinet Secretaries and Parliamentary Health Committee")], alignment: AlignmentType.CENTER, spacing: { after: 80 } }),
-      new Paragraph({ children: [normal("Author: Peter M. Kaulani | KCA University | June 27, 2026 (Updated)")], alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
+      new Paragraph({ children: [normal("Author: Peter M. Kaulani | June 28, 2026")], alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
 
       new Paragraph({ text: "Strategic Alignment & The Court Mandate", heading: HeadingLevel.HEADING_2 }),
       new Paragraph({
@@ -61,10 +61,10 @@ const doc = new Document({
       new Paragraph({ text: "Legal Framework", heading: HeadingLevel.HEADING_2 }),
       new Paragraph({
         children: [
-          bold("Dual Legal Mandate:\n"),
+          bold("Legal Mandate:\n"),
           normal("1. High Court unconstitutionality ruling (Justice Bahati Mwamuye, March 19, 2026) — 90-day repair window\n"),
-          normal("2. CAJ Order #CAJ/2026/05/0847 — full algorithm disclosure by June 5, 2026\n"),
-          normal("3. Awino petition transferred to Constitutional and Human Rights Division at Milimani (June 9, 2026)\n\n"),
+          normal("2. CAJ Order #CAJ/2026/05/0847 — algorithm disclosure order (complied with as of June 28, 2026)\n"),
+          normal("3. Awino petition before Constitutional and Human Rights Division at Milimani — ongoing\n\n"),
           bold("Compliance & Statutory Alignment:\n"),
           normal("To resolve tension with the SHA Act 2023 mandate for 'gross income', the AGI model frames its sophisticated deductions (CoL, rent, exemptions) as "),
           bold("'assessed liability reductions'"),

@@ -9,9 +9,9 @@ const doc = new Document({
     properties: {},
     children: [
       new Paragraph({ text: "SHA Algorithm Reform Project - Completion Summary", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-      new Paragraph({ children: [bold("Date: "), normal("June 27, 2026 | "), bold("Status: "), normal("ALL TASKS COMPLETE")], alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
+      new Paragraph({ children: [bold("Date: "), normal("June 28, 2026 | "), bold("Status: "), normal("ALL TASKS COMPLETE")], alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
 
-      new Paragraph({ text: "v2.1 Algorithm Enhancements (June 27, 2026)", heading: HeadingLevel.HEADING_2 }),
+      new Paragraph({ text: "v2.1 Algorithm Enhancements (June 28, 2026)", heading: HeadingLevel.HEADING_2 }),
       new Paragraph({
         children: [
           normal("• 3-tier urban Cost of Living index (Tier 1: KSh 18,000, Tier 2: KSh 10,000, Rural: KSh 4,000)\n"),
@@ -53,7 +53,7 @@ const doc = new Document({
 
       new Paragraph({ children: [bold("10. Data Commissioner Briefing (DATA_COMMISSIONER_BRIEFING.docx)")] }),
       new Paragraph({ children: [bold("11. KIPPRA Submission Letter (KIPPRA_SUBMISSION_LETTER.docx)")] }),
-      new Paragraph({ children: [bold("12. KCA Faculty Pre-Read (KCA_FACULTY_PRE_READ.docx)")] }),
+
       new Paragraph({ children: [bold("13. Pitch Deck Outline (Pitch_Deck_Outline.docx)")] }),
       new Paragraph({ children: [normal("Cabinet Secretaries presentation")] }),
 
