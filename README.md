@@ -100,7 +100,7 @@ npm run dev
 
 ## Fraud Detection
 
-Kenya lost **KSh 11 billion** to ghost patients, fake facilities, and upcoding in just 6 months (Oct 2024 – Apr 2025). Over 1,000 facilities were closed and 30 prosecutions are underway. The AGI model includes a **12-flag fraud detection engine** that catches phantom dependents, hidden high-value assets (NTSA cross-check), income under-reporting (KRA cross-check), and geographic impossibility — addressing the systemic vulnerabilities that enabled the fraud.
+Kenya lost **KSh 11 billion** to ghost patients, fake facilities, and upcoding in just 6 months (Oct 2024 – Apr 2025). Over 1,000 facilities were closed and 30 prosecutions are underway. The AGI model includes an **18-flag fraud detection engine** that catches phantom dependents, hidden high-value assets (NTSA cross-check), formal vs business income under-reporting (KRA PIN Type cross-check), and geographic impossibility — addressing the systemic vulnerabilities that enabled the fraud.
 
 ## Provider Payments
 
@@ -117,6 +117,9 @@ The AGI model integrates the missing components from both systems: continuous re
 ## MNO-Agnostic Architecture & Fallback Protocol
 
 While Safaricom (M-Pesa) holds significant market share, the Triangulation engine is explicitly designed as an **MNO-agnostic gateway**. To comply with the Communications Authority of Kenya's data portability mandates, the system integrates via an aggregation layer that supports Safaricom, Airtel, and Telkom equally. 
+
+**KRA PIN Type Granularity:**
+The triangulation engine also uses granular KRA API data (`kraPinType`) to differentiate between active formal payroll employees (`PAYE`) and self-declared business owners (`BUSINESS`). This allows the algorithm to apply mathematically higher confidence weighting to formal payroll mismatches.
 
 **Disaster Recovery (Triangulation Fallback):**
 To ensure the system remains mathematically sound during API outages (KRA, NTSA, or MNO gateway failures), or when assessing citizens who operate purely in cash (zero digital footprint), the system features a built-in **Fallback Protocol**:
@@ -137,7 +140,7 @@ flowchart TD
         AGI <--> MNO[(MNO Gateway\nM-Pesa/Airtel)]
     end
     
-    AGI --> Fraud{Fraud Engine \n12 Flags}
+    AGI --> Fraud{Fraud Engine \n18 Flags}
     Fraud -- Digital Ghost --> CHP[CHP Physical Verification]
     Fraud -- Flagged --> Manual[Manual Review \nCHP/DPA §35]
     Fraud -- Cleared --> Tier(Tier Classification \nKSh 300 - KSh 5,000)
