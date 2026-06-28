@@ -122,7 +122,7 @@
     .card p { font-size: 0.95rem; color: var(--text-2); line-height: 1.6; }
 
     /* ── Impact Stats ── */
-    .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 40px; }
+    .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 40px; }
     .stat-box { padding: 24px; border-left: 3px solid var(--red); background: #fff; border-radius: 0 8px 8px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .stat-val { font-size: 2rem; font-weight: 900; color: var(--text-1); margin-bottom: 8px; letter-spacing: -0.04em; }
     .stat-label { font-size: 0.85rem; color: var(--text-2); font-weight: 500; }
@@ -284,19 +284,27 @@
     <div class="stat-row reveal">
       <div class="stat-box">
         <div class="stat-val">80%</div>
-        <div class="stat-label">of poorest households have their income over-predicted.</div>
+        <div class="stat-label">of Kenya's poorest households have their income drastically over-predicted due to flawed proxy assumptions.</div>
       </div>
       <div class="stat-box">
         <div class="stat-val">56%</div>
-        <div class="stat-label">exclusion error rate for poor households with electricity.</div>
+        <div class="stat-label">exclusion error rate. Over half of vulnerable households are locked out of subsidies simply for having basic electricity.</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">KSh 11B</div>
+        <div class="stat-label">lost to hospital-side fraud in six months because the current system cannot automatically detect phantom dependents.</div>
       </div>
       <div class="stat-box">
         <div class="stat-val">25%</div>
-        <div class="stat-label">payment compliance (only 5M out of 20M enrolled are paying).</div>
+        <div class="stat-label">payment compliance. Only 5 million out of 20 million enrolled citizens are actually paying due to immense unaffordability.</div>
       </div>
       <div class="stat-box">
-        <div class="stat-val">11B</div>
-        <div class="stat-label">KSh lost to hospital-side fraud in six months due to system strain.</div>
+        <div class="stat-val">KSh 150K</div>
+        <div class="stat-label">luxury penalty applied to Bodaboda riders, completely ignoring that the motorcycle is a debt-financed tool of trade.</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">40%</div>
+        <div class="stat-label">breakeven compliance rate required by the AGI model. By closing evasion loopholes, it funds subsidies for the poor.</div>
       </div>
     </div>
   </div>
@@ -424,6 +432,44 @@
         </div>
       </div>
     </div>
+
+    <!-- Samuel Bodaboda -->
+    <div class="comp-card reveal">
+      <div class="comp-header">
+        <div class="comp-name">Household Profile: Samuel (Bodaboda Rider)</div>
+        <div class="comp-desc">Location: Nairobi | Daily Income: Subsistence | Assets: Motorcycle (Debt-financed) | Rent: KSh 8,000/mo</div>
+      </div>
+      <div class="comp-body">
+        <div class="comp-col col-red">
+          <div class="comp-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+            Current SHA Algorithm
+          </div>
+          <div class="comp-line"><span class="comp-line-label">Motorcycle Assessment</span><span class="comp-line-val">+KSh 150,000 luxury penalty</span></div>
+          <div class="comp-line"><span class="comp-line-label">Nairobi Rent</span><span class="comp-line-val">Ignored</span></div>
+          <div class="comp-result">
+            <span class="comp-result-label">Assessed Monthly Premium</span>
+            <span class="comp-result-val">KSh 1,420</span>
+          </div>
+        </div>
+        <div class="comp-col col-green">
+          <div class="comp-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+            Proposed AGI Model
+          </div>
+          <div class="comp-line"><span class="comp-line-label">Motorcycle Assessment</span><span class="comp-line-val">50% Commercial Exemption</span></div>
+          <div class="comp-line"><span class="comp-line-label">Nairobi Rent Assessment</span><span class="comp-line-val">-KSh 8,000/mo Cost of Living</span></div>
+          <div class="comp-result">
+            <span class="comp-result-label">Assessed Monthly Premium</span>
+            <span class="comp-result-val">KSh 300 (Subsidized)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveal" style="text-align: center; color: #64748b; margin-top: 2rem; font-weight: 500;">
+      ...And 5 more representative household comparisons available in the full technical document.
+    </div>
   </div>
 </section>
 
@@ -447,7 +493,7 @@
 
 <footer>
   <div class="container">
-    Peter M. Kaulani · SHA PMT Reform Initiative · June 2026
+    Peter M. Kaulani · <a href="mailto:pmkaulani@gmail.com" style="color: inherit; text-decoration: underline;">pmkaulani@gmail.com</a> · SHA PMT Reform Initiative · June 2026
   </div>
 </footer>
 
