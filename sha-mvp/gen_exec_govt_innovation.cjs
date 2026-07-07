@@ -237,7 +237,7 @@ const doc = new Document({
           cell([
             p([
               t("Contact:  ", { bold: true, size: 19, color: WHITE }),
-              t("0712260057  \u2502  2507765@students.kcau.ac.ke  \u2502  sha-pmt-reform.vercel.app  \u2502  github.com/pmkaulani/sha-pmt-reform", { size: 19, color: "CCE4F5" }),
+              t("0712260057  \u2502  info@kenia.go.ke  \u2502  sha-pmt-reform.vercel.app  \u2502  github.com/pmkaulani/sha-pmt-reform", { size: 19, color: "CCE4F5" }),
             ], { align: AlignmentType.CENTER, before: 60, after: 60 }),
           ], { fill: NAVY, borders: noBorders }),
         ]})]

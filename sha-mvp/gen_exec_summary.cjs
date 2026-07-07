@@ -519,7 +519,7 @@ const doc = new Document({
                       alignment: AlignmentType.CENTER,
                       children: [
                         new TextRun({ text: "Contact:  ", bold: true, size: 17, font: "Calibri", color: "B0C4DE" }),
-                        new TextRun({ text: "0712260057  |  2507765@students.kcau.ac.ke", size: 17, font: "Calibri", color: WHITE }),
+                        new TextRun({ text: "0712260057  |  info@kenia.go.ke", size: 17, font: "Calibri", color: WHITE }),
                       ],
                     }),
                   ],
