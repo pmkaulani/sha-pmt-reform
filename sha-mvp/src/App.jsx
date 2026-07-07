@@ -297,20 +297,23 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
         </div>
       </div>}
 
+      {step===5 && (
+        <div style={{marginTop: 20, padding: 14, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
+          <label style={{display:"flex", alignItems:"center", gap:10, fontSize:13, fontWeight:500, color:S.text, cursor:"pointer"}}>
+            <input type="checkbox" checked={hasConsented} onChange={(e)=>setHasConsented(e.target.checked)} style={{transform:"scale(1.1)"}} />
+            I consent to cross-referencing my data with KRA, NTSA, and MNOs.
+          </label>
+        </div>
+      )}
+
       {/* Navigation */}
       <div style={{display:"flex",justifyContent:"space-between",marginTop:28,paddingTop:20,borderTop:`1px solid ${S.border}`}}>
-        <button onClick={()=>go(step-1)} disabled={step===0} style={{padding:"10px 20px",borderRadius:6,border:`1px solid ${S.borderUp}`,background:S.surface,color:step===0?S.borderUp:S.text,fontSize:14,fontWeight:500,cursor:step===0?"default":"pointer",fontFamily:"inherit",transition:"all .2s"}}>← Back</button>
+        <button onClick={()=>go(step-1)} disabled={step===0} style={{padding:"10px 20px",borderRadius:6,border:`1px solid ${S.borderUp}`,background:S.surface,color:step===0?S.borderUp:S.text,fontSize:14,fontWeight:500,cursor:step===0?"default":"pointer",fontFamily:"inherit",transition:"all .2s",whiteSpace:"nowrap"}}>← Back</button>
         {step<5
-          ?<button onClick={()=>go(step+1)} style={{padding:"10px 24px",borderRadius:6,border:"none",background:S.blue,color:"#FFF",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 4px rgba(2,132,199,0.2)",transition:"all .2s"}}>Next →</button>
-          :<div style={{display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8}}>
-             <label style={{display:"flex", alignItems:"center", gap:8, fontSize:12, color:S.text, cursor:"pointer"}}>
-               <input type="checkbox" checked={hasConsented} onChange={(e)=>setHasConsented(e.target.checked)} />
-               I consent to cross-referencing my data with KRA, NTSA, and MNOs.
-             </label>
-             <button onClick={onClassify} disabled={classifying || !hasConsented} style={{padding:"10px 24px",borderRadius:6,border:"none",background:classifying||!hasConsented?S.borderUp:S.sage,color:classifying||!hasConsented?S.muted:"#FFF",fontSize:14,fontWeight:600,cursor:classifying||!hasConsented?"default":"pointer",fontFamily:"inherit",boxShadow:classifying||!hasConsented?"none":"0 2px 4px rgba(5,150,105,0.2)",transition:"all .2s"}}>
-               {classifying?"Computing…":"Run Classification →"}
-             </button>
-           </div>
+          ?<button onClick={()=>go(step+1)} style={{padding:"10px 24px",borderRadius:6,border:"none",background:S.blue,color:"#FFF",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 4px rgba(2,132,199,0.2)",transition:"all .2s",whiteSpace:"nowrap"}}>Next →</button>
+          :<button onClick={onClassify} disabled={classifying || !hasConsented} style={{padding:"10px 24px",borderRadius:6,border:"none",background:classifying||!hasConsented?S.borderUp:S.sage,color:classifying||!hasConsented?S.muted:"#FFF",fontSize:14,fontWeight:600,cursor:classifying||!hasConsented?"default":"pointer",fontFamily:"inherit",boxShadow:classifying||!hasConsented?"none":"0 2px 4px rgba(5,150,105,0.2)",transition:"all .2s",whiteSpace:"nowrap"}}>
+             {classifying?"Computing…":"Run Classification →"}
+           </button>
         }
       </div>
     </div>
