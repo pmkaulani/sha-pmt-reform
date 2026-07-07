@@ -20,8 +20,8 @@ const DEFAULTS = {
   waterSource: "BOREHOLE", sanitationType: "PIT_LATRINE",
   cookingEnergy: "FIREWOOD", lightingEnergy: "ELECTRICITY",
   assets: ["FEATURE_PHONE"], motorcycleIsCommercial: false, landAcreage: 2, livestockCount: 5, receivesAid: false, isRefugee: false,
-  grossMpesaMonthly: 10000, avgRetainedBalance: 2000, isSeasonalWorker: false, lowSeasonRetainedBalance: 0, diasporaRemittances: 0, fulizaDefaults: 0,
-  kraPinType: 'NONE', isNtsaVerified: false, hasSaccoAccount: false, saccoShareCapital: 0, hasChronicIllness: false, hasRegisteredDisability: false, isGroupTreasurer: false,
+  grossMpesaMonthly: 10000, transactionCount: 80, avgRetainedBalance: 2000, isSeasonalWorker: false, lowSeasonRetainedBalance: 0, diasporaRemittances: 0, fulizaDefaults: 0,
+  kraPinType: 'NONE', isNtsaVerified: false, hiddenWealthDiscovered: false, hasSaccoAccount: false, saccoShareCapital: 0, hasChronicIllness: false, hasRegisteredDisability: false, isGroupTreasurer: false,
   vehicleType: "STANDARD_OLD", consentWithheld: false
 };
 
@@ -282,12 +282,16 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
           <FieldNumber label="Diaspora Remittances (Monthly KSh)" value={d.diasporaRemittances} onChange={v=>upd("diasporaRemittances",v)} note="Excluded from AGI to encourage inward flows."/>
         </div>
         
-        <FieldNumber label="Number of Fuliza Defaults" value={d.fulizaDefaults} onChange={v=>upd("fulizaDefaults",v)} max={10} note="Count of defaults, NOT the Shilling amount owed."/>
+        <div className="grid-2">
+          <FieldNumber label="M-Pesa Transaction Count" value={d.transactionCount} onChange={v=>upd("transactionCount",v)} min={0} note="Used to identify high-velocity subsistence workers."/>
+          <FieldNumber label="Number of Fuliza Defaults" value={d.fulizaDefaults} onChange={v=>upd("fulizaDefaults",v)} max={50} note="Count of defaults, NOT the Shilling amount owed."/>
+        </div>
         
         <div style={{display:"grid",gap:10,background:S.surface,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
           <div style={{fontSize:12,fontWeight:600,color:S.muted,textTransform:"uppercase",letterSpacing:0.5}}>Triangulation Flags</div>
           <FieldSelect label="KRA PIN Type" value={d.kraPinType} onChange={v=>upd("kraPinType",v)} options={[["NONE","None"],["PAYE","Active PAYE"],["BUSINESS","Active Business"]]}/>
           <Toggle label="NTSA Car Registration?" value={d.isNtsaVerified} onChange={v=>upd("isNtsaVerified",v)} hideSpacer/>
+          <Toggle label="Simulate Hidden Wealth Discovered?" value={d.hiddenWealthDiscovered} onChange={v=>upd("hiddenWealthDiscovered",v)} hideSpacer/>
           <Toggle label="Is Chama/Group Treasurer?" value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
           <Toggle label="Has active SACCO account?" value={d.hasSaccoAccount} onChange={v=>upd("hasSaccoAccount",v)} hideSpacer/>
           {d.hasSaccoAccount && (
@@ -1071,7 +1075,7 @@ export default function SHADemo() {
 
   const loadScenario=(name)=>{
     setActiveScenario(name);
-    setInputs({...SCENARIOS[name].d});
+    setInputs({...DEFAULTS, ...SCENARIOS[name].d});
     setHasConsented(true);
     setResults(null); setStep(0);
   };
@@ -1097,7 +1101,8 @@ export default function SHADemo() {
       
       // Calculate fraud risk with this assessment
       const fraudRisk = calculateFraudRisk(inputs, {
-        ntsaCarExists: inputs.assets.includes('CAR') || inputs.isNtsaVerified,
+        ntsaCarExists: inputs.assets.includes('CAR') || inputs.isNtsaVerified || inputs.hiddenWealthDiscovered,
+        vehicleValue: inputs.hiddenWealthDiscovered ? 1500000 : undefined,
         kraIncomeLevel: undefined,
       });
       
