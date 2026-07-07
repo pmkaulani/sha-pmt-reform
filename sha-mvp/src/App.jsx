@@ -1063,6 +1063,7 @@ export default function SHADemo() {
   const loadScenario=(name)=>{
     setActiveScenario(name);
     setInputs({...SCENARIOS[name].d});
+    setHasConsented(true);
     setResults(null); setStep(0);
   };
 
@@ -1241,13 +1242,6 @@ export default function SHADemo() {
         </div>
 
         {/* Main layout */}
-        {!hasConsented ? (
-          <ConsentScreen onConsent={(c) => {
-            setHasConsented(true);
-            // Optionally, we could adjust `inputs` based on what they consented to,
-            // but for this MVP we just let them into the form.
-          }} />
-        ) : (
         <div className="main-layout" id="main-content">
 
           {/* Left panel */}
@@ -1374,7 +1368,6 @@ export default function SHADemo() {
             )}
           </div>
         </div>
-        )}
       </div>
     </>
   );
