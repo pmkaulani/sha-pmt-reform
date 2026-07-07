@@ -1060,8 +1060,14 @@ export default function SHADemo() {
     triangulationOffline: false
   });
 
-  const upd=(k,v)=>setInputs(p=>({...p,[k]:v}));
-  const toggleAsset=(a)=>setInputs(p=>({...p,assets:p.assets.includes(a)?p.assets.filter(x=>x!==a):[...p.assets,a]}));
+  const upd=(k,v)=>{
+    setInputs(p=>({...p,[k]:v}));
+    if(activeScenario!=="Custom") setActiveScenario("Custom");
+  };
+  const toggleAsset=(a)=>{
+    setInputs(p=>({...p,assets:p.assets.includes(a)?p.assets.filter(x=>x!==a):[...p.assets,a]}));
+    if(activeScenario!=="Custom") setActiveScenario("Custom");
+  };
 
   const loadScenario=(name)=>{
     setActiveScenario(name);
@@ -1149,7 +1155,8 @@ export default function SHADemo() {
           border-right: 1px solid ${S.border};
           background: ${S.faint};
           padding: 24px;
-          display: grid;
+          display: flex;
+          flex-direction: column;
           gap: 24px;
           align-content: start;
           overflow-y: auto;
@@ -1263,6 +1270,14 @@ export default function SHADemo() {
                     <div style={{fontSize:12,color:activeScenario===name?"rgba(255,255,255,0.8)":S.muted,lineHeight:1.5}}>{sc.sub}</div>
                   </button>
                 ))}
+                
+                {/* Custom Entry Button */}
+                <button onClick={()=>{setActiveScenario("Custom"); setInputs({...DEFAULTS}); setResults(null); setStep(0); setHasConsented(false);}} style={{padding:"14px 16px",border:`2px dashed ${activeScenario==="Custom"?S.text:S.borderUp}`,borderRadius:10,background:activeScenario==="Custom"?S.text:"transparent",cursor:"pointer",textAlign:"left",transition:"all .2s",width:"100%",boxShadow:activeScenario==="Custom"?"0 4px 6px rgba(15,23,42,0.3)":"none",transform:activeScenario==="Custom"?"scale(1.02)":"scale(1)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                    <div style={{fontSize:14,fontWeight:700,color:activeScenario==="Custom"?"#FFF":S.text}}>Custom Entry</div>
+                  </div>
+                  <div style={{fontSize:12,color:activeScenario==="Custom"?"rgba(255,255,255,0.8)":S.muted,lineHeight:1.5}}>Enter your own custom household data.</div>
+                </button>
               </div>
             </div>
 
