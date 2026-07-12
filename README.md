@@ -43,7 +43,7 @@ The AGI model applies **7 evidence-based deductions** before the legally mandate
 | Tools of Trade | Income-generating assets depreciated, not penalized |
 | Fiduciary Exemption | Chama/group funds excluded from personal income |
 
-**Revenue projection:** At 60% target compliance (based on Rwanda CBHI benchmark) with 31.39M registered population and KSh 520 average contribution, projected annual revenue is **~KSh 58B** — compared to the current system's KSh 90B collected from only 22.7% compliance. Fair premiums increase total collection by driving mass voluntary compliance.
+**Revenue projection:** At 60% target compliance (based on Rwanda CBHI benchmark) for the **15.5M non-salaried households** at a KSh 520 average monthly contribution, the informal sector's projected annual revenue is **~KSh 58B**. While the current system collects KSh ~90B total (mostly from formal payrolls) with only 22.7% informal compliance, the AGI model's fair premiums increase the total overall collection by driving mass voluntary compliance in the informal sector.
 
 ## July 2026 Policy Context
 
@@ -81,7 +81,7 @@ This project is actively aligned with the most recent developments in Kenya's he
 | Legal Instrument | Requirement | v2.1 Status |
 |---|---|---|
 | Constitution Art. 27(4) | No sex/geography discrimination | ✅ Compliant |
-| DPA 2019 §32/35/39 | Consent, human oversight, retention | ✅ Compliant |
+| DPA 2019 §32/35/39 | Consent, human oversight, retention | ✅ Compliant by design; backend implementation required before deployment |
 | AI Bill 2026 | Impact assessment, bias testing, explainability | ✅ Compliant |
 | CAJ Order (Nov 2025) | Algorithm disclosure | ✅ Submitted |
 | High Court (Mwita, 2025) | Found 2.75% gross-income deduction is double taxation | ⚠️ Contested: judge declined binding order pending Court of Appeal; Ministry continues enforcement. |

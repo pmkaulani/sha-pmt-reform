@@ -22,7 +22,11 @@ const DEFAULTS = {
   assets: ["FEATURE_PHONE"], motorcycleIsCommercial: false, landAcreage: 2, livestockCount: 5, receivesAid: false, isRefugee: false,
   grossMpesaMonthly: 10000, transactionCount: 80, avgRetainedBalance: 2000, isSeasonalWorker: false, lowSeasonRetainedBalance: 0, diasporaRemittances: 0, fulizaDefaults: 0,
   kraPinType: 'NONE', isNtsaVerified: false, hiddenWealthDiscovered: false, hasSaccoAccount: false, saccoShareCapital: 0, hasChronicIllness: false, hasRegisteredDisability: false, isGroupTreasurer: false,
-  vehicleType: "STANDARD_OLD", consentWithheld: false
+  vehicleType: "STANDARD_OLD", consentWithheld: false,
+  // NEW (system design, post-audit-v2): optional richer multi-item fields.
+  // Empty by default — UI falls back to the legacy single-item fields above
+  // until the user explicitly adds a second vehicle/parcel/rental property.
+  vehicles: [], landParcels: [], rentalProperties: [], ownedHomes: []
 };
 
 const SCENARIOS = Object.fromEntries(PRESETS.map(p => [
@@ -65,14 +69,32 @@ const S = {
   blueBd: "#BAE6FD"
 };
 
-function Label({children}) {
-  return <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.5px",textTransform:"uppercase",color:S.muted,marginBottom:6}}>{children}</div>;
+function InfoTip({children}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span style={{position:"relative", display:"inline-flex", marginLeft:5}}
+      onMouseEnter={()=>setOpen(true)} onMouseLeave={()=>setOpen(false)}>
+      <Info size={13} color={S.muted} style={{cursor:"help"}}/>
+      {open && (
+        <div style={{position:"absolute", top:"140%", left:0, background:S.text, color:"#fff",
+          padding:"9px 11px", borderRadius:8, fontSize:12, fontWeight:400,
+          textTransform:"none", letterSpacing:"normal", lineHeight:1.5, width:230,
+          zIndex:50, boxShadow:"0 6px 16px rgba(0,0,0,0.25)"}}>
+          {children}
+        </div>
+      )}
+    </span>
+  );
 }
 
-function FieldSelect({label,value,onChange,options}) {
+function Label({children, tip}) {
+  return <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.5px",textTransform:"uppercase",color:S.muted,marginBottom:6,display:"flex",alignItems:"center"}}>{children}{tip && <InfoTip>{tip}</InfoTip>}</div>;
+}
+
+function FieldSelect({label,value,onChange,options,tip}) {
   return (
     <div>
-      <Label>{label}</Label>
+      <Label tip={tip}>{label}</Label>
       <div style={{position:"relative"}}>
         <select aria-label={label} role="listbox" value={value} onChange={e=>onChange(e.target.value)} style={{width:"100%",appearance:"none",WebkitAppearance:"none",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"10px 36px 10px 14px",fontSize:13,fontWeight:500,fontFamily:"inherit",outline:"none",cursor:"pointer",boxShadow:"0 1px 2px rgba(0,0,0,0.02)",transition:"border-color 0.2s, box-shadow 0.2s"}} onFocus={e=>{e.target.style.borderColor=S.blue;e.target.style.boxShadow=`0 0 0 3px ${S.blueD}`;}} onBlur={e=>{e.target.style.borderColor=S.borderUp;e.target.style.boxShadow="0 1px 2px rgba(0,0,0,0.02)";}}>
           {options.map(([v,l])=><option key={v} value={v}>{l}</option>)}
@@ -83,7 +105,7 @@ function FieldSelect({label,value,onChange,options}) {
   );
 }
 
-function FieldNumber({label,value,onChange,min=0,max,step=1,note}) {
+function FieldNumber({label,value,onChange,min=0,max,step=1,note,tip}) {
   const handleChange = (e) => {
     let raw = e.target.value;
     if (raw === "") {
@@ -105,7 +127,7 @@ function FieldNumber({label,value,onChange,min=0,max,step=1,note}) {
 
   return (
     <div>
-      <Label>{label}</Label>
+      <Label tip={tip}>{label}</Label>
       <input type="number" aria-label={label} aria-required="true" value={value} min={min} max={max} step={step}
         onChange={handleChange}
         style={{width:"100%",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"10px 14px",fontSize:13,fontWeight:500,fontFamily:"inherit",outline:"none",boxShadow:"0 1px 2px rgba(0,0,0,0.02)",transition:"border-color 0.2s, box-shadow 0.2s"}}
@@ -251,8 +273,31 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
         )}
         {d.assets.includes("CAR") && (
           <div style={{marginTop: 8, padding: 16, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
-            <FieldSelect label="Vehicle Type & Age" value={d.vehicleType || "STANDARD_OLD"} onChange={v=>upd("vehicleType",v)} options={[["STANDARD_OLD","Standard Car (Older than 7 yrs)"], ["STANDARD_NEW","Standard Car (Newer than 7 yrs)"], ["LUXURY","Luxury / SUV"], ["COMMERCIAL","Commercial (Matatu / Pick-up)"]]}/>
-            <div style={{fontSize:12, color: S.muted, marginTop: 10, lineHeight: 1.5}}>The algorithm evaluates vehicle class to adjust depreciation and applies a 50% exemption for commercial vehicles (tools of trade). This is cross-referenced with the <strong>NTSA TIMS (Transport Integrated Management System)</strong> database to verify age, make, and commercial status to prevent fraud.</div>
+            {(!d.vehicles || d.vehicles.length === 0) ? (
+              <>
+                <FieldSelect label="Vehicle Type & Age" value={d.vehicleType || "STANDARD_OLD"} onChange={v=>upd("vehicleType",v)} options={[["STANDARD_OLD","Standard Car (Older than 7 yrs)"], ["STANDARD_NEW","Standard Car (Newer than 7 yrs)"], ["LUXURY","Luxury / SUV"], ["COMMERCIAL","Commercial (Matatu / Pick-up)"]]}/>
+                <button onClick={()=>{
+                    setInputs(p=>({...p, vehicles:[{type:p.vehicleType||"STANDARD_OLD"},{type:"STANDARD_OLD"}]}));
+                    if(activeScenario!=="Custom") setActiveScenario("Custom");
+                  }} style={{marginTop:10,padding:"8px 14px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Own more than one car? Add another vehicle</button>
+              </>
+            ) : (
+              <>
+                <div style={{fontSize:12,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:10}}>Vehicles ({d.vehicles.length})</div>
+                <div style={{display:"grid",gap:10}}>
+                  {d.vehicles.map((v,idx)=>(
+                    <div key={idx} style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+                      <div style={{flex:1}}>
+                        <FieldSelect label={`Vehicle ${idx+1}`} value={v.type||"STANDARD_OLD"} onChange={val=>updListItem("vehicles",idx,"type",val)} options={[["STANDARD_OLD","Standard Car (Older than 7 yrs)"], ["STANDARD_NEW","Standard Car (Newer than 7 yrs)"], ["LUXURY","Luxury / SUV"], ["COMMERCIAL","Commercial (Matatu / Pick-up)"]]}/>
+                      </div>
+                      <button onClick={()=>removeListItem("vehicles",idx)} style={{padding:"10px 12px",background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer"}}>Remove</button>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={()=>addListItem("vehicles",{type:"STANDARD_OLD"})} style={{marginTop:10,padding:"8px 14px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add another vehicle</button>
+              </>
+            )}
+            <div style={{fontSize:12, color: S.muted, marginTop: 10, lineHeight: 1.5}}>Each vehicle is valued individually — a household is no longer limited to declaring just one car's worth of value. Cross-referenced with the <strong>NTSA TIMS</strong> database against the total declared count to catch undisclosed vehicles.</div>
           </div>
         )}
       </div>}
@@ -262,6 +307,81 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
         <div className="grid-2">
           <FieldNumber label="Land owned (acres)" value={d.landAcreage} onChange={v=>upd("landAcreage",v)} min={0} max={100} step={0.5} note="The proposed AGI model automatically applies a massive ASAL (Arid and Semi-Arid Lands) discount to land acreage in pastoralist counties to avoid penalizing barren land."/>
           <FieldNumber label="Livestock count (all types)" value={d.livestockCount} onChange={v=>upd("livestockCount",Math.max(0,Math.round(v)))} min={0} max={500} note="Subsistence livestock is not a reliable cash income source. The model distinguishes between commercial farming and subsistence pastoralism."/>
+        </div>
+        <div style={{padding:16,background:S.faint,borderRadius:8,border:`1px solid ${S.border}`}}>
+          <Toggle label="Do you own land in more than one county?" value={d.landParcels && d.landParcels.length>0} onChange={v=>{
+              if (v) setInputs(p=>({...p, landParcels:[{acres:p.landAcreage||0, county:p.county||"Nairobi"},{acres:0, county:"Nairobi"}]}));
+              else setInputs(p=>({...p, landParcels:[]}));
+              if(activeScenario!=="Custom") setActiveScenario("Custom");
+            }} hideSpacer/>
+          {d.landParcels && d.landParcels.length>0 && (
+            <div style={{marginTop:12,display:"grid",gap:10}}>
+              <div style={{fontSize:12,color:S.muted,lineHeight:1.5}}>Each parcel is valued using its own county's ASAL discount, instead of applying one county's rate to all your land.</div>
+              {d.landParcels.map((parcel,idx)=>(
+                <div key={idx} style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+                  <div style={{width:110}}>
+                    <FieldNumber label="Acres" value={parcel.acres} onChange={v=>updListItem("landParcels",idx,"acres",v)} min={0} max={200} step={0.5}/>
+                  </div>
+                  <div style={{flex:1}}>
+                    <FieldSelect label="County" value={parcel.county||"Nairobi"} onChange={v=>updListItem("landParcels",idx,"county",v)} options={COUNTIES.map(c=>[c,c])}/>
+                  </div>
+                  <button onClick={()=>removeListItem("landParcels",idx)} style={{padding:"10px 12px",background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer"}}>Remove</button>
+                </div>
+              ))}
+              <button onClick={()=>addListItem("landParcels",{acres:0,county:"Nairobi"})} style={{padding:"8px 14px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer",justifySelf:"start"}}>+ Add another parcel</button>
+            </div>
+          )}
+        </div>
+        <div style={{padding:16,background:S.faint,borderRadius:8,border:`1px solid ${S.border}`}}>
+          <Toggle label="Do you own rental properties (as a landlord)?" value={d.rentalProperties && d.rentalProperties.length>0} onChange={v=>{
+              if (v) setInputs(p=>({...p, rentalProperties:[{monthlyRentCharged:0, isOccupied:true}]}));
+              else setInputs(p=>({...p, rentalProperties:[]}));
+              if(activeScenario!=="Custom") setActiveScenario("Custom");
+            }} hideSpacer/>
+          {d.rentalProperties && d.rentalProperties.length>0 && (
+            <div style={{marginTop:12,display:"grid",gap:10}}>
+              <div style={{fontSize:12,color:S.muted,lineHeight:1.5}}>Treated as a business: rent from occupied units counts as income (not double-counted as a separate asset value). Vacant units still carry a conservative imputed value, since a paid-off empty rental house is real wealth that would otherwise be invisible. 3+ properties with substantial income and no KRA PIN is flagged for tax-compliance review, not penalized automatically.</div>
+              {d.rentalProperties.map((prop,idx)=>(
+                <div key={idx} style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0"}}>
+                    <input type="checkbox" checked={!!prop.isOccupied} onChange={e=>updListItem("rentalProperties",idx,"isOccupied",e.target.checked)} style={{width:16,height:16}}/>
+                    <span style={{fontSize:12,color:S.text,fontWeight:500}}>Occupied</span>
+                  </div>
+                  {prop.isOccupied && (
+                    <div style={{width:180}}>
+                      <FieldNumber label="Monthly rent charged (KSh)" value={prop.monthlyRentCharged} onChange={v=>updListItem("rentalProperties",idx,"monthlyRentCharged",v)} min={0} step={500}/>
+                    </div>
+                  )}
+                  <button onClick={()=>removeListItem("rentalProperties",idx)} style={{padding:"10px 12px",background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer"}}>Remove</button>
+                </div>
+              ))}
+              <button onClick={()=>addListItem("rentalProperties",{monthlyRentCharged:0,isOccupied:true})} style={{padding:"8px 14px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer",justifySelf:"start"}}>+ Add another rental property</button>
+            </div>
+          )}
+        </div>
+        <div style={{padding:16,background:S.faint,borderRadius:8,border:`1px solid ${S.border}`}}>
+          <Toggle label="Do you own any other homes (not your primary residence and not rented out)?" value={d.ownedHomes && d.ownedHomes.length>0} onChange={v=>{
+              if (v) setInputs(p=>({...p, ownedHomes:[{county:"Meru", status:"OCCUPIED_FAMILY"}]}));
+              else setInputs(p=>({...p, ownedHomes:[]}));
+              if(activeScenario!=="Custom") setActiveScenario("Custom");
+            }} hideSpacer/>
+          {d.ownedHomes && d.ownedHomes.length>0 && (
+            <div style={{marginTop:12,display:"grid",gap:10}}>
+              <div style={{fontSize:12,color:S.muted,lineHeight:1.5}}>Example: you rent in Nairobi for work but own a home in Meru where family stays, or you own a second home elsewhere. Each additional home is a wealth signal — family-occupied homes are valued conservatively, vacant homes are valued higher as stored wealth.</div>
+              {d.ownedHomes.map((home,idx)=>(
+                <div key={idx} style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
+                  <div style={{flex:1,minWidth:160}}>
+                    <FieldSelect label={`Home ${idx+1} — County`} value={home.county||"Nairobi"} onChange={v=>updListItem("ownedHomes",idx,"county",v)} options={COUNTIES.map(c=>[c,c])}/>
+                  </div>
+                  <div style={{width:200}}>
+                    <FieldSelect label="Status" value={home.status||"OCCUPIED_FAMILY"} onChange={v=>updListItem("ownedHomes",idx,"status",v)} options={[["OCCUPIED_FAMILY","Family members live there"],["VACANT","Vacant / under construction"],["OTHER","Other (non-rental use)"]]}/>
+                  </div>
+                  <button onClick={()=>removeListItem("ownedHomes",idx)} style={{padding:"10px 12px",background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer"}}>Remove</button>
+                </div>
+              ))}
+              <button onClick={()=>addListItem("ownedHomes",{county:"Nairobi",status:"OCCUPIED_FAMILY"})} style={{padding:"8px 14px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer",justifySelf:"start"}}>+ Add another home</button>
+            </div>
+          )}
         </div>
         <div style={{display:"grid",gap:10,background:S.surface,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
           <Toggle label="Is the primary earner a Seasonal Worker?" value={d.isSeasonalWorker} onChange={v=>upd("isSeasonalWorker",v)} hideSpacer/>
@@ -289,10 +409,9 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
         
         <div style={{display:"grid",gap:10,background:S.surface,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
           <div style={{fontSize:12,fontWeight:600,color:S.muted,textTransform:"uppercase",letterSpacing:0.5}}>Triangulation Flags</div>
-          <FieldSelect label="KRA PIN Type" value={d.kraPinType} onChange={v=>upd("kraPinType",v)} options={[["NONE","None"],["PAYE","Active PAYE"],["BUSINESS","Active Business"]]}/>
-          <Toggle label="NTSA Car Registration?" value={d.isNtsaVerified} onChange={v=>upd("isNtsaVerified",v)} hideSpacer/>
-          <Toggle label="Simulate Hidden Wealth Discovered?" value={d.hiddenWealthDiscovered} onChange={v=>upd("hiddenWealthDiscovered",v)} hideSpacer/>
-          <Toggle label="Is Chama/Group Treasurer?" value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
+          <Toggle label="NTSA Car Registration?" tip="Self-declared in this demo — it doesn't check a real NTSA record. In production this would be verified automatically." value={d.isNtsaVerified} onChange={v=>upd("isNtsaVerified",v)} hideSpacer/>
+          <Toggle label="Simulate Hidden Wealth Discovered?" tip="A demo switch, not a real check — shows what happens when the model's KRA/NTSA/M-Pesa cross-check catches assets that don't match declared income." value={d.hiddenWealthDiscovered} onChange={v=>upd("hiddenWealthDiscovered",v)} hideSpacer/>
+          <Toggle label="Is Chama/Group Treasurer?" tip="Yes if you personally hold and move money for a savings group or merry-go-round — not just a member." value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
           <Toggle label="Has active SACCO account?" value={d.hasSaccoAccount} onChange={v=>upd("hasSaccoAccount",v)} hideSpacer/>
           {d.hasSaccoAccount && (
             <NumIn label="Declared SACCO Share Capital" value={d.saccoShareCapital} onChange={v=>upd("saccoShareCapital",v)} help="KSh total share capital" />
@@ -442,7 +561,10 @@ function SHAPTab({results, adminParams}) {
   return (
     <div style={{display:"grid",gap:24}}>
       <div>
-        <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Algorithmic Explicability (SHAP & AGI)</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text}}>Your Premium Breakdown <span style={{fontSize:14,color:S.muted,fontWeight:500}}>(SHAP-based)</span></div>
+          <button onClick={()=>window.print()} style={{padding:"8px 16px",background:S.surface,color:S.text,border:`1px solid ${S.border}`,borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Download / Print Receipt</button>
+        </div>
         <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>
           The SHA Optimization model applies rigorous deductions (Adjustable Gross Income) before flat 2.75% taxation, perfectly solving the Tax Cliff and Adverse Selection flaws. Each deduction below is a legally mandated adjustment that protects vulnerable citizens from algorithmic overcharging.
         </div>
@@ -608,7 +730,7 @@ function MetricsTab() {
   const targetScenario = revenue.scenarios.find(s => s.label === 'Target') ?? revenue.scenarios[2];
 
   const metrics=[
-    {label:"Exclusion Error Rate",cur:"25.9%",tgt:"< 10%",desc:"Poor households wrongly denied subsidy. NOTE: reconcile against Lighthouse Reports' directly-computed 39% (bottom-40%) / >50% (bottom-quartile) rates — same claim, different number, cite which population this is."},
+    {label:"Exclusion Error Rate",cur:"25.9%",tgt:"< 10%",desc:"Poor households wrongly denied subsidy, measured on our full synthetic test population. Lighthouse Reports' independent figure (39–50%+) applies to specific sub-groups (bottom-40%/bottom-quartile by wealth) — same failure, different slice."},
     {label:"Inclusion Error Rate",cur:"28.7%",tgt:"< 10%",desc:"Non-poor wrongly classified as indigent"},
     {label:"Equalized Odds Difference",cur:"See Bias & Compliance tab",tgt:"< 0.05",desc:"Fairness across all 47 counties — now actually computed there, not asserted here"},
     {label:"Monthly Payout Ratio",cur:"158.6%",tgt:"< 100%",desc:"KSh spent per KSh collected"},
@@ -685,7 +807,7 @@ function MetricsTab() {
           <div style={{width:40,height:40,borderRadius:8,background:S.sageD,display:"flex",alignItems:"center",justifyContent:"center"}}><CheckCircle2 color={S.sage} size={24}/></div>
           <div>
             <div style={{fontSize:16,fontWeight:700,color:S.text}}>Revenue Sustainability Projection</div>
-            <div style={{fontSize:13,color:S.muted}}>Mathematical proof that fairness increases total fund revenue — figures below are computed live from generateRevenueStressTest(), not hardcoded.</div>
+            <div style={{fontSize:13,color:S.muted}}>Mathematical proof that fairness increases total fund revenue — figures below are computed live from generateRevenueStressTest(), not hardcoded</div>
           </div>
         </div>
         <div style={{fontSize:13,color:S.text,lineHeight:1.6,marginBottom:16}}>
@@ -695,18 +817,17 @@ function MetricsTab() {
           <div style={{background:S.terraD,padding:16,borderRadius:8,border:`1px solid ${S.terraBd}`}}>
             <div style={{fontSize:12,fontWeight:700,color:S.terra,marginBottom:12,textTransform:"uppercase"}}>Current System (The Collapse)</div>
             <div style={{display:"grid",gap:8,fontSize:13,color:S.text}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Registered members</span><span style={{fontWeight:600}}>31.39 Million</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Registered members</span><span style={{fontWeight:600}}>22 Million</span></div>
               <div style={{display:"flex",justifyContent:"space-between"}}><span>Compliance rate</span><span style={{fontWeight:700,color:S.terra}}>22.7%</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>~7.1 Million</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 1,050/mo</span></div>
-              <div style={{borderTop:`1px solid ${S.terraBd}`,paddingTop:8,display:"flex",justifyContent:"space-between",fontWeight:700}}><span>Annual Revenue</span><span style={{color:S.terra,fontSize:16}}>KSh 88.8 B</span></div>
-              <div style={{fontSize:11,color:S.terra,marginTop:6,lineHeight:1.4}}>*National Assembly Health Committee (Mar '26): Fund is "unsustainable", collecting KSh 7.4B/mo while burning KSh 7.2B/mo due to informal sector defaults.</div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>5 Million</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 1,500/mo</span></div>
+              <div style={{borderTop:`1px solid ${S.terraBd}`,paddingTop:8,display:"flex",justifyContent:"space-between",fontWeight:700}}><span>Annual Revenue</span><span style={{color:S.terra,fontSize:16}}>KSh 90 B</span></div>
             </div>
           </div>
           <div style={{background:S.sageD,padding:16,borderRadius:8,border:`1px solid ${S.sageBd}`}}>
             <div style={{fontSize:12,fontWeight:700,color:S.sage,marginBottom:12,textTransform:"uppercase"}}>Proposed AGI System (The Rescue)</div>
             <div style={{display:"grid",gap:8,fontSize:13,color:S.text}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Registered members</span><span style={{fontWeight:600}}>31.39 Million</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Eligible population</span><span style={{fontWeight:600}}>15.5 Million</span></div>
               <div style={{display:"flex",justifyContent:"space-between"}}><span>Compliance rate</span><span style={{fontWeight:700,color:S.sage}}>60%</span></div>
               <div style={{display:"flex",justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>{(targetScenario.enrolledPopulation/1e6).toFixed(1)} Million</span></div>
               <div style={{display:"flex",justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 520/mo</span></div>
@@ -1052,7 +1173,8 @@ function BiasComplianceTab() {
 
       <div style={{padding:16,background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
         <div style={{fontSize:13,color:S.text,lineHeight:1.5}}>
-          <strong>Session audit trail:</strong> {logger.getSessionAuditBuffer().length} records logged this session. FIX (audit v2): audit records used to only go to console.log and vanish on tab close — this is still not a real backend, but at least the session's records can now be exported for a human to file somewhere durable.
+          {/* FIX (audit v2): records used to only go to console.log and vanish on tab close; now exportable. */}
+          <strong>Session audit trail:</strong> {logger.getSessionAuditBuffer().length} records logged this session. Nothing is sent to a server — export below if you want to keep a copy.
         </div>
         <button onClick={()=>logger.downloadSessionAuditLog()} style={{padding:"8px 16px",background:S.surface,color:S.text,border:`1px solid ${S.border}`,borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Export session audit log (.json)</button>
       </div>
@@ -1102,6 +1224,8 @@ function ConsentScreen({ onConsent }) {
         <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 24, fontWeight: 700, color: S.text, marginBottom: 12 }}>Data Privacy & Consent</div>
         <div style={{ fontSize: 14, color: S.muted, lineHeight: 1.6, marginBottom: 24 }}>
           In compliance with the Kenya Data Protection Act 2019 (Section 32), we require your explicit, granular consent to access your data from the following agencies to accurately calculate your Social Health Authority (SHA) contribution and potential subsidy.
+          <br/><br/>
+          <strong>This is a demonstration of the consent flow a production version would use — no real KRA, NTSA, or Safaricom data is accessed here.</strong>
         </div>
         
         <div style={{ display: "grid", gap: 16, marginBottom: 32 }}>
@@ -1155,7 +1279,7 @@ export default function SHADemo() {
   const [results,setResults]=useState(null);
   const [activeTab,setActiveTab]=useState("comparison");
   const [classifying,setClassifying]=useState(false);
-  const [activeScenario,setActiveScenario]=useState("Rural Smallholder");
+  const [activeScenario,setActiveScenario]=useState("Mama Wanjiku — Chama Treasurer");
   const [adminParams, setAdminParams] = useState({
     carValue: 350000,
     urbanCostOfLiving: 12000,
@@ -1171,6 +1295,20 @@ export default function SHADemo() {
   };
   const toggleAsset=(a)=>{
     setInputs(p=>({...p,assets:p.assets.includes(a)?p.assets.filter(x=>x!==a):[...p.assets,a]}));
+    if(activeScenario!=="Custom") setActiveScenario("Custom");
+  };
+  // Generic helpers for the new repeatable-list fields (vehicles, landParcels,
+  // rentalProperties) — add/update/remove one item without touching the rest.
+  const addListItem=(key,template)=>{
+    setInputs(p=>({...p,[key]:[...(p[key]||[]),template]}));
+    if(activeScenario!=="Custom") setActiveScenario("Custom");
+  };
+  const updListItem=(key,idx,field,value)=>{
+    setInputs(p=>({...p,[key]:(p[key]||[]).map((item,i)=>i===idx?{...item,[field]:value}:item)}));
+    if(activeScenario!=="Custom") setActiveScenario("Custom");
+  };
+  const removeListItem=(key,idx)=>{
+    setInputs(p=>({...p,[key]:(p[key]||[]).filter((_,i)=>i!==idx)}));
     if(activeScenario!=="Custom") setActiveScenario("Custom");
   };
 
@@ -1225,7 +1363,7 @@ export default function SHADemo() {
     },800);
   };
 
-  const TABS=[["comparison","Financial Comparison"],["fairness","Fairness Analysis"],["fraud","Fraud Risk Assessment"],["bias","Bias & Compliance"],["shap","SHAP Legal Explanation"],["ussd","USSD Simulation"],["metrics","System Metrics"]];
+  const TABS=[["comparison","Financial Comparison"],["fairness","Fairness Analysis"],["fraud","Fraud Risk Assessment"],["bias","Bias & Compliance"],["shap","Your Premium Breakdown"],["ussd","USSD Simulation"],["metrics","System Metrics"]];
 
   return (
     <>
@@ -1367,6 +1505,12 @@ export default function SHADemo() {
 
             {/* Scenarios */}
             <div>
+
+            <div style={{background:S.blueD, border:`1px solid ${S.blueBd}`, padding:16, borderRadius:8, marginBottom:24}}>
+              <div style={{fontSize:13, color:S.text, lineHeight:1.5}}>
+                <strong>Want to compare this against what SHA is actually charging you right now?</strong> Dial *147# on any network, or log into afyayangu.go.ke → Contribution History.
+              </div>
+            </div>
               <Label>Select Demographic Persona</Label>
               <div style={{display:"grid",gap:10}}>
                 {Object.entries(SCENARIOS).map(([name,sc])=>(
