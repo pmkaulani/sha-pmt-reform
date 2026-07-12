@@ -637,7 +637,7 @@ const doc = new Document({
   }]
 });
 
-const outPath = path.join('C:', 'Users', 'STD USER', 'Desktop', 'work', 'SHA', 'docs', 'SHAP_DEDUCTION_RECEIPTS.docx');
+const outPath = path.join(__dirname, '..', 'docs', 'SHAP_DEDUCTION_RECEIPTS.docx');
 
 Packer.toBuffer(doc).then(buf => {
   fs.mkdirSync(path.dirname(outPath), { recursive: true });

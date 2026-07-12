@@ -1,4 +1,5 @@
-const fs = require('fs');
+const fs = require("fs");
+const path = require("path"); // FIX (audit v2): output path was hardcoded to one specific Windows user profile
 const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = require('docx');
 
 const bold = (t) => new TextRun({ text: t, bold: true });
@@ -72,6 +73,6 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then((buffer) => {
-  fs.writeFileSync('C:\\Users\\STD USER\\Desktop\\work\\SHA\\docs\\PROJECT_COMPLETION_SUMMARY.docx', buffer);
+  fs.writeFileSync(path.join(__dirname, '..', 'docs', 'PROJECT_COMPLETION_SUMMARY.docx'), buffer); // FIX (audit v2): was hardcoded to one specific Windows machine/profile (and in one case the wrong folder); now portable
   console.log("PROJECT_COMPLETION_SUMMARY.docx updated successfully");
 });

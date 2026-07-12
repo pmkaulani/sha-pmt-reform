@@ -1,4 +1,5 @@
-const fs = require('fs');
+const fs = require("fs");
+const path = require("path"); // FIX (audit v2): output path was hardcoded to one specific Windows user profile
 const docx = require('docx');
 const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = docx;
 
@@ -276,6 +277,6 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then((buffer) => {
-  fs.writeFileSync('C:\\Users\\STD USER\\Desktop\\work\\SHA\\docs\\SHA_Algorithm_v2.1_Documentation.docx', buffer);
+  fs.writeFileSync(path.join(__dirname, '..', 'docs', 'SHA_Algorithm_v2.1_Documentation.docx'), buffer); // FIX (audit v2): was hardcoded to one specific Windows machine/profile (and in one case the wrong folder); now portable
   console.log("SHA_Algorithm_v2.1_Documentation.docx created successfully");
 });

@@ -1,5 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { resolve } from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 // https://vitejs.dev/config/
 // P-64 (CAJ BLOCKER): Security headers for OWASP compliance
@@ -18,8 +22,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: new URL('./index.html', import.meta.url).pathname,
-        app: new URL('./app.html', import.meta.url).pathname
+        main: resolve(__dirname, 'index.html'),
+        app: resolve(__dirname, 'app.html')
       }
     }
   }

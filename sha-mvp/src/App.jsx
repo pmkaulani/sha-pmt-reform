@@ -4,7 +4,7 @@ import {
   Radio, Tv, Refrigerator, Laptop, Smartphone, Phone, 
   Bike, Car, ShieldCheck, Info, CheckCircle2, AlertTriangle, Fingerprint, ChevronDown, Settings
 } from "lucide-react";
-import { calculateCurrentModel, calculateProposedModel, calculateFraudRisk, analyzeSector, calculateFairnessMetrics, PRESETS, createAuditRecord } from "./lib/AlgorithmSimulation.js";
+import { calculateCurrentModel, calculateCurrentModelContribution, calculateProposedModel, calculateFraudRisk, analyzeSector, calculateFairnessMetrics, PRESETS, createAuditRecord, generateRevenueStressTest, testCurrentModelDisparityByCounty, generateFraudStatistics, generateSyntheticPopulation } from "./lib/AlgorithmSimulation.js";
 import { logger } from "./lib/Logger.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -342,7 +342,7 @@ function ComparisonTab({results, adminParams}) {
       <div className="grid-2">
         {[
           {label:"Current System · Lasso PMT",monthly:cur.monthly,income:cur.annualIncome,tier:cur.tier,indigent:cur.isIndigent,color:S.terra,bdColor:S.terraBd,bgColor:S.terraD,note:null},
-          {label:"Proposed · 3-Layer Ensemble",monthly:nxt.monthly,income:nxt.annualIncome,tier:nxt.tier,indigent:nxt.isIndigent,color:S.sage,bdColor:S.sageBd,bgColor:S.sageD,note:nxt.fairnessPass?"Equalized Odds Constraint Active":null},
+          {label:"Proposed · 3-Layer Ensemble",monthly:nxt.monthly,income:nxt.annualIncome,tier:nxt.tier,indigent:nxt.isIndigent,color:S.sage,bdColor:S.sageBd,bgColor:S.sageD,note:null /* FIX (audit v2): was nxt.fairnessPass?"Equalized Odds Constraint Active":null — that field was a hardcoded `true` literal on every assessment. Equalized odds is a population-level stat; see the Bias & Compliance tab for the real, computed version. */},
         ].map(box=>(
           <div key={box.label} style={{background:box.bgColor,border:`1px solid ${box.bdColor}`,borderRadius:12,padding:24,boxShadow:"0 1px 3px rgba(0,0,0,0.02)"}}>
             <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:box.color,marginBottom:16}}>{box.label}</div>
@@ -597,15 +597,25 @@ function USSDTab({results}) {
 }
 
 function MetricsTab() {
+  // FIX (audit v2): this used to hardcode "KSh 575/mo" and "KSh 64 B" —
+  // stale figures from before the average contribution was updated to
+  // KSh 520 (new vulnerability exemptions pulled it down from 575). Your
+  // own gen_assumptions.cjs / exec_brief_text.txt already reflect 520/~58B;
+  // this tab (the thing people actually click) didn't. Now computed live
+  // from the same function your revenue docs are generated from, so the
+  // three can never drift apart again.
+  const revenue = generateRevenueStressTest();
+  const targetScenario = revenue.scenarios.find(s => s.label === 'Target') ?? revenue.scenarios[2];
+
   const metrics=[
-    {label:"Exclusion Error Rate",cur:"25.9%",tgt:"< 10%",desc:"Poor households wrongly denied subsidy"},
+    {label:"Exclusion Error Rate",cur:"25.9%",tgt:"< 10%",desc:"Poor households wrongly denied subsidy. NOTE: reconcile against Lighthouse Reports' directly-computed 39% (bottom-40%) / >50% (bottom-quartile) rates — same claim, different number, cite which population this is."},
     {label:"Inclusion Error Rate",cur:"28.7%",tgt:"< 10%",desc:"Non-poor wrongly classified as indigent"},
-    {label:"Equalized Odds Difference",cur:"Unmeasured",tgt:"< 0.05",desc:"Fairness across all 47 counties"},
+    {label:"Equalized Odds Difference",cur:"See Bias & Compliance tab",tgt:"< 0.05",desc:"Fairness across all 47 counties — now actually computed there, not asserted here"},
     {label:"Monthly Payout Ratio",cur:"158.6%",tgt:"< 100%",desc:"KSh spent per KSh collected"},
     {label:"Active Payers",cur:"22.7%",tgt:"> 60%",desc:"5 Million of 22 Million registered members"},
     {label:"Inference Latency",cur:"~3 s",tgt:"< 500 ms",desc:"Time required to compute classification result"},
     {label:"USSD Gateway Uptime (*147#)",cur:"Intermittent",tgt:"99.99%",desc:"Feature phone access reliability"},
-    {label:"Systemic Fraud Losses (6 mos)",cur:"KSh 11 B",tgt:"< KSh 1 B / yr",desc:"Ghost patients, fake facilities, upcoding"},
+    {label:"Systemic Fraud Losses (6 mos)",cur:"KSh 11 B",tgt:"< KSh 1 B / yr",desc:"Ghost patients, fake facilities, upcoding — official DCI/parliamentary figure, not from this app's own fraud engine (see Bias & Compliance tab for that separate, engine-computed figure)"},
   ];
   const barData=[
     {name:"Exclusion Error %",cur:25.9,tgt:10},{name:"Inclusion Error %",cur:28.7,tgt:10},
@@ -651,9 +661,20 @@ function MetricsTab() {
       <div style={{padding:"20px",background:S.blueD,border:`1px solid ${S.blueBd}`,borderRadius:10,display:"flex",gap:16,alignItems:"flex-start"}}>
         <ShieldCheck size={24} color={S.blue} style={{flexShrink:0,marginTop:2}}/>
         <div>
-          <div style={{fontSize:13,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.blue,marginBottom:8}}>Equalized Odds Implementation</div>
+          <div style={{fontSize:13,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.blue,marginBottom:8}}>What "Equalized Odds" Actually Means Here</div>
           <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>
-            The proposed model is trained with an Equalized Odds constraint enforced at the optimization level — not as a post-hoc correction. The model <strong>cannot converge</strong> if it systematically misclassifies any county, gender, or urban/rural group by more than a 0.05 margin. This mathematical constraint ensures the structural bias of the previous algorithm (which deliberately prioritized wealthy accuracy over poor accuracy) cannot be repeated.
+            {/* FIX (audit v2): this used to claim the model was "trained with
+                an Equalized Odds constraint enforced at the optimization
+                level" and "cannot converge" past a 0.05 margin. It isn't
+                trained at all — calculateProposedModel() is a deterministic
+                rules engine (fixed deductions and percentages), not a fitted
+                model, so there is no training and nothing to "converge".
+                Disparity across groups is a real, checkable, computed
+                property — see testCurrentModelDisparityByCounty() and the
+                Bias & Compliance tab — but it's a property you verify by
+                running that test against real assessment data, not one the
+                formulas guarantee by construction. */}
+            This is a deterministic rules engine, not a trained model — there's no optimization step and nothing "converges". What actually backs the fairness claim: <code>testCurrentModelDisparityByCounty()</code> measures disparity in current-model overcharging across county and gender groups from real assessment data, gated on a minimum sample size per group. Live results are on the <strong>Bias & Compliance</strong> tab. That test — not a training guarantee — is the real evidence, and it should be re-run continuously against production data, not just at launch.
           </div>
         </div>
       </div>
@@ -664,7 +685,7 @@ function MetricsTab() {
           <div style={{width:40,height:40,borderRadius:8,background:S.sageD,display:"flex",alignItems:"center",justifyContent:"center"}}><CheckCircle2 color={S.sage} size={24}/></div>
           <div>
             <div style={{fontSize:16,fontWeight:700,color:S.text}}>Revenue Sustainability Projection</div>
-            <div style={{fontSize:13,color:S.muted}}>Mathematical proof that fairness increases total fund revenue</div>
+            <div style={{fontSize:13,color:S.muted}}>Mathematical proof that fairness increases total fund revenue — figures below are computed live from generateRevenueStressTest(), not hardcoded.</div>
           </div>
         </div>
         <div style={{fontSize:13,color:S.text,lineHeight:1.6,marginBottom:16}}>
@@ -674,26 +695,27 @@ function MetricsTab() {
           <div style={{background:S.terraD,padding:16,borderRadius:8,border:`1px solid ${S.terraBd}`}}>
             <div style={{fontSize:12,fontWeight:700,color:S.terra,marginBottom:12,textTransform:"uppercase"}}>Current System (The Collapse)</div>
             <div style={{display:"grid",gap:8,fontSize:13,color:S.text}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Registered members</span><span style={{fontWeight:600}}>22 Million</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Registered members</span><span style={{fontWeight:600}}>31.39 Million</span></div>
               <div style={{display:"flex",justifyContent:"space-between"}}><span>Compliance rate</span><span style={{fontWeight:700,color:S.terra}}>22.7%</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>5 Million</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 1,500/mo</span></div>
-              <div style={{borderTop:`1px solid ${S.terraBd}`,paddingTop:8,display:"flex",justifyContent:"space-between",fontWeight:700}}><span>Annual Revenue</span><span style={{color:S.terra,fontSize:16}}>KSh 90 B</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>~7.1 Million</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 1,050/mo</span></div>
+              <div style={{borderTop:`1px solid ${S.terraBd}`,paddingTop:8,display:"flex",justifyContent:"space-between",fontWeight:700}}><span>Annual Revenue</span><span style={{color:S.terra,fontSize:16}}>KSh 88.8 B</span></div>
+              <div style={{fontSize:11,color:S.terra,marginTop:6,lineHeight:1.4}}>*National Assembly Health Committee (Mar '26): Fund is "unsustainable", collecting KSh 7.4B/mo while burning KSh 7.2B/mo due to informal sector defaults.</div>
             </div>
           </div>
           <div style={{background:S.sageD,padding:16,borderRadius:8,border:`1px solid ${S.sageBd}`}}>
             <div style={{fontSize:12,fontWeight:700,color:S.sage,marginBottom:12,textTransform:"uppercase"}}>Proposed AGI System (The Rescue)</div>
             <div style={{display:"grid",gap:8,fontSize:13,color:S.text}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Eligible population</span><span style={{fontWeight:600}}>15.5 Million</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Registered members</span><span style={{fontWeight:600}}>31.39 Million</span></div>
               <div style={{display:"flex",justifyContent:"space-between"}}><span>Compliance rate</span><span style={{fontWeight:700,color:S.sage}}>60%</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>9.3 Million</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 575/mo</span></div>
-              <div style={{borderTop:`1px solid ${S.sageBd}`,paddingTop:8,display:"flex",justifyContent:"space-between",fontWeight:700}}><span>Annual Revenue</span><span style={{color:S.sage,fontSize:16}}>KSh 64 B</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>{(targetScenario.enrolledPopulation/1e6).toFixed(1)} Million</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 520/mo</span></div>
+              <div style={{borderTop:`1px solid ${S.sageBd}`,paddingTop:8,display:"flex",justifyContent:"space-between",fontWeight:700}}><span>Annual Revenue</span><span style={{color:S.sage,fontSize:16}}>KSh {targetScenario.annualRevenueBillions} B</span></div>
             </div>
           </div>
         </div>
         <div style={{marginTop:16,padding:12,background:S.blueD,borderRadius:6,border:`1px solid ${S.blueBd}`,fontSize:12,color:S.text,lineHeight:1.5}}>
-          <strong style={{color:S.blue}}>Key Insight:</strong> The proposed system collects a <strong>lower average premium</strong> (KSh 575 vs KSh 1,500) but achieves <strong>dramatically higher compliance</strong> — 9.3 million citizens willingly paying a fair amount, versus only 5 million under the current punitive system. At 60% compliance (matching Rwanda's CBHI benchmark), projected annual revenue reaches KSh 64B. This is the insurance equivalent of the Laffer Curve — beyond a certain premium threshold, higher prices reduce total collection.
+          <strong style={{color:S.blue}}>Key Insight:</strong> The proposed system collects a <strong>lower average premium</strong> (KSh 520 vs KSh 1,500) but achieves <strong>dramatically higher compliance</strong> — {(targetScenario.enrolledPopulation/1e6).toFixed(1)} million citizens willingly paying a fair amount, versus only 5 million under the current punitive system. At 60% compliance (matching Rwanda's CBHI benchmark), projected annual revenue reaches KSh {targetScenario.annualRevenueBillions}B — breakeven requires ≥{revenue.breakeven.requiredComplianceRate} compliance. This is the insurance equivalent of the Laffer Curve — beyond a certain premium threshold, higher prices reduce total collection.
         </div>
       </div>
     </div>
@@ -987,6 +1009,85 @@ function FraudRiskTab({results}) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// BIAS & COMPLIANCE TAB
+// FIX (audit v2): testCurrentModelDisparityByCounty(), generateFraudStatistics(),
+// and generateRevenueStressTest() were fully implemented in AlgorithmSimulation.js,
+// each marked "(CAJ BLOCKER)" in its own docstring, and NONE of them was ever
+// called anywhere in this app. This tab actually runs them. There is no real
+// assessment history yet (pre-pilot), so it runs them against a generated
+// synthetic population — clearly labeled as such throughout. Swap
+// generateSyntheticPopulation() for a real assessment-history array the
+// moment one exists; the plumbing here doesn't change.
+// ─────────────────────────────────────────────────────────────────────────────
+function BiasComplianceTab() {
+  const [population, setPopulation] = useState(() => generateSyntheticPopulation(300));
+  const countyTest = testCurrentModelDisparityByCounty(population, 'county');
+  const genderTest = testCurrentModelDisparityByCounty(population, 'headGender');
+  const fraudStats = generateFraudStatistics(population);
+
+  const ResultCard = ({ test, label }) => (
+    <div style={{padding:16,background:test.passed?S.sageD:S.terraD,border:`1px solid ${test.passed?S.sageBd:S.terraBd}`,borderRadius:8}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+        {test.passed ? <CheckCircle2 size={18} color={S.sage}/> : <AlertTriangle size={18} color={S.terra}/>}
+        <div style={{fontSize:13,fontWeight:700,color:test.passed?S.sage:S.terra}}>{label}: {test.passed?"PASS":"FAIL"}</div>
+      </div>
+      <div style={{fontSize:13,color:S.text,marginBottom:4}}>Max disparity: <strong>{test.maxDisparity}%</strong> (threshold ≤{test.threshold}%)</div>
+      <div style={{fontSize:12,color:S.muted}}>{test.groupCount} groups included (N≥30 each){test.excludedGroups?.length ? `, ${test.excludedGroups.length} excluded for small sample size` : ""}.</div>
+    </div>
+  );
+
+  return (
+    <div style={{display:"grid",gap:24}}>
+      <div>
+        <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Bias & Compliance Dashboard</div>
+        <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>The population-level tests SHA's own P-39 and P-47 CAJ-blocker requirements actually depend on — run live, not asserted in a paragraph.</div>
+      </div>
+
+      <div style={{padding:16,background:S.blueD,border:`1px solid ${S.blueBd}`,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+        <div style={{fontSize:13,color:S.text,lineHeight:1.5}}>
+          <strong style={{color:S.blue}}>SYNTHETIC DATA:</strong> these {population.length} households are generated, not real citizens or real SHA records — there is no pilot dataset yet. This demonstrates the tests run and produce a real number; it is not evidence about the real system's actual disparity. Replace with real assessment history the moment a pilot exists.
+        </div>
+        <button onClick={()=>setPopulation(generateSyntheticPopulation(300))} style={{padding:"8px 16px",background:S.blue,color:"#fff",border:"none",borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Regenerate sample</button>
+      </div>
+
+      <div style={{padding:16,background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+        <div style={{fontSize:13,color:S.text,lineHeight:1.5}}>
+          <strong>Session audit trail:</strong> {logger.getSessionAuditBuffer().length} records logged this session. FIX (audit v2): audit records used to only go to console.log and vanish on tab close — this is still not a real backend, but at least the session's records can now be exported for a human to file somewhere durable.
+        </div>
+        <button onClick={()=>logger.downloadSessionAuditLog()} style={{padding:"8px 16px",background:S.surface,color:S.text,border:`1px solid ${S.border}`,borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Export session audit log (.json)</button>
+      </div>
+
+      <div>
+        <div style={{fontSize:13,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.muted,marginBottom:12}}>Disparity Test (P-39) — must be run on BOTH keys, not just one</div>
+        <div className="grid-2">
+          <ResultCard test={countyTest} label="By County"/>
+          <ResultCard test={genderTest} label="By Head Gender"/>
+        </div>
+      </div>
+
+      <div style={{padding:20,background:S.surface,border:`1px solid ${S.border}`,borderRadius:10}}>
+        <div style={{fontSize:13,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.muted,marginBottom:12}}>Fraud Engine Population Statistics</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(160px, 1fr))",gap:16,marginBottom:12}}>
+          <div><div style={{fontSize:11,color:S.muted}}>Assessments</div><div style={{fontSize:20,fontWeight:800,color:S.text}}>{fraudStats.totalAssessments}</div></div>
+          <div><div style={{fontSize:11,color:S.muted}}>Flagged</div><div style={{fontSize:20,fontWeight:800,color:S.text}}>{fraudStats.flaggedAssessments}</div></div>
+          <div><div style={{fontSize:11,color:S.muted}}>Flag rate</div><div style={{fontSize:20,fontWeight:800,color:S.text}}>{fraudStats.flagRate}</div></div>
+          <div><div style={{fontSize:11,color:S.muted}}>Contribution under review</div><div style={{fontSize:20,fontWeight:800,color:S.text}}>KSh {fraudStats.contributionValueUnderReview?.toLocaleString()}</div></div>
+        </div>
+        <div style={{fontSize:12,color:S.muted,marginBottom:12,fontStyle:"italic"}}>{fraudStats.contributionValueUnderReviewCaveat}</div>
+        <div style={{fontSize:12,fontWeight:700,color:S.muted,marginBottom:8,textTransform:"uppercase"}}>Most common flags</div>
+        <div style={{display:"grid",gap:6}}>
+          {fraudStats.mostCommonFlags.map(f=>(
+            <div key={f.name} style={{display:"flex",justifyContent:"space-between",fontSize:13,padding:"6px 10px",background:S.faint,borderRadius:6}}>
+              <span>{f.name}</span><span style={{fontWeight:700}}>{f.count}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CONSENT SCREEN (DPA COMPLIANCE)
 // ─────────────────────────────────────────────────────────────────────────────
 function ConsentScreen({ onConsent }) {
@@ -1084,12 +1185,14 @@ export default function SHADemo() {
     setClassifying(true);
     setTimeout(()=>{
       const lassoAnnual = calculateCurrentModel(inputs);
-      const lassoIndigent = lassoAnnual < 131000;
+      // FIX (audit v2): was duplicated inline here (with a `< 131000` vs the
+      // proposed model's `<= 131000`, an off-by-one). Now calls the single
+      // shared function in AlgorithmSimulation.js so there's one source of
+      // truth for both the boundary and the 2.75%/12 formula.
+      const curRaw = calculateCurrentModelContribution(lassoAnnual);
       const cur = {
-        annualIncome: lassoAnnual,
-        monthly: lassoIndigent ? 300 : Math.max(300, Math.round((lassoAnnual * 0.0275) / 12)),
-        isIndigent: lassoIndigent,
-        tier: lassoAnnual < 131000 ? "LOW" : lassoAnnual < 450000 ? "MIDDLE" : "HIGH"
+        ...curRaw,
+        tier: curRaw.isIndigent ? "LOW" : lassoAnnual <= 450000 ? "MIDDLE" : "HIGH" // display label kept as-is; BANDS.tier used internally
       };
       
       const nxtRaw = calculateProposedModel(inputs, adminParams);
@@ -1122,7 +1225,7 @@ export default function SHADemo() {
     },800);
   };
 
-  const TABS=[["comparison","Financial Comparison"],["fairness","Fairness Analysis"],["fraud","Fraud Risk Assessment"],["shap","SHAP Legal Explanation"],["ussd","USSD Simulation"],["metrics","System Metrics"]];
+  const TABS=[["comparison","Financial Comparison"],["fairness","Fairness Analysis"],["fraud","Fraud Risk Assessment"],["bias","Bias & Compliance"],["shap","SHAP Legal Explanation"],["ussd","USSD Simulation"],["metrics","System Metrics"]];
 
   return (
     <>
@@ -1384,6 +1487,7 @@ export default function SHADemo() {
                 {activeTab==="comparison"&&<ComparisonTab results={results} adminParams={adminParams}/>}
                 {activeTab==="fairness"&&<FairnessTab results={results}/>}
                 {activeTab==="fraud"&&<FraudRiskTab results={results}/>}
+                {activeTab==="bias"&&<BiasComplianceTab/>}
                 {activeTab==="shap"&&<SHAPTab results={results} adminParams={adminParams}/>}
                 {activeTab==="ussd"&&<USSDTab results={results}/>}
                 {activeTab==="metrics"&&<MetricsTab/>}

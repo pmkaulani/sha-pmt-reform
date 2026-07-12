@@ -2,11 +2,24 @@
 // This engine implements the Adjustable Gross Income (AGI) model to calculate SHA contributions.
 // It complies with the legally mandated 2.75% rate while fixing 28 systemic flaws by applying
 // mathematically rigorous deductions before the flat rate is calculated.
+//
+// IMPORTANT (audit v2, read before citing this file to a technical reviewer):
+// This entire module is a deterministic rules engine (if/else + fixed
+// constants). Nothing here is "trained" and nothing "converges" — there is
+// no model fitting, no loss function, no gradient step anywhere in this
+// file. Any UI copy or doc that describes this as a trained/optimized model
+// enforcing a learned constraint is describing software that does not
+// exist. Disparity across groups (the closest thing to "equalized odds"
+// this system has) is only ever known if testCurrentModelDisparityByCounty()
+// below is actually run against real assessment data — it is not a property
+// the formulas below guarantee by construction.
+
+import { hashMsisdn } from './hash.js';
 
 export const BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: true }, // Subsidized
-  { min: 131001, max: 450000, isIndigent: false }, // Flat 2.75%
-  { min: 450001, max: Infinity, isIndigent: false }, // Flat 2.75%
+  { min: 0, max: 131000, monthly: 300, isIndigent: true, tier: 'Indigent (Subsidized)' },
+  { min: 131001, max: 450000, isIndigent: false, tier: 'Standard' }, // Flat 2.75%
+  { min: 450001, max: Infinity, isIndigent: false, tier: 'Upper' }, // Flat 2.75% — same formula as Standard; kept separate for reporting/tier-label purposes only
 ];
 
 export const PROPOSED_BANDS = [
@@ -85,6 +98,31 @@ export function calculateCurrentModel(d) {
 }
 
 /**
+ * FIX (audit v2): this logic used to live only inline inside App.jsx's
+ * classify() callback — invisible to anyone auditing this file (the one
+ * name-checked in your technical docs), untestable from verify_logic.js,
+ * and duplicated against the 2.75%/12 formula in calculateProposedModel
+ * with no shared source of truth. `BANDS` above was defined but never
+ * actually referenced by that inline logic, so this now makes BANDS the
+ * real source of truth for tier/indigent lookups instead of dead code.
+ *
+ * Also fixes a one-shilling off-by-one: the old inline version classified
+ * indigent via `lassoAnnual < 131000` (strict) while the proposed model
+ * uses `agi <= 131000`. Both now use `<=`, matching BANDS' own `max: 131000`
+ * boundary on the first band.
+ *
+ * Takes the raw wealth-score output of calculateCurrentModel() and turns it
+ * into an actual monthly-contribution object, the same shape the proposed
+ * model already returns.
+ */
+export function calculateCurrentModelContribution(lassoAnnual) {
+  const band = BANDS.find(b => lassoAnnual <= b.max) ?? BANDS[BANDS.length - 1];
+  const isIndigent = band.isIndigent === true;
+  const monthly = isIndigent ? band.monthly : Math.max(300, Math.round((lassoAnnual * 0.0275) / 12));
+  return { annualIncome: lassoAnnual, monthly, isIndigent, tier: band.tier };
+}
+
+/**
  * Calculates the proposed SHA PMT v2.1 Optimization using the AGI model.
  */
 export function calculateProposedModel(d, adminParams = {}) {
@@ -111,6 +149,19 @@ export function calculateProposedModel(d, adminParams = {}) {
     avgTransactionSize = d.grossMpesaMonthly / 80;
   }
   let isSubsistenceUser = false;
+  // FIX (audit v2) — real, previously-undiscovered crash bug: this was
+  // declared with `let` down near the Digital Ghost check (~230 lines
+  // below) but assigned right here on the seasonal-worker branch, which
+  // runs first. That's a JS temporal-dead-zone ReferenceError, not a typo
+  // that silently does the wrong thing — it CRASHES the whole assessment
+  // for any seasonal worker (farm/tourism-sector labourer, exactly who the
+  // "Seasonal Worker Override" feature exists to help) who declares a zero
+  // low-season balance. The 6 hand-picked PRESETS never hit this combination,
+  // so verify_logic.js never caught it; a 500-household synthetic
+  // population (see generateSyntheticPopulation, used by the new Bias &
+  // Compliance tab) hit it on the first run. Declared here now, before the
+  // branch that assigns to it.
+  let requiresChpVerification = false;
   if (d.grossMpesaMonthly && d.grossMpesaMonthly > 25000 && (d.avgRetainedBalance || 0) < 3000 && avgTransactionSize < 450) {
     isSubsistenceUser = true;
     effectiveBalance *= 0.4; // 60% discount on the retained balance due to subsistence activity
@@ -196,12 +247,26 @@ export function calculateProposedModel(d, adminParams = {}) {
   }
   baseIncome += carValue;
 
-  let motoValue = d.assets.includes('MOTORCYCLE') ? 150000 : 0;
+  // FIX (audit v2): motorcycle base value was a bare 150000 literal with no
+  // adminParams hook, unlike carBaseValue above. Bodaboda/PSV motorcycles are
+  // exactly the asset class this v2.1 pass says it's protecting, so it
+  // shouldn't be second-class in the admin-configurability story.
+  let motoBaseValue = adminParams.motoValue ?? 150000;
+  let motoValue = d.assets.includes('MOTORCYCLE') ? motoBaseValue : 0;
   if (motoValue > 0 && d.motorcycleIsCommercial) {
-    motoValue *= 0.5; // 50% tools-of-trade exemption
-    deductions.push({ name: 'Motorcycle Commercial Exemption', amount: 75000, reason: 'Bodaboda/PSV motorcycle — income-generating tool' });
+    const exemptionAmount = motoValue * 0.5; // 50% tools-of-trade exemption, derived not hardcoded
+    motoValue *= 0.5;
+    deductions.push({ name: 'Motorcycle Commercial Exemption', amount: exemptionAmount, reason: 'Bodaboda/PSV motorcycle — income-generating tool' });
   } else if (motoValue > 0 && !hasHighWealthSignal) {
+    // FIX (audit v2): this depreciation used to reduce baseIncome silently,
+    // with no deductions.push() entry — the equivalent car-depreciation
+    // branch above does record one. Since SHAP Deduction Receipts are built
+    // from the `deductions` array, a bodaboda owner's receipt was missing
+    // this line item even though it materially lowered their AGI. Recorded
+    // now for transparency parity with the car case.
+    const depreciationAmount = motoValue * 0.4;
     motoValue *= 0.6;
+    deductions.push({ name: 'Motorcycle Age Depreciation', amount: depreciationAmount, reason: 'Dead Asset / Age Adjustment — same basis as Old Asset Depreciation for cars' });
   }
   baseIncome += motoValue;
 
@@ -242,8 +307,18 @@ export function calculateProposedModel(d, adminParams = {}) {
     : URBAN_TIER_2.includes(d.county) ? 'TIER_2' : 'RURAL';
   
   // Base CoL without rent
-  const baseCol = adminParams.urbanCostOfLiving !== undefined && urbanTier === 'TIER_1'
-    ? adminParams.urbanCostOfLiving
+  // FIX (audit v2): this override used to only ever apply when
+  // urbanTier === 'TIER_1' — Tier 2 and Rural COL were hardcoded regardless
+  // of adminParams, unlike the rent caps below which are fully configurable
+  // across all three tiers. `urbanCostOfLiving` is kept as a Tier-1 alias
+  // for backward compatibility with any existing caller.
+  const colOverrides = {
+    TIER_1: adminParams.tier1CostOfLiving ?? adminParams.urbanCostOfLiving,
+    TIER_2: adminParams.tier2CostOfLiving,
+    RURAL: adminParams.ruralCostOfLiving,
+  };
+  const baseCol = colOverrides[urbanTier] !== undefined
+    ? colOverrides[urbanTier]
     : COST_OF_LIVING[urbanTier];
 
   let colDeduction;
@@ -333,8 +408,15 @@ export function calculateProposedModel(d, adminParams = {}) {
   // Fallback Protocol: Digital Ghost Detection
   // If user operates purely in cash with zero digital footprint and zero physical assets
   let isDigitalGhost = false;
-  let requiresChpVerification = false;
-  if (!isOffline && (!d.kraPinType || d.kraPinType === 'NONE') && !d.isNtsaVerified && !d.hasSaccoAccount && (d.grossMpesaMonthly || 0) < 1000 && d.assets.length === 0) {
+  // requiresChpVerification is declared earlier in this function now (see FIX audit v2 note above) — this used to be a duplicate re-declaration
+  // FIX (audit v2): `d.assets` only ever holds items like CAR/MOTORCYCLE/TV
+  // — land and livestock are separate fields and were never checked here.
+  // A pastoralist with real land/livestock wealth but no phone-linked
+  // footprint could be mislabeled "digital ghost" even though their AGI
+  // above already correctly counted that wealth. Doesn't change what
+  // anyone owes, but it corrupted the isDigitalGhost statistic itself.
+  const hasNoPhysicalAssets = d.assets.length === 0 && !(d.landAcreage > 0) && !(d.livestockCount > 0);
+  if (!isOffline && (!d.kraPinType || d.kraPinType === 'NONE') && !d.isNtsaVerified && !d.hasSaccoAccount && (d.grossMpesaMonthly || 0) < 1000 && hasNoPhysicalAssets) {
     isDigitalGhost = true;
   }
   
@@ -369,7 +451,15 @@ export function calculateProposedModel(d, adminParams = {}) {
     factors: factors,
     modelName: 'SHA PMT v2.1 Optimization',
     deductions: deductions,
-    fairnessPass: true,
+    // FIX (audit v2): this was `fairnessPass: true` — a literal, unconditional
+    // hardcode returned on every single assessment, feeding a per-case
+    // "Equalized Odds Constraint Active" badge in the UI. Equalized odds is
+    // a population-level statistic (see testCurrentModelDisparityByCounty
+    // above) — no single household's result can honestly claim it. Field
+    // removed; the UI badge that read it has been removed too (see App.jsx).
+    // If you want a per-case trust signal, testCurrentModelDisparityByCounty's
+    // most recent population-level `passed` result is the honest source —
+    // wire that through instead of a per-case flag.
     confidenceTier: confidenceTier,
     agiRangeLow: Math.max(0, Math.round(agi * (1 - confidenceBand))),
     agiRangeHigh: Math.round(agi * (1 + confidenceBand))
@@ -682,7 +772,8 @@ export function calculateFraudRisk(d, contextData = {}) {
       reason: `Household size (${d.householdSize}) exceeds reasonable threshold (${PHANTOM_DEPENDENT_THRESHOLD})`,
       confidence: 0.85,
       severity: 'HIGH',
-      action: 'Escalate to fraud unit for home verification'
+      action: 'Escalate to fraud unit for home verification',
+      cluster: 'household_size' // FIX (audit v2): see compounding note below
     });
     confidenceScores.push(0.85);
     overallRiskScore += 0.85;
@@ -768,17 +859,27 @@ export function calculateFraudRisk(d, contextData = {}) {
   }
 
   // FLAG 6: Age + Household Mismatch
-  // If head is very young (<25) but claims large household
-  if (d.headAge < 25 && d.householdSize > 6) {
+  // FIX (audit v2): as written this fired on the exact profile the
+  // Child-Headed Household override (calculateProposedModel, headAge<21)
+  // exists to *protect* — e.g. a 22-year-old orphan raising six siblings
+  // was simultaneously auto-granted indigent status AND escalated as a
+  // HIGH-severity fraud suspect. Young-head-of-large-household is a real,
+  // common, legitimate Kenyan household pattern (orphan-headed households,
+  // young widowhood, eldest sibling as guardian) — it is not on its own
+  // "biological implausibility". Narrowed to a much rarer band, dropped to
+  // MEDIUM, and explicitly excluded from the Child-Headed Household age
+  // range so the two systems can't contradict each other on the same case.
+  if (d.headAge >= 21 && d.headAge < 23 && d.householdSize > 9) {
     fraudFlags.push({
       name: 'Age-Household Mismatch',
-      reason: `Head is ${d.headAge} years old but claims household of ${d.householdSize}. Biological implausibility.`,
-      confidence: 0.75,
-      severity: 'HIGH',
-      action: 'Request household composition verification'
+      reason: `Head is ${d.headAge} years old with a household of ${d.householdSize}. Not implausible on its own — flagged only for a courtesy composition check, not as a fraud accusation.`,
+      confidence: 0.35,
+      severity: 'MEDIUM',
+      action: 'Soft-touch household composition check (no benefit hold)',
+      cluster: 'household_size' // FIX (audit v2): shares root signal with Flag 1 and Flag 9
     });
-    confidenceScores.push(0.75);
-    overallRiskScore += 0.75;
+    confidenceScores.push(0.35);
+    overallRiskScore += 0.35;
   }
 
   // FLAG 7: Asset Ownership Paradox
@@ -817,7 +918,8 @@ export function calculateFraudRisk(d, contextData = {}) {
       reason: `Claims chronic illness AND household of ${d.householdSize} outside ASAL regions. Statistically rare combination; verify both claims.`,
       confidence: 0.55,
       severity: 'LOW',
-      action: 'Request medical documentation for CHE claim'
+      action: 'Request medical documentation for CHE claim',
+      cluster: 'household_size' // FIX (audit v2): also keys off householdSize — see compounding note below
     });
     confidenceScores.push(0.55);
     overallRiskScore += 0.55;
@@ -951,28 +1053,66 @@ export function calculateFraudRisk(d, contextData = {}) {
     overallRiskScore += 0.92;
   }
 
-  // FLAG 18: Multi-Household Income Splitting (Polygamous / Split Families)
-  if (contextData.iprsHouseholdLinkages > 1) {
+  // FLAG 18 (was "Multi-Household Income Splitting (Polygamous / Split
+  // Families)"). FIX (audit v2): polygamous marriage is legally recognised
+  // in Kenya (Marriage Act 2014) and is most common in exactly the ASAL /
+  // pastoralist communities this codebase elsewhere grants a *higher*
+  // dependency cap for (see the 40% ASAL cap above, justified in
+  // ASSUMPTIONS.docx by citing Art. 56 protection for those same families).
+  // Flagging that population as fraud suspects here directly contradicted
+  // that protection and carried real Art. 27(4) discrimination exposure.
+  // AGI consolidation across linked households is still a legitimate thing
+  // to do administratively — it just isn't evidence of fraud by itself, so
+  // it no longer feeds the fraud score. A fraud flag now requires linkage
+  // counts well beyond what any normal family structure (polygamous or not)
+  // produces, and never fires in ASAL counties at all.
+  const householdConsolidationNote = contextData.iprsHouseholdLinkages > 1
+    ? `IPRS shows ${contextData.iprsHouseholdLinkages} linked households — AGI consolidated across all of them before applying the dependency ratio. This is routine processing, not a fraud signal.`
+    : null;
+
+  if (contextData.iprsHouseholdLinkages > 4 && !ASAL_COUNTIES[d.county]) {
     fraudFlags.push({
-      name: 'Multi-Household Income Splitting',
-      reason: `IPRS records show ${contextData.iprsHouseholdLinkages} linked households. Possible income splitting to claim multiple independent dependency allowances.`,
-      confidence: 0.85,
-      severity: 'HIGH',
-      action: 'Consolidate AGI across linked households before applying dependency ratio'
+      name: 'Unusually High Household Linkage Count',
+      reason: `IPRS shows ${contextData.iprsHouseholdLinkages} linked households outside an ASAL county — well above typical family-structure counts (including polygamous ones). Worth a look, not an accusation.`,
+      confidence: 0.45,
+      severity: 'MEDIUM',
+      action: 'Manual review of linked-household declarations before adjusting dependency ratio'
     });
-    confidenceScores.push(0.85);
-    overallRiskScore += 0.85;
+    confidenceScores.push(0.45);
+    overallRiskScore += 0.45;
   }
 
   // Calculate overall fraud risk percentile (0-100)
+  // FIX (audit v2): the fixed-last-time formula below (1 - Π(1-c)) is the
+  // correct way to combine *independent* evidence, but several flags above
+  // are tagged `cluster: 'household_size'` because they all key off the
+  // same underlying fact (Flags 1, 6, 9 all react to d.householdSize). A
+  // 23-year-old with a 13-person household could trip Flag 1 and Flag 6
+  // from one data point, and naive independent-compounding reported that
+  // as 96% ("two separate pieces of damning evidence") when it's really one
+  // fact viewed twice. Flags sharing a cluster are now first collapsed to
+  // their single highest confidence score before compounding across
+  // (still-treated-as-independent) clusters.
   let fraudRiskPercentile = 0;
   if (confidenceScores.length > 0) {
-    const combined = 1 - confidenceScores.reduce((acc, c) => acc * (1 - c), 1);
+    const byCluster = new Map(); // cluster key -> max confidence in that cluster
+    const uncorrelated = [];
+    fraudFlags.forEach((flag, i) => {
+      const c = confidenceScores[i];
+      if (flag.cluster) {
+        byCluster.set(flag.cluster, Math.max(byCluster.get(flag.cluster) ?? 0, c));
+      } else {
+        uncorrelated.push(c);
+      }
+    });
+    const dedupedScores = [...byCluster.values(), ...uncorrelated];
+    const combined = 1 - dedupedScores.reduce((acc, c) => acc * (1 - c), 1);
     fraudRiskPercentile = Math.min(100, Math.round(combined * 100));
   }
 
   return {
     fraudFlags: fraudFlags,
+    householdConsolidationNote: householdConsolidationNote, // administrative, not a fraud signal — see Flag 18 fix
     overallRiskScore: overallRiskScore,
     fraudRiskPercentile: fraudRiskPercentile,
     flagCount: fraudFlags.length,
@@ -1029,7 +1169,21 @@ export function generateFraudStatistics(populationSample = []) {
       }, [])
       .sort((a, b) => b.count - a.count)
       .slice(0, 5),
-    estimatedFraudLosses: flaggedAssessments * 2500 // Assumed avg loss per fraud case (conservative)
+    // FIX (audit v2): this used to be `flaggedAssessments * 2500` — a
+    // citation-free round number multiplied by FLAGGED (not confirmed)
+    // cases, presented as "estimated fraud losses". Flagged means
+    // "pending manual review", not "proven fraudulent"; the two should
+    // never be conflated in a number a reviewer might quote as fact.
+    // This reports something real and derivable instead: the monthly
+    // contribution value currently tied up in HIGH/CRITICAL cases awaiting
+    // review — a workload/exposure figure, explicitly not a loss claim.
+    contributionValueUnderReview: populationSample.reduce((sum, a) => {
+      const isHighOrCritical = a.fraudRisk?.severityLevel === 'CRITICAL' || a.fraudRisk?.severityLevel === 'HIGH';
+      if (!isHighOrCritical) return sum;
+      const monthly = a.proposedResult?.monthlyContribution ?? a.proposedResult?.monthly ?? 0;
+      return sum + monthly;
+    }, 0),
+    contributionValueUnderReviewCaveat: 'Sum of monthly contributions for HIGH/CRITICAL-flagged cases only. This is exposure pending manual review, not a confirmed loss figure — most flags will not turn out to be fraud.'
   };
 }
 
@@ -1213,16 +1367,83 @@ export function handleApiFailure(apiName, error, d) {
 }
 
 /**
- * P-39 (CAJ BLOCKER): Tests the algorithm for equalized odds across demographic groups.
- * Ensures the False Positive Rate (overcharging citizens who should be indigent)
- * does not vary by more than 5% across any grouping.
- * @param {Array} assessments - Array of { inputs, currentResult, proposedResult } objects
- * @param {string} groupingKey - The demographic key to group by (e.g., 'county', 'headGender')
- * @returns {Object} { passed: boolean, maxDisparity: number, groupResults: Object, report: string }
+ * P-39 (CAJ BLOCKER).
+ * FIX (audit v2) — three corrections to this docstring/function itself:
+ *  1. Threshold said 5% here but the code enforced 3% — now both say 3%.
+ *  2. "Tests for equalized odds" overclaimed what this measures. A "false
+ *     positive" here is defined as "proposed model says indigent AND current
+ *     (Lasso) model said non-indigent" — i.e. it measures disparity in how
+ *     often the OLD model's known bias shows up across groups, using the OLD
+ *     model as a stand-in for ground truth. It is NOT a formal equalized-odds
+ *     test against real outcomes (that needs a ground-truth dataset from the
+ *     pilot). Renamed framing below to match what it actually does.
+ *  3. No minimum group size was enforced, so a single case in a
+ *     small-population county could swing maxDisparity on noise alone.
+ *     Groups below MIN_GROUP_SIZE are now excluded from the disparity
+ *     calculation and reported separately instead of silently counted.
+ *
+ * Compares disparity in current-model overcharging (per this function's
+ * specific definition above) across demographic groups.
  */
-export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'county') {
+// --- Statistical Helpers for Fisher's Exact Test ---
+function logGamma(z) {
+  let sum = 0.99999999999980993;
+  let c = [
+    676.5203681218851, -1259.1392167224028, 771.32342877765313,
+    -176.61502916214059, 12.507343278686905, -0.13857109526572012,
+    9.9843695780195716e-6, 1.5056327351493116e-7
+  ];
+  z -= 1;
+  for (let i = 0; i < c.length; i++) {
+    sum += c[i] / (z + i + 1);
+  }
+  const t = z + c.length - 0.5;
+  return Math.log(Math.sqrt(2 * Math.PI)) + (z + 0.5) * Math.log(t) - t + Math.log(sum);
+}
+
+function logFactorial(n) {
+  if (n <= 1) return 0;
+  return logGamma(n + 1);
+}
+
+function hypergeomProb(a, b, c, d) {
+  return Math.exp(
+    logFactorial(a + b) + logFactorial(c + d) + logFactorial(a + c) + logFactorial(b + d) -
+    logFactorial(a) - logFactorial(b) - logFactorial(c) - logFactorial(d) - logFactorial(a + b + c + d)
+  );
+}
+
+function fisherExactTest(a, b, c, d) {
+  const p0 = hypergeomProb(a, b, c, d);
+  let pValue = 0;
+  const n = a + b + c + d;
+  const row1 = a + b;
+  const col1 = a + c;
+  const minA = Math.max(0, row1 + col1 - n);
+  const maxA = Math.min(row1, col1);
+  
+  for (let i = minA; i <= maxA; i++) {
+    const curP = hypergeomProb(i, row1 - i, col1 - i, n - row1 - col1 + i);
+    if (curP <= p0 + 1e-10) {
+      pValue += curP;
+    }
+  }
+  return Math.min(1, pValue);
+}
+// ---------------------------------------------------
+
+/**
+ * P-45 (CAJ BLOCKER): Assesses fairness constraint violations (disparate impact)
+ * Replaces the arbitrary 3% gap threshold with Fisher's Exact Test, matching
+ * the KIPPRA/Lighthouse Reports methodology.
+ * @param {Array} assessments - Output from multiple generateSimulationAssessments() runs
+ * @param {string} groupingKey - e.g., 'county' or 'gender'
+ * @param {number} minGroupSize - Groups smaller than this are excluded from disparity math (default 30)
+ * @returns {Object} { passed: boolean, maxDisparity: number, groupResults: Object, excludedGroups: Array, report: string }
+ */
+export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'county', minGroupSize = 30) {
   if (!assessments || assessments.length === 0) {
-    return { passed: false, maxDisparity: 0, groupResults: {}, report: 'No assessments provided' };
+    return { passed: false, maxDisparity: 0, groupResults: {}, excludedGroups: [], report: 'No assessments provided' };
   }
 
   // Group assessments by the demographic key
@@ -1231,7 +1452,9 @@ export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'co
     const key = a.inputs[groupingKey] || 'UNKNOWN';
     if (!groups[key]) groups[key] = { total: 0, falsePositives: 0 };
     groups[key].total++;
-    // A "false positive" is when the proposed model charges someone who should be indigent
+    // A "false positive" here means: proposed model says indigent, current
+    // (Lasso) model said non-indigent. See docstring — this is disparity in
+    // the old model's overcharging pattern, not a ground-truth FPR.
     const shouldBeIndigent = a.proposedResult?.isIndigent === true;
     const wasChargedAsNonIndigent = a.currentResult?.isIndigent === false;
     if (shouldBeIndigent && wasChargedAsNonIndigent) {
@@ -1239,33 +1462,57 @@ export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'co
     }
   });
 
-  // Calculate False Positive Rate (FPR) per group
+  // Calculate False Positive Rate (FPR) per group, gated on sample size
   const groupResults = {};
-  let maxFPR = 0;
-  let minFPR = 1;
+  const excludedGroups = [];
+  let maxFPR = -1;
+  let minFPR = 2; // Init to impossible >1 value
+  let maxGroup = null;
+  let minGroup = null;
+
   Object.entries(groups).forEach(([key, data]) => {
     const fpr = data.total > 0 ? data.falsePositives / data.total : 0;
-    groupResults[key] = {
+    const entry = {
       total: data.total,
       falsePositives: data.falsePositives,
       falsePositiveRate: Math.round(fpr * 10000) / 100 // percentage with 2 decimals
     };
-    if (fpr > maxFPR) maxFPR = fpr;
-    if (fpr < minFPR) minFPR = fpr;
+    if (data.total < minGroupSize) {
+      excludedGroups.push({ key, ...entry, reason: `Below minGroupSize (${minGroupSize}) — excluded to avoid noise-driven disparity` });
+      return;
+    }
+    groupResults[key] = entry;
+    if (fpr > maxFPR) { maxFPR = fpr; maxGroup = { key, ...entry }; }
+    if (fpr < minFPR || minGroup === null) { minFPR = fpr; minGroup = { key, ...entry }; }
   });
 
+  const groupCount = Object.keys(groupResults).length;
+  if (groupCount < 2) {
+    return { passed: false, maxDisparity: 0, pValue: 1, groupResults, excludedGroups, groupCount, report: `Insufficient valid groups to assess disparity.` };
+  }
+
   const maxDisparity = Math.round((maxFPR - minFPR) * 10000) / 100;
-  const passed = maxDisparity <= 3.0; // 3% threshold
+  
+  // Fisher's exact test on max vs min group
+  const a = maxGroup.falsePositives;
+  const b = maxGroup.total - maxGroup.falsePositives;
+  const c = minGroup.falsePositives;
+  const d = minGroup.total - minGroup.falsePositives;
+  const pValue = fisherExactTest(a, b, c, d);
+
+  // Lighthouse standard: Reject if p < 0.05
+  const passed = pValue >= 0.05;
 
   return {
     passed,
     maxDisparity,
-    threshold: 3.0,
+    pValue,
     groupResults,
-    groupCount: Object.keys(groupResults).length,
+    excludedGroups,
+    groupCount,
     report: passed
-      ? `PASS: Maximum FPR disparity across ${groupingKey} groups is ${maxDisparity}% (≤3% threshold)`
-      : `FAIL: Maximum FPR disparity across ${groupingKey} groups is ${maxDisparity}% (>3% threshold). Algorithm must be recalibrated before deployment.`
+      ? `PASS: Disparity between worst and best group (${maxGroup.key} vs ${minGroup.key}) is not statistically significant (Fisher's exact p=${pValue.toFixed(4)} ≥ 0.05).`
+      : `FAIL: Statistically significant disparity detected. ${maxGroup.key} has significantly higher exclusion error than ${minGroup.key} (Fisher's exact p=${pValue.toFixed(4)} < 0.05). Algorithm must be recalibrated.`
   };
 }
 
@@ -1299,6 +1546,14 @@ export function generateRevenueStressTest(totalPopulation = 15500000, avgContrib
   });
 
   // Breakeven analysis: need ~45% to sustain subsidy program
+  // NOTE (audit v2, unresolved — flagging rather than silently fixing):
+  // this is still a static constant, independent of how many people the
+  // AGI model actually reclassifies as indigent vs the current system.
+  // This was Gap D5 in the June 28 audit ("subsidy fiscal tradeoff not
+  // addressed") — a real fix needs a population-reclassification pass
+  // (run both models over a real/synthetic population, count net new
+  // indigent classifications, cost those out) rather than a bigger magic
+  // number. Left as-is; don't cite this figure as dynamically derived.
   const subsidyCostPerMonth = 3200000000; // ~3.2B KSh/month for indigent subsidies
   const breakevenRate = Math.ceil((subsidyCostPerMonth / (totalPopulation * avgContribution)) * 100);
   const breakevenEnrolled = Math.round(totalPopulation * (breakevenRate / 100));
@@ -1334,11 +1589,22 @@ export function generateRevenueStressTest(totalPopulation = 15500000, avgContrib
  */
 export function createAuditRecord(inputs, currentResult, proposedResult, fraudRisk, officerId = 'SYSTEM') {
   const now = new Date();
-  const assessmentId = `SHA-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-  
+  // FIX (audit v2): Math.random() is not appropriate for an "immutable audit
+  // record" ID (not cryptographically secure, theoretically guessable).
+  // crypto.randomUUID() is available in all evergreen browsers + Node 19+.
+  const uid = (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID().split('-')[0].toUpperCase()
+    : Math.random().toString(36).substring(2, 10).toUpperCase(); // last-resort fallback only
+  const assessmentId = `SHA-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${uid}`;
+
   return {
     assessmentId,
-    citizenIdHash: typeof inputs.msisdn === 'string' ? `SHA256(${inputs.msisdn.substring(0,4)}****)` : 'ANONYMOUS',
+    // FIX (audit v2): this used to be the literal string "SHA256(1234****)"
+    // — the first 4 real digits of the phone number wrapped in a label that
+    // implied hashing had occurred. It hadn't. This now runs a real,
+    // test-vector-verified SHA-256 (see lib/hash.js). See that file's
+    // docstring for the remaining server-side-pepper caveat.
+    citizenIdHash: hashMsisdn(inputs.msisdn),
     createdAt: now.toISOString(),
     algorithmVersion: 'PMT-v2.1-AGI',
     status: 'SUBMITTED',
@@ -1380,4 +1646,101 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
       policy: 'Tiered Retention per DPA §39'
     }
   };
+}
+
+/**
+ * FIX (audit v2, addresses the "CAJ BLOCKER functions are never called"
+ * finding): testCurrentModelDisparityByCounty(), generateFraudStatistics(),
+ * and generateRevenueStressTest() all existed but nothing in App.jsx ever
+ * ran them — the live product never actually demonstrated the compliance
+ * evidence it claimed. There is no real production dataset yet (pre-pilot),
+ * so this generates a synthetic-but-plausible population so those three
+ * functions have something real to compute over instead of sitting unused.
+ * This is clearly labeled SYNTHETIC everywhere it surfaces in the UI —
+ * treat its disparity/fraud numbers as "the pipeline works and produces
+ * this shape of output", not as real evidence about the real system. Swap
+ * in real assessment records the moment a pilot produces any.
+ *
+ * NOTE: the county list below is duplicated from App.jsx's COUNTIES const
+ * rather than imported from one shared source — pre-existing pattern in
+ * this codebase (see BANDS/PROPOSED_BANDS duplication note elsewhere), not
+ * introduced here, but worth consolidating into one shared constants file
+ * next time either list needs to change, so they can't drift apart.
+ */
+const SYNTHETIC_COUNTIES = ["Baringo","Bomet","Bungoma","Busia","Elgeyo Marakwet","Embu","Garissa","Homa Bay","Isiolo","Kajiado","Kakamega","Kericho","Kiambu","Kilifi","Kirinyaga","Kisii","Kisumu","Kitui","Kwale","Laikipia","Lamu","Machakos","Makueni","Mandera","Marsabit","Meru","Migori","Mombasa","Murang'a","Nairobi","Nakuru","Nandi","Narok","Nyandarua","Nyamira","Nyeri","Samburu","Siaya","Taita Taveta","Tana River","Tharaka-Nithi","Trans Nzoia","Turkana","Uasin Gishu","Vihiga","Wajir","West Pokot"];
+
+function randChoice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function randInt(min, max) { return Math.floor(min + Math.random() * (max - min + 1)); }
+function randBool(pTrue) { return Math.random() < pTrue; }
+
+export function generateSyntheticHousehold() {
+  const county = randChoice(SYNTHETIC_COUNTIES);
+  const isUrban = ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Uasin Gishu', 'Kiambu', 'Kisii', 'Nyeri', 'Machakos', 'Trans Nzoia'].includes(county);
+  const headGender = randChoice(['MALE', 'FEMALE']);
+  const headAge = randInt(19, 78);
+  const householdSize = Math.max(1, Math.round(1 + Math.random() * 5 + (Math.random() < 0.08 ? Math.random() * 10 : 0)));
+  const hasCar = randBool(isUrban ? 0.22 : 0.08);
+  const hasMoto = randBool(isUrban ? 0.15 : 0.28);
+  const assets = [
+    ...(hasCar ? ['CAR'] : []),
+    ...(hasMoto ? ['MOTORCYCLE'] : []),
+    ...(randBool(0.55) ? ['TV'] : []),
+    ...(randBool(0.4) ? ['FRIDGE'] : []),
+    ...(randBool(0.7) ? ['FEATURE_PHONE'] : []),
+  ];
+  const grossMpesaMonthly = Math.round(Math.exp(6 + Math.random() * 4)); // roughly log-spread ~400 to ~90,000
+  const ownershipStatus = isUrban && randBool(0.5) ? 'RENTED' : 'OWNED';
+
+  return {
+    county, headGender, headAge, householdSize,
+    dwellingType: 'TRADITIONAL',
+    wallMaterial: randChoice(['MUD', 'IRON_SHEETS', 'STONE', 'BRICK']),
+    roofMaterial: randChoice(['GRASS_THATCH', 'IRON_SHEETS', 'TILES']),
+    floorMaterial: randChoice(['EARTH', 'CEMENT', 'TILES']),
+    rooms: randInt(1, 5),
+    ownershipStatus,
+    monthlyRent: ownershipStatus === 'RENTED' ? randInt(2000, 25000) : 0,
+    subletIncome: randBool(0.05) ? randInt(1000, 8000) : 0,
+    waterSource: randChoice(['BOREHOLE', 'PIPED', 'RIVER']),
+    sanitationType: randChoice(['PIT_LATRINE', 'FLUSH']),
+    cookingEnergy: randChoice(['FIREWOOD', 'CHARCOAL', 'GAS']),
+    lightingEnergy: randChoice(['NONE', 'SOLAR', 'ELECTRICITY']),
+    assets,
+    vehicleType: hasCar ? randChoice(['STANDARD_OLD', 'STANDARD_NEW', 'LUXURY', 'COMMERCIAL']) : 'STANDARD_OLD',
+    motorcycleIsCommercial: hasMoto ? randBool(0.5) : false,
+    landAcreage: isUrban ? (randBool(0.1) ? randInt(1, 2) : 0) : randInt(0, 8),
+    livestockCount: isUrban ? 0 : (randBool(0.6) ? randInt(0, 25) : 0),
+    receivesAid: randBool(0.06),
+    isRefugee: randBool(0.02),
+    grossMpesaMonthly,
+    transactionCount: randInt(10, 200),
+    avgRetainedBalance: Math.round(grossMpesaMonthly * (0.02 + Math.random() * 0.15)),
+    isSeasonalWorker: randBool(0.15),
+    lowSeasonRetainedBalance: 0,
+    diasporaRemittances: randBool(0.04) ? randInt(5000, 40000) : 0,
+    fulizaDefaults: randBool(0.05) ? randInt(1, 3) : 0,
+    kraPinType: randBool(0.2) ? randChoice(['PAYE', 'BUSINESS']) : 'NONE',
+    isNtsaVerified: hasCar ? randBool(0.7) : false,
+    hiddenWealthDiscovered: false,
+    hasSaccoAccount: randBool(0.18),
+    saccoShareCapital: 0,
+    hasChronicIllness: randBool(0.09),
+    hasRegisteredDisability: randBool(0.05),
+    isGroupTreasurer: false,
+    consentWithheld: randBool(0.03),
+    msisdn: `2547${randInt(10000000, 99999999)}`,
+  };
+}
+
+export function generateSyntheticPopulation(n = 300, adminParams = {}) {
+  const population = [];
+  for (let i = 0; i < n; i++) {
+    const inputs = generateSyntheticHousehold();
+    const lassoAnnual = calculateCurrentModel(inputs);
+    const currentResult = calculateCurrentModelContribution(lassoAnnual);
+    const proposedResult = calculateProposedModel(inputs, adminParams);
+    const fraudRisk = calculateFraudRisk(inputs, { iprsHouseholdLinkages: randBool(0.06) ? randInt(2, 5) : 1 });
+    population.push({ inputs, currentResult, proposedResult, fraudRisk });
+  }
+  return population;
 }

@@ -1,4 +1,5 @@
-const fs = require('fs');
+const fs = require("fs");
+const path = require("path"); // FIX (audit v2): output path was hardcoded to one specific Windows user profile
 const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = require('docx');
 
 const bold = (t) => new TextRun({ text: t, bold: true });
@@ -79,7 +80,7 @@ const doc = new Document({
           normal("1. SHA to adopt AGI model as the v2.1 means-testing standard\n"),
           normal("2. Data Commissioner to issue compliance certificate\n"),
           normal("3. KIPPRA to conduct independent policy review\n\n"),
-          bold("Contact: "), normal("0712260057 | info@kenia.go.ke")
+          bold("Contact: "), normal("0712260057 | 2507765@students.kcau.ac.ke")
         ]
       }),
     ],
@@ -87,6 +88,6 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then((buffer) => {
-  fs.writeFileSync('C:\\Users\\STD USER\\Desktop\\work\\SHA\\docs\\EXECUTIVE_SUMMARY_ONE_PAGER.docx', buffer);
+  fs.writeFileSync(path.join(__dirname, '..', 'docs', 'EXECUTIVE_SUMMARY_ONE_PAGER.docx'), buffer); // FIX (audit v2): was hardcoded to one specific Windows machine/profile (and in one case the wrong folder); now portable
   console.log("EXECUTIVE_SUMMARY_ONE_PAGER.docx updated successfully");
 });

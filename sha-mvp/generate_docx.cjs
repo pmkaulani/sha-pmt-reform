@@ -1,4 +1,5 @@
-const fs = require('fs');
+const fs = require("fs");
+const path = require("path"); // FIX (audit v2): output path was hardcoded to one specific Windows user profile
 const docx = require('docx');
 const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
 
@@ -109,6 +110,6 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then((buffer) => {
-  fs.writeFileSync('C:\\Users\\STD USER\\Desktop\\work\\SHA\\KNOWN_BLIND_SPOTS.docx', buffer);
+  fs.writeFileSync(path.join(__dirname, '..', 'docs', 'KNOWN_BLIND_SPOTS.docx'), buffer); // FIX (audit v2): was hardcoded to one specific Windows machine/profile (and in one case the wrong folder); now portable
   console.log("Document created successfully");
 });

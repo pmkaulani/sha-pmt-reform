@@ -14,6 +14,8 @@ Kenya's Social Health Authority deployed a Proxy Means Test (PMT) algorithm that
 - Has a **65% exclusion error** for poor female-headed households (vs 34% for male-headed)
 - Was flagged as inequitable by IDinsight **before deployment** — and deployed regardless
 
+The National Assembly's Health Committee (March 2026) officially declared the resulting fund **"unsustainable"**, revealing that while it collects Ksh 7.4 billion monthly, it burns Ksh 7.2 billion, leaving no margin for shocks. The cause? Mass defaults from the informal sector, who have simply opted out due to unaffordable algorithmic assessments.
+
 The High Court (March 2026) rebuked SHA for a 'chaotic and premature' rollout that denied critical medical services — including cancer treatment and dialysis — and issued a structural interdict requiring corrective measures under judicial supervision. The CAJ ordered full algorithm disclosure.
 
 ### The "Error by Design" Crisis (May 2026)
@@ -41,7 +43,15 @@ The AGI model applies **7 evidence-based deductions** before the legally mandate
 | Tools of Trade | Income-generating assets depreciated, not penalized |
 | Fiduciary Exemption | Chama/group funds excluded from personal income |
 
-**Revenue projection:** At 60% target compliance (based on Rwanda CBHI benchmark) with 15.5M eligible population and KSh 575 average contribution, projected annual revenue is **KSh 64B** — compared to the current system's KSh 90B collected from only 22.7% compliance. Fair premiums increase total collection by driving mass voluntary compliance.
+**Revenue projection:** At 60% target compliance (based on Rwanda CBHI benchmark) with 31.39M registered population and KSh 520 average contribution, projected annual revenue is **~KSh 58B** — compared to the current system's KSh 90B collected from only 22.7% compliance. Fair premiums increase total collection by driving mass voluntary compliance.
+
+## July 2026 Policy Context
+
+This project is actively aligned with the most recent developments in Kenya's healthcare transition:
+
+- **"Lipa SHA Pole Pole" Initiative:** In July 2026, the government launched a Hustler Fund integration allowing informal sector workers to pay annual SHA premiums in daily or weekly micro-installments. The v2.1 AGI model's projected **KSh 520/month** average premium is explicitly designed to be financed through this *Pole Pole* framework, proving that fair premiums unlock mass compliance.
+- **CAJ Transparency Orders (July 10, 2026):** The Ombudsman recently ordered SHA to release all hospital payment records from 2018–2026 to combat fraud and opacity. While that order targets financial transparency, this repository delivers **algorithmic transparency**, offering an open-source, SHAP-explainable engine to match the Ombudsman's standard for public accountability.
+- **NG-CDF "Taifa Care" Enrollments:** With MPs currently using constituency funds to pay premiums for vulnerable households classified as non-poor by the legacy model, the v2.1 algorithm's accurate indigent classification (e.g., via the Refugee/IDP auto-pathway and Subsistence filter) will automatically trigger state subsidies for these citizens, freeing up NG-CDF funds for local development.
 
 ## Repository Structure
 
@@ -73,9 +83,9 @@ The AGI model applies **7 evidence-based deductions** before the legally mandate
 | Constitution Art. 27(4) | No sex/geography discrimination | ✅ Compliant |
 | DPA 2019 §32/35/39 | Consent, human oversight, retention | ✅ Compliant |
 | AI Bill 2026 | Impact assessment, bias testing, explainability | ✅ Compliant |
-| CAJ Order | Algorithm disclosure | ✅ Submitted |
-| High Court (Mwita, 2025) | No double taxation on gross income | ✅ Resolved |
-| High Court (Mwamuye, 2026) | Fix means-testing infrastructure | ✅ Addressed |
+| CAJ Order (Nov 2025) | Algorithm disclosure | ✅ Submitted |
+| High Court (Mwita, 2025) | Found 2.75% gross-income deduction is double taxation | ⚠️ Contested: judge declined binding order pending Court of Appeal; Ministry continues enforcement. |
+| High Court (Mwamuye, March 19, 2026) | Fix means-testing infrastructure | ✅ **Direct Response:** This open-source repository serves as a technical compliance framework for the Ministry's mandated 90-day Corrective Affidavit (due June 2026). |
 
 ## Key Documents
 
@@ -153,4 +163,4 @@ flowchart TD
 
 ---
 
-*This project responds to the High Court's March 19, 2026 structural interdict requiring corrective measures, CAJ Order #CAJ/2026/05/0847 (complied with), and the ongoing Awino petition before the Constitutional and Human Rights Division at Milimani.*
+*This project responds to the High Court's March 19, 2026 structural interdict requiring corrective measures, the Nov 2025 CAJ/Ombudsman algorithm disclosure order, and the ongoing Awino petition before the Constitutional and Human Rights Division at Milimani.*

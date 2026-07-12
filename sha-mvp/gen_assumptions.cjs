@@ -1,4 +1,5 @@
-const fs = require('fs');
+const fs = require("fs");
+const path = require("path"); // FIX (audit v2): output path was hardcoded to one specific Windows user profile
 const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = require('docx');
 
 const bold = (t) => new TextRun({ text: t, bold: true });
@@ -110,12 +111,22 @@ const doc = new Document({
       entry("Average Monthly Contribution", "KSh 520 (reduced from KSh 575 due to new vulnerability exemptions)"),
       entry("Breakeven Compliance Rate", "40% (increased from 36% in v2.0)"),
       entry("Projected Revenue at Target", "KSh 4.84 billion/month at 60% compliance"),
-      entry("Compliance Uplift Factor", "1.15x (15% projected increase in voluntary compliance due to perceived fairness)", "ILO studies on equitable social insurance systems in LMICs"),
+      // FIX (audit v2): removed "Compliance Uplift Factor: 1.15x ... Source:
+      // ILO studies on equitable social insurance systems in LMICs". This
+      // multiplier was already removed from generateRevenueStressTest()'s
+      // actual calculation (confirmed: no *1.15 anywhere in that function)
+      // — but this assumptions register kept listing it as if it were a
+      // live, sourced parameter, now dressed up with a citation that names
+      // no specific study, author, or year. A reviewer who checks the
+      // citation and then checks the code will find neither holds up.
+      // If a real, specific ILO/Rwanda-comparison source is found later,
+      // re-add this row with the exact citation (title, author, year) —
+      // don't restore a vague one.
     ],
   }],
 });
 
 Packer.toBuffer(doc).then((buffer) => {
-  fs.writeFileSync('C:\\Users\\STD USER\\Desktop\\work\\SHA\\docs\\ASSUMPTIONS.docx', buffer);
+  fs.writeFileSync(path.join(__dirname, '..', 'docs', 'ASSUMPTIONS.docx'), buffer); // FIX (audit v2): was hardcoded to one specific Windows machine/profile (and in one case the wrong folder); now portable
   console.log("ASSUMPTIONS.docx updated successfully");
 });
