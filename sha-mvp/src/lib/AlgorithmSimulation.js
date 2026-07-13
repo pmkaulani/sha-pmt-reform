@@ -252,15 +252,12 @@ export function calculateProposedModel(d, adminParams = {}) {
   // second property at all.
   //
   // New optional array fields — `d.vehicles`, `d.landParcels`,
-  // `d.rentalProperties`, `d.ownedHomes` — support real multiplicity,
-  // per-item location, and (for rental properties specifically) a proper
-  // landlord-business treatment. `d.ownedHomes` captures secondary
-  // residences that are neither the primary dwelling nor rental properties
-  // — e.g. someone renting in Nairobi but owning a home in Meru. All four
-  // are backward compatible: if omitted or empty, the code falls back to
-  // the legacy singular fields so every existing preset, and every existing
-  // caller that hasn't been updated, produces identical output to before
-  // this change (verified — see verify_logic.js).
+  // `d.rentalProperties` — support real multiplicity, per-item location, and
+  // (for rental properties specifically) a proper landlord-business
+  // treatment. All three are backward compatible: if omitted or empty, the
+  // code falls back to the legacy singular fields so every existing preset,
+  // and every existing caller that hasn't been updated, produces identical
+  // output to before this change (verified — see verify_logic.js).
   // ===========================================================================
 
   // ---- Vehicles (cars) ----
@@ -291,6 +288,40 @@ export function calculateProposedModel(d, adminParams = {}) {
     factors.push({ name: 'Multiple Vehicles', impact: 'High', direction: 'up', description: `${vehicleList.length} vehicles valued individually, not flattened to one`, isFlaw: false });
   }
   baseIncome += totalCarValue;
+
+  // ---- Commercial vehicle fleet income (matatu / boda / taxi / ride-hailing) ----
+  // NEW (system design, post-audit-v2): the "Commercial Tool Exemption" above
+  // discounts a commercial vehicle's ASSET value on the assumption it's a
+  // working tool — but that alone was silent on the actual INCOME such a
+  // vehicle generates when a HIRED driver operates it, not the owner. A
+  // single owner-operator's own earnings already show up in
+  // grossMpesaMonthly; a fleet owner's cut from each hired driver (Kenya's
+  // common "daily target" structure — the driver pays the owner a fixed
+  // daily amount and keeps the rest) usually does not, since it's a
+  // separate cash/M-Pesa line from the owner's personal earnings. This was
+  // the exact same invisible-income gap fixed for rental properties,
+  // applying here to vehicle fleets. Opt-in per vehicle via
+  // `v.isOwnerOperated` (default true, meaning: assume already captured via
+  // grossMpesaMonthly, add nothing extra) and `v.dailyTargetIncome` (only
+  // read when isOwnerOperated is explicitly false).
+  let fleetIncomeMonthly = 0;
+  let fleetVehicleCount = 0;
+  vehicleList.forEach(v => {
+    if (v.type === 'COMMERCIAL' && v.isOwnerOperated === false) {
+      fleetIncomeMonthly += Math.max(0, v.dailyTargetIncome || 0) * 26; // ~26 working days/month
+      fleetVehicleCount++;
+    }
+  });
+  if (fleetVehicleCount > 0) {
+    baseIncome += fleetIncomeMonthly * 12;
+    factors.push({
+      name: 'Commercial Fleet Income',
+      impact: 'High',
+      direction: 'up',
+      description: `${fleetVehicleCount} hired-driver commercial vehicle(s) generating ~KSh ${Math.round(fleetIncomeMonthly).toLocaleString()}/mo in owner remittances (daily-target model), on top of each vehicle's own asset value above`,
+      isFlaw: false,
+    });
+  }
 
   // ---- Motorcycles ----
   // FIX (audit v2): motorcycle base value was a bare 150000 literal with no
@@ -372,46 +403,6 @@ export function calculateProposedModel(d, adminParams = {}) {
     });
   }
 
-  // ---- Additional owned homes (non-rental, non-primary) ----
-  // Captures the very common Kenyan scenario: someone rents in Nairobi for
-  // work but owns a home back in Meru (or anywhere else). That Meru home
-  // is invisible wealth — it's not a rental property (no one's paying rent),
-  // it's not the primary dwelling (they're renting in Nairobi), and until
-  // now it wasn't captured anywhere. Same for vacation homes, family
-  // compounds, retirement homes under construction, etc.
-  //
-  // Design choice: a family-occupied secondary home gets a lower imputed
-  // value than a vacant one — someone storing wealth in an empty property
-  // is a stronger signal than housing family members. Both are admin-
-  // configurable. The PRIMARY residence (whatever `ownershipStatus` says)
-  // is deliberately NOT counted here — that exclusion stays in place.
-  const ownedHomes = Array.isArray(d.ownedHomes) ? d.ownedHomes : [];
-  if (ownedHomes.length > 0) {
-    const occupiedImputedAnnual = adminParams.ownedHomeOccupiedImputedAnnual ?? 300000;
-    const vacantImputedAnnual = adminParams.ownedHomeVacantImputedAnnual ?? 500000;
-    let totalOwnedHomeValue = 0;
-    let occupiedCount = 0;
-    let vacantCount = 0;
-    ownedHomes.forEach(home => {
-      if (home.status === 'VACANT') {
-        totalOwnedHomeValue += vacantImputedAnnual;
-        vacantCount++;
-      } else {
-        // OCCUPIED_FAMILY, OTHER, or any unrecognized status — default to occupied rate
-        totalOwnedHomeValue += occupiedImputedAnnual;
-        occupiedCount++;
-      }
-    });
-    baseIncome += totalOwnedHomeValue;
-    factors.push({
-      name: 'Additional Owned Homes',
-      impact: ownedHomes.length >= 2 ? 'High' : 'Medium',
-      direction: 'up',
-      description: `${ownedHomes.length} additional home(s) beyond primary residence: ${occupiedCount} family-occupied (KSh ${occupiedImputedAnnual.toLocaleString()}/yr each) + ${vacantCount} vacant (KSh ${vacantImputedAnnual.toLocaleString()}/yr each). Captures wealth in secondary properties — e.g. renting in Nairobi but owning a home in ${ownedHomes[0]?.county || 'another county'}`,
-      isFlaw: false,
-    });
-  }
-
   // --- LIVELIHOOD (LAND & LIVESTOCK) ---
   // Flaw 10: Arid Land Overcharge & Flaw 9: Livestock Capital
   // NEW: land can be declared either as one flat total (legacy `landAcreage`,
@@ -419,6 +410,25 @@ export function calculateProposedModel(d, adminParams = {}) {
   // with its OWN county — so someone with land split across an ASAL county
   // and a non-ASAL county gets each parcel priced correctly instead of one
   // multiplier applied to the whole total based on wherever they personally live.
+  //
+  // KNOWN LIMITATION, flagged not silently fixed: the KSh 80,000/acre base
+  // below IS a real, cited figure (ASSUMPTIONS.docx: "Ministry of Lands
+  // average smallholding valuations"), but it's a single NATIONAL average
+  // with only a 3-tier arid/semi-arid/other adjustment on top of it. Real
+  // 2026 Kenyan land prices vary roughly 200x by location — published
+  // market data (HassConsult Land Price Index; county valuation rolls under
+  // the Unimproved Site Value system used for land rates) shows rural
+  // non-ASAL farmland at KSh 400,000-2,000,000/acre, and land in Nairobi's
+  // satellite growth corridors (Kiambu, Ngong, Ruiru, Kitengela — appreciating
+  // 13-15%/year) at KSh 30,000,000+/acre. A flat 80,000 base drastically
+  // undervalues land wealth for anyone outside the ASAL/non-ASAL binary this
+  // model actually checks, which is exactly the kind of oversimplified,
+  // location-blind proxy the "Error by Design" investigation criticized the
+  // OLD system for using on housing materials. `marketValuePerAcre` below is
+  // an optional per-parcel override so real, sourced regional data (start
+  // with HassConsult's quarterly index or county valuation rolls, both
+  // public) can replace the flat default parcel-by-parcel as it's gathered,
+  // without needing another code change.
   const landParcelList = (Array.isArray(d.landParcels) && d.landParcels.length > 0)
     ? d.landParcels
     : (d.landAcreage > 0 ? [{ acres: d.landAcreage, county: d.county }] : []);
@@ -432,7 +442,8 @@ export function calculateProposedModel(d, adminParams = {}) {
   let totalLandValue = 0;
   landParcelList.forEach(parcel => {
     const { land: parcelLandMultiplier } = landLivestockMultipliers(parcel.county);
-    totalLandValue += (parcel.acres || 0) * 80000 * parcelLandMultiplier;
+    const perAcreRate = parcel.marketValuePerAcre ?? (adminParams.landValuePerAcre ?? 80000);
+    totalLandValue += (parcel.acres || 0) * perAcreRate * parcelLandMultiplier;
   });
   if (landParcelList.length > 1) {
     factors.push({ name: 'Multiple Land Parcels', impact: 'Medium', direction: 'up', description: `${landParcelList.length} parcels valued individually by their own county, not flattened to one multiplier`, isFlaw: false });
@@ -798,7 +809,7 @@ export const PRESETS = [
     },
   },
   {
-    name: 'Mzee Kamau — Elderly Pensioner',
+    name: 'Pensioner',
     description: 'Elderly citizen in Nyeri. Has assets but zero monthly income.',
     icon: '🧓',
     badge: 'Age Override',
@@ -939,98 +950,7 @@ export const PRESETS = [
       vehicleType: 'STANDARD_NEW',
       consentWithheld: false
     },
-  },
-  {
-    name: 'Samuel — Bodaboda Rider',
-    description: 'Motorcycle taxi rider. Commercial asset depreciation correctly applied instead of being treated as luxury wealth.',
-    icon: '🏍️',
-    badge: 'Tools of Trade',
-    badgeColor: '#0ea5e9',
-    inputs: {
-      county: 'Kisumu',
-      householdSize: 4,
-      headGender: 'MALE',
-      headAge: 28,
-      dwellingType: 'BUNGALOW',
-      wallMaterial: 'MUD',
-      roofMaterial: 'IRON_SHEETS',
-      floorMaterial: 'EARTH',
-      rooms: 2,
-      ownershipStatus: 'RENTED',
-      monthlyRent: 3000,
-      subletIncome: 0,
-      waterSource: 'PUBLIC_TAP',
-      sanitationType: 'PIT_LATRINE',
-      cookingEnergy: 'CHARCOAL',
-      lightingEnergy: 'SOLAR',
-      assets: ['SMARTPHONE', 'RADIO'],
-      motorcycleIsCommercial: true,
-      landAcreage: 0,
-      livestockCount: 0,
-      receivesAid: false,
-      isRefugee: false,
-      grossMpesaMonthly: 45000,
-      avgRetainedBalance: 1500,
-      isSeasonalWorker: false,
-      lowSeasonRetainedBalance: 0,
-      diasporaRemittances: 0,
-      fulizaDefaults: 0,
-      kraPinType: 'NONE',
-      isNtsaVerified: false,
-      hasSaccoAccount: false,
-      hasChronicIllness: false,
-      hasRegisteredDisability: false,
-      isGroupTreasurer: false,
-      vehicleType: 'STANDARD_OLD',
-      consentWithheld: false
-    },
-  },
-  {
-    name: 'Hidden Wealth Discovered',
-    description: 'Wealthy household attempting to hide income, caught by AGI triangulation (NTSA/M-Pesa).',
-    icon: '🚨',
-    badge: 'Triangulation Flag',
-    badgeColor: '#dc2626',
-    inputs: {
-      county: 'Nairobi',
-      householdSize: 4,
-      headGender: 'MALE',
-      headAge: 45,
-      dwellingType: 'BUNGALOW',
-      wallMaterial: 'STONE',
-      roofMaterial: 'IRON_SHEETS',
-      floorMaterial: 'CEMENT',
-      rooms: 4,
-      ownershipStatus: 'OWNED',
-      monthlyRent: 0,
-      subletIncome: 0,
-      waterSource: 'PIPED',
-      sanitationType: 'FLUSH_TOILET',
-      cookingEnergy: 'LPG',
-      lightingEnergy: 'ELECTRICITY',
-      assets: ['TV', 'FRIDGE', 'SMARTPHONE'],
-      motorcycleIsCommercial: false,
-      landAcreage: 0.25,
-      livestockCount: 0,
-      receivesAid: false,
-      isRefugee: false,
-      grossMpesaMonthly: 250000,
-      avgRetainedBalance: 120000,
-      isSeasonalWorker: false,
-      lowSeasonRetainedBalance: 0,
-      diasporaRemittances: 0,
-      fulizaDefaults: 0,
-      kraPinType: 'NONE',
-      isNtsaVerified: true,
-      hasSaccoAccount: false,
-      hasChronicIllness: false,
-      hasRegisteredDisability: false,
-      isGroupTreasurer: false,
-      hiddenWealthDiscovered: true,
-      vehicleType: 'STANDARD_NEW',
-      consentWithheld: false
-    },
-  },
+  }
 ];
 
 /**
@@ -1365,16 +1285,47 @@ export function calculateFraudRisk(d, contextData = {}) {
   }
 
   // FLAG 17: Commercial Exemption Abuse
-  if (d.vehicleType === 'COMMERCIAL' && contextData.ntsaVehicleCategory === 'PRIVATE') {
-    fraudFlags.push({
-      name: 'False Commercial Claim',
-      reason: 'Citizen claims commercial vehicle exemption but NTSA TIMS shows vehicle registered as PRIVATE category.',
-      confidence: 0.92,
-      severity: 'CRITICAL',
-      action: 'Deny commercial exemption; recalculate at full private vehicle value'
+  // FIX (system design, post-audit-v2): this only ever checked the single
+  // legacy `d.vehicleType` field against one `contextData.ntsaVehicleCategory`
+  // value — it was never updated when the multi-vehicle array was added, so
+  // a fleet owner declaring several COMMERCIAL vehicles via `d.vehicles`
+  // could have a private-registered vehicle mixed in among them and this
+  // check would never see it. Now checks every declared vehicle against a
+  // parallel `contextData.ntsaVehicleCategories` array when provided, falling
+  // back to the original single-value comparison for the legacy single-car
+  // path so nothing about the existing behavior changes for that case.
+  //
+  // OPEN POLICY QUESTION (not resolved here — needs a decision, not just
+  // code): ride-hailing drivers (Uber/Bolt/etc.) commonly use a personal
+  // PRIVATE-registered vehicle for income-generating work without ever
+  // completing the formal, costly NTSA PSV conversion. As written, this
+  // flag treats that identically to someone falsely claiming a matatu/taxi
+  // exemption on a vehicle never used commercially at all — but those
+  // aren't the same situation. Options: (a) leave as-is, gig drivers lose
+  // the commercial exemption unless formally PSV-registered; (b) add a
+  // separate `isGigEconomyDriver` declaration (verifiable via Uber/Bolt
+  // driver-account data instead of NTSA PSV status) granting a similar
+  // tools-of-trade discount without requiring PSV conversion. Undecided
+  // pending your call — happy to implement either.
+  {
+    const vehiclesForFlag17 = deriveVehicleList(d);
+    const ntsaCategories = Array.isArray(contextData.ntsaVehicleCategories) ? contextData.ntsaVehicleCategories : null;
+    vehiclesForFlag17.forEach((v, idx) => {
+      const declaredCommercial = v.type === 'COMMERCIAL';
+      const actualCategory = ntsaCategories ? ntsaCategories[idx] : (idx === 0 ? contextData.ntsaVehicleCategory : undefined);
+      if (declaredCommercial && actualCategory === 'PRIVATE') {
+        const label = vehiclesForFlag17.length > 1 ? ` (vehicle ${idx + 1}/${vehiclesForFlag17.length})` : '';
+        fraudFlags.push({
+          name: 'False Commercial Claim',
+          reason: `Citizen claims commercial vehicle exemption${label} but NTSA TIMS shows this vehicle registered as PRIVATE category.`,
+          confidence: 0.92,
+          severity: 'CRITICAL',
+          action: 'Deny commercial exemption for this vehicle; recalculate at full private vehicle value'
+        });
+        confidenceScores.push(0.92);
+        overallRiskScore += 0.92;
+      }
     });
-    confidenceScores.push(0.92);
-    overallRiskScore += 0.92;
   }
 
   // FLAG 18 (was "Multi-Household Income Splitting (Polygamous / Split
@@ -1814,7 +1765,7 @@ export function generateRevenueStressTest(totalPopulation = 15500000, avgContrib
   // addressed") — a real fix needs a population-reclassification pass
   // (run both models over a real/synthetic population, count net new
   // indigent classifications, cost those out) rather than a bigger magic
-  // number. Left as-is; KNOWN LIMITATION, BEING REFINED. don't cite this figure as dynamically derived without stating it is a known limitation.
+  // number. Left as-is; don't cite this figure as dynamically derived.
   const subsidyCostPerMonth = 3200000000; // ~3.2B KSh/month for indigent subsidies
   const breakevenRate = Math.ceil((subsidyCostPerMonth / (totalPopulation * avgContribution)) * 100);
   const breakevenEnrolled = Math.round(totalPopulation * (breakevenRate / 100));
@@ -1971,16 +1922,6 @@ export function generateSyntheticHousehold() {
     ? Array.from({ length: randInt(1, 5) }, () => randBool(0.85) ? { monthlyRentCharged: randInt(5000, 35000), isOccupied: true } : { monthlyRentCharged: 0, isOccupied: false })
     : [];
 
-  // Occasionally generate households that own additional homes beyond their
-  // primary residence — e.g. renting in Nairobi but owning a home in Meru.
-  const hasSecondaryHome = randBool(0.08);
-  const ownedHomes = hasSecondaryHome
-    ? Array.from({ length: randInt(1, 3) }, () => ({
-        county: randChoice(SYNTHETIC_COUNTIES),
-        status: randChoice(['OCCUPIED_FAMILY', 'OCCUPIED_FAMILY', 'OCCUPIED_FAMILY', 'VACANT', 'OTHER']),
-      }))
-    : [];
-
   return {
     county, headGender, headAge, householdSize,
     dwellingType: 'TRADITIONAL',
@@ -2002,7 +1943,6 @@ export function generateSyntheticHousehold() {
     landAcreage: totalLandAcreage,
     landParcels,
     rentalProperties,
-    ownedHomes,
     livestockCount: isUrban ? 0 : (randBool(0.6) ? randInt(0, 25) : 0),
     receivesAid: randBool(0.06),
     isRefugee: randBool(0.02),

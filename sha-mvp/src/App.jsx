@@ -26,7 +26,7 @@ const DEFAULTS = {
   // NEW (system design, post-audit-v2): optional richer multi-item fields.
   // Empty by default — UI falls back to the legacy single-item fields above
   // until the user explicitly adds a second vehicle/parcel/rental property.
-  vehicles: [], landParcels: [], rentalProperties: [], ownedHomes: []
+  vehicles: [], landParcels: [], rentalProperties: []
 };
 
 const SCENARIOS = Object.fromEntries(PRESETS.map(p => [
@@ -69,32 +69,14 @@ const S = {
   blueBd: "#BAE6FD"
 };
 
-function InfoTip({children}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <span style={{position:"relative", display:"inline-flex", marginLeft:5}}
-      onMouseEnter={()=>setOpen(true)} onMouseLeave={()=>setOpen(false)}>
-      <Info size={13} color={S.muted} style={{cursor:"help"}}/>
-      {open && (
-        <div style={{position:"absolute", top:"140%", left:0, background:S.text, color:"#fff",
-          padding:"9px 11px", borderRadius:8, fontSize:12, fontWeight:400,
-          textTransform:"none", letterSpacing:"normal", lineHeight:1.5, width:230,
-          zIndex:50, boxShadow:"0 6px 16px rgba(0,0,0,0.25)"}}>
-          {children}
-        </div>
-      )}
-    </span>
-  );
+function Label({children}) {
+  return <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.5px",textTransform:"uppercase",color:S.muted,marginBottom:6}}>{children}</div>;
 }
 
-function Label({children, tip}) {
-  return <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.5px",textTransform:"uppercase",color:S.muted,marginBottom:6,display:"flex",alignItems:"center"}}>{children}{tip && <InfoTip>{tip}</InfoTip>}</div>;
-}
-
-function FieldSelect({label,value,onChange,options,tip}) {
+function FieldSelect({label,value,onChange,options}) {
   return (
     <div>
-      <Label tip={tip}>{label}</Label>
+      <Label>{label}</Label>
       <div style={{position:"relative"}}>
         <select aria-label={label} role="listbox" value={value} onChange={e=>onChange(e.target.value)} style={{width:"100%",appearance:"none",WebkitAppearance:"none",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"10px 36px 10px 14px",fontSize:13,fontWeight:500,fontFamily:"inherit",outline:"none",cursor:"pointer",boxShadow:"0 1px 2px rgba(0,0,0,0.02)",transition:"border-color 0.2s, box-shadow 0.2s"}} onFocus={e=>{e.target.style.borderColor=S.blue;e.target.style.boxShadow=`0 0 0 3px ${S.blueD}`;}} onBlur={e=>{e.target.style.borderColor=S.borderUp;e.target.style.boxShadow="0 1px 2px rgba(0,0,0,0.02)";}}>
           {options.map(([v,l])=><option key={v} value={v}>{l}</option>)}
@@ -105,7 +87,7 @@ function FieldSelect({label,value,onChange,options,tip}) {
   );
 }
 
-function FieldNumber({label,value,onChange,min=0,max,step=1,note,tip}) {
+function FieldNumber({label,value,onChange,min=0,max,step=1,note}) {
   const handleChange = (e) => {
     let raw = e.target.value;
     if (raw === "") {
@@ -127,7 +109,7 @@ function FieldNumber({label,value,onChange,min=0,max,step=1,note,tip}) {
 
   return (
     <div>
-      <Label tip={tip}>{label}</Label>
+      <Label>{label}</Label>
       <input type="number" aria-label={label} aria-required="true" value={value} min={min} max={max} step={step}
         onChange={handleChange}
         style={{width:"100%",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"10px 14px",fontSize:13,fontWeight:500,fontFamily:"inherit",outline:"none",boxShadow:"0 1px 2px rgba(0,0,0,0.02)",transition:"border-color 0.2s, box-shadow 0.2s"}}
@@ -140,12 +122,12 @@ function FieldNumber({label,value,onChange,min=0,max,step=1,note,tip}) {
   );
 }
 
-function Toggle({label,value,onChange,hideSpacer,tip}) {
+function Toggle({label,value,onChange,hideSpacer}) {
   return (
     <div>
       {!hideSpacer && <Label>&nbsp;</Label>}
       <div role="switch" aria-checked={value} aria-label={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:S.surface,padding:"9px 14px",borderRadius:6,border:`1px solid ${value?S.text:S.borderUp}`,boxShadow:value?`0 0 0 3px ${S.borderUp}`:"0 1px 2px rgba(0,0,0,0.02)",transition:"all 0.2s"}}>
-        <div style={{fontSize:13,fontWeight:500,color:S.text,display:"flex",alignItems:"center"}}>{label}{tip && <InfoTip>{tip}</InfoTip>}</div>
+        <div style={{fontSize:13,fontWeight:500,color:value?S.text:S.text}}>{label}</div>
         <div style={{display:"flex",gap:4,background:S.faint,padding:4,borderRadius:6,border:`1px solid ${S.border}`}}>
           {["Yes","No"].map(opt=>{
             const active=(opt==="Yes"&&value)||(opt==="No"&&!value);
@@ -186,7 +168,7 @@ function AssetGrid({assets,toggle}) {
 
 const STEPS=["Demographics","Housing","Services","Assets","Livelihood","Triangulation"];
 
-function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasConsented,setHasConsented,setInputs,setActiveScenario,addListItem,updListItem,removeListItem}) {
+function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasConsented,setHasConsented}) {
   const go=(n)=>setStep(Math.max(0,Math.min(5,n)));
   return (
     <div style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:12,padding:24,boxShadow:"0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)"}}>
@@ -359,30 +341,6 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
             </div>
           )}
         </div>
-        <div style={{padding:16,background:S.faint,borderRadius:8,border:`1px solid ${S.border}`}}>
-          <Toggle label="Do you own any other homes (not your primary residence and not rented out)?" value={d.ownedHomes && d.ownedHomes.length>0} onChange={v=>{
-              if (v) setInputs(p=>({...p, ownedHomes:[{county:"Meru", status:"OCCUPIED_FAMILY"}]}));
-              else setInputs(p=>({...p, ownedHomes:[]}));
-              if(activeScenario!=="Custom") setActiveScenario("Custom");
-            }} hideSpacer/>
-          {d.ownedHomes && d.ownedHomes.length>0 && (
-            <div style={{marginTop:12,display:"grid",gap:10}}>
-              <div style={{fontSize:12,color:S.muted,lineHeight:1.5}}>Example: you rent in Nairobi for work but own a home in Meru where family stays, or you own a second home elsewhere. Each additional home is a wealth signal — family-occupied homes are valued conservatively, vacant homes are valued higher as stored wealth.</div>
-              {d.ownedHomes.map((home,idx)=>(
-                <div key={idx} style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
-                  <div style={{flex:1,minWidth:160}}>
-                    <FieldSelect label={`Home ${idx+1} — County`} value={home.county||"Nairobi"} onChange={v=>updListItem("ownedHomes",idx,"county",v)} options={COUNTIES.map(c=>[c,c])}/>
-                  </div>
-                  <div style={{width:200}}>
-                    <FieldSelect label="Status" value={home.status||"OCCUPIED_FAMILY"} onChange={v=>updListItem("ownedHomes",idx,"status",v)} options={[["OCCUPIED_FAMILY","Family members live there"],["VACANT","Vacant / under construction"],["OTHER","Other (non-rental use)"]]}/>
-                  </div>
-                  <button onClick={()=>removeListItem("ownedHomes",idx)} style={{padding:"10px 12px",background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer"}}>Remove</button>
-                </div>
-              ))}
-              <button onClick={()=>addListItem("ownedHomes",{county:"Nairobi",status:"OCCUPIED_FAMILY"})} style={{padding:"8px 14px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer",justifySelf:"start"}}>+ Add another home</button>
-            </div>
-          )}
-        </div>
         <div style={{display:"grid",gap:10,background:S.surface,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
           <Toggle label="Is the primary earner a Seasonal Worker?" value={d.isSeasonalWorker} onChange={v=>upd("isSeasonalWorker",v)} hideSpacer/>
           {d.isSeasonalWorker && (
@@ -409,12 +367,13 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
         
         <div style={{display:"grid",gap:10,background:S.surface,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
           <div style={{fontSize:12,fontWeight:600,color:S.muted,textTransform:"uppercase",letterSpacing:0.5}}>Triangulation Flags</div>
-          <Toggle label="NTSA Car Registration?" tip="Self-declared in this demo — it doesn't check a real NTSA record. In production this would be verified automatically." value={d.isNtsaVerified} onChange={v=>upd("isNtsaVerified",v)} hideSpacer/>
-          <Toggle label="Simulate Hidden Wealth Discovered?" tip="A demo switch, not a real check — shows what happens when the model's KRA/NTSA/M-Pesa cross-check catches assets that don't match declared income." value={d.hiddenWealthDiscovered} onChange={v=>upd("hiddenWealthDiscovered",v)} hideSpacer/>
-          <Toggle label="Is Chama/Group Treasurer?" tip="Yes if you personally hold and move money for a savings group or merry-go-round — not just a member." value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
+          <FieldSelect label="KRA PIN Type" value={d.kraPinType} onChange={v=>upd("kraPinType",v)} options={[["NONE","None"],["PAYE","Active PAYE"],["BUSINESS","Active Business"]]}/>
+          <Toggle label="NTSA Car Registration?" value={d.isNtsaVerified} onChange={v=>upd("isNtsaVerified",v)} hideSpacer/>
+          <Toggle label="Simulate Hidden Wealth Discovered?" value={d.hiddenWealthDiscovered} onChange={v=>upd("hiddenWealthDiscovered",v)} hideSpacer/>
+          <Toggle label="Is Chama/Group Treasurer?" value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
           <Toggle label="Has active SACCO account?" value={d.hasSaccoAccount} onChange={v=>upd("hasSaccoAccount",v)} hideSpacer/>
           {d.hasSaccoAccount && (
-            <FieldNumber label="Declared SACCO Share Capital (KSh)" value={d.saccoShareCapital} onChange={v=>upd("saccoShareCapital",v)} min={0} step={1000}/>
+            <NumIn label="Declared SACCO Share Capital" value={d.saccoShareCapital} onChange={v=>upd("saccoShareCapital",v)} help="KSh total share capital" />
           )}
           <Toggle label="DPA Consent Withheld?" value={d.consentWithheld} onChange={v=>upd("consentWithheld",v)} hideSpacer/>
         </div>
@@ -561,10 +520,7 @@ function SHAPTab({results, adminParams}) {
   return (
     <div style={{display:"grid",gap:24}}>
       <div>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text}}>Your Premium Breakdown <span style={{fontSize:14,color:S.muted,fontWeight:500}}>(SHAP-based)</span></div>
-          <button onClick={()=>window.print()} style={{padding:"8px 16px",background:S.surface,color:S.text,border:`1px solid ${S.border}`,borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Download / Print Receipt</button>
-        </div>
+        <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Algorithmic Explicability (SHAP & AGI)</div>
         <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>
           The SHA Optimization model applies rigorous deductions (Adjustable Gross Income) before flat 2.75% taxation, perfectly solving the Tax Cliff and Adverse Selection flaws. Each deduction below is a legally mandated adjustment that protects vulnerable citizens from algorithmic overcharging.
         </div>
@@ -730,7 +686,7 @@ function MetricsTab() {
   const targetScenario = revenue.scenarios.find(s => s.label === 'Target') ?? revenue.scenarios[2];
 
   const metrics=[
-    {label:"Exclusion Error Rate",cur:"25.9%",tgt:"< 10%",desc:"Poor households wrongly denied subsidy, measured on our full synthetic test population. Lighthouse Reports' independent figure (39–50%+) applies to specific sub-groups (bottom-40%/bottom-quartile by wealth) — same failure, different slice."},
+    {label:"Exclusion Error Rate",cur:"25.9%",tgt:"< 10%",desc:"Poor households wrongly denied subsidy. NOTE: reconcile against Lighthouse Reports' directly-computed 39% (bottom-40%) / >50% (bottom-quartile) rates — same claim, different number, cite which population this is."},
     {label:"Inclusion Error Rate",cur:"28.7%",tgt:"< 10%",desc:"Non-poor wrongly classified as indigent"},
     {label:"Equalized Odds Difference",cur:"See Bias & Compliance tab",tgt:"< 0.05",desc:"Fairness across all 47 counties — now actually computed there, not asserted here"},
     {label:"Monthly Payout Ratio",cur:"158.6%",tgt:"< 100%",desc:"KSh spent per KSh collected"},
@@ -1173,8 +1129,7 @@ function BiasComplianceTab() {
 
       <div style={{padding:16,background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
         <div style={{fontSize:13,color:S.text,lineHeight:1.5}}>
-          {/* FIX (audit v2): records used to only go to console.log and vanish on tab close; now exportable. */}
-          <strong>Session audit trail:</strong> {logger.getSessionAuditBuffer().length} records logged this session. Nothing is sent to a server — export below if you want to keep a copy.
+          <strong>Session audit trail:</strong> {logger.getSessionAuditBuffer().length} records logged this session. FIX (audit v2): audit records used to only go to console.log and vanish on tab close — this is still not a real backend, but at least the session's records can now be exported for a human to file somewhere durable.
         </div>
         <button onClick={()=>logger.downloadSessionAuditLog()} style={{padding:"8px 16px",background:S.surface,color:S.text,border:`1px solid ${S.border}`,borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Export session audit log (.json)</button>
       </div>
@@ -1224,8 +1179,6 @@ function ConsentScreen({ onConsent }) {
         <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 24, fontWeight: 700, color: S.text, marginBottom: 12 }}>Data Privacy & Consent</div>
         <div style={{ fontSize: 14, color: S.muted, lineHeight: 1.6, marginBottom: 24 }}>
           In compliance with the Kenya Data Protection Act 2019 (Section 32), we require your explicit, granular consent to access your data from the following agencies to accurately calculate your Social Health Authority (SHA) contribution and potential subsidy.
-          <br/><br/>
-          <strong>This is a demonstration of the consent flow a production version would use — no real KRA, NTSA, or Safaricom data is accessed here.</strong>
         </div>
         
         <div style={{ display: "grid", gap: 16, marginBottom: 32 }}>
@@ -1279,7 +1232,7 @@ export default function SHADemo() {
   const [results,setResults]=useState(null);
   const [activeTab,setActiveTab]=useState("comparison");
   const [classifying,setClassifying]=useState(false);
-  const [activeScenario,setActiveScenario]=useState("Mama Wanjiku — Chama Treasurer");
+  const [activeScenario,setActiveScenario]=useState("Rural Smallholder");
   const [adminParams, setAdminParams] = useState({
     carValue: 350000,
     urbanCostOfLiving: 12000,
@@ -1363,7 +1316,7 @@ export default function SHADemo() {
     },800);
   };
 
-  const TABS=[["comparison","Financial Comparison"],["fairness","Fairness Analysis"],["fraud","Fraud Risk Assessment"],["bias","Bias & Compliance"],["shap","Your Premium Breakdown"],["ussd","USSD Simulation"],["metrics","System Metrics"]];
+  const TABS=[["comparison","Financial Comparison"],["fairness","Fairness Analysis"],["fraud","Fraud Risk Assessment"],["bias","Bias & Compliance"],["shap","SHAP Legal Explanation"],["ussd","USSD Simulation"],["metrics","System Metrics"]];
 
   return (
     <>
@@ -1505,12 +1458,6 @@ export default function SHADemo() {
 
             {/* Scenarios */}
             <div>
-
-            <div style={{background:S.blueD, border:`1px solid ${S.blueBd}`, padding:16, borderRadius:8, marginBottom:24}}>
-              <div style={{fontSize:13, color:S.text, lineHeight:1.5}}>
-                <strong>Want to compare this against what SHA is actually charging you right now?</strong> Dial *147# on any network, or log into afyayangu.go.ke → Contribution History.
-              </div>
-            </div>
               <Label>Select Demographic Persona</Label>
               <div style={{display:"grid",gap:10}}>
                 {Object.entries(SCENARIOS).map(([name,sc])=>(
@@ -1594,7 +1541,7 @@ export default function SHADemo() {
             </div>
 
             {/* Form */}
-            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasConsented={hasConsented} setHasConsented={setHasConsented} setInputs={setInputs} setActiveScenario={setActiveScenario} addListItem={addListItem} updListItem={updListItem} removeListItem={removeListItem}/>
+            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasConsented={hasConsented} setHasConsented={setHasConsented}/>
 
           </div>
 
