@@ -126,7 +126,7 @@ function InfoTip({children}) {
   const [show, setShow] = useState(false);
   return (
     <span 
-      style={{marginLeft:6, color:S.muted, cursor:"help", position:"relative", display:"inline-flex", alignItems:"center"}}
+      style={{marginLeft:6, color:S.muted, cursor:"help", position:"relative", display:"inline-flex", verticalAlign:"-2px"}}
       onMouseEnter={() => setShow(true)}
       onMouseLeave={() => setShow(false)}
       onTouchStart={() => setShow(!show)}
@@ -174,7 +174,7 @@ function Toggle({label,value,onChange,hideSpacer,tip}) {
     <div>
       {!hideSpacer && <Label>&nbsp;</Label>}
       <div role="switch" aria-checked={value} aria-label={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:S.surface,padding:"9px 14px",borderRadius:6,border:`1px solid ${value?S.text:S.borderUp}`,boxShadow:value?`0 0 0 3px ${S.borderUp}`:"0 1px 2px rgba(0,0,0,0.02)",transition:"all 0.2s"}}>
-        <div style={{fontSize:13,fontWeight:500,color:S.text,display:"flex",alignItems:"center"}}>{label}{tip && <InfoTip>{tip}</InfoTip>}</div>
+        <div style={{fontSize:13,fontWeight:500,color:S.text,lineHeight:1.4,paddingRight:8}}>{label}{tip && <InfoTip>{tip}</InfoTip>}</div>
         <div style={{display:"flex",gap:4,background:S.faint,padding:4,borderRadius:6,border:`1px solid ${S.border}`}}>
           {["Yes","No"].map(opt=>{
             const active=(opt==="Yes"&&value)||(opt==="No"&&!value);
