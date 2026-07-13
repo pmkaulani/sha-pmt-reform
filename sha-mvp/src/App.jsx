@@ -122,6 +122,14 @@ function FieldNumber({label,value,onChange,min=0,max,step=1,note}) {
   );
 }
 
+function InfoTip({children}) {
+  return (
+    <span style={{marginLeft:6, color:S.muted, cursor:"help", position:"relative", display:"inline-flex", alignItems:"center"}} title={children}>
+      <Info size={14} />
+    </span>
+  );
+}
+
 function Toggle({label,value,onChange,hideSpacer,tip}) {
   return (
     <div>
