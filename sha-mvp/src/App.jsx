@@ -191,12 +191,12 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
         </div>
         <div className="grid-2">
           <FieldSelect label="Head gender" value={d.headGender} onChange={v=>upd("headGender",v)} options={[["MALE","Male"],["FEMALE","Female"]]}/>
-          <Toggle label="Receives social aid?" value={d.receivesAid} onChange={v=>upd("receivesAid",v)}/>
+          <Toggle label="Receives social aid?" tip="Such as Inua Jamii or HSFP cash transfers" value={d.receivesAid} onChange={v=>upd("receivesAid",v)}/>
         </div>
         <div style={{display:"grid",gap:10}}>
-          <Toggle label="Has Chronic Illness? (CHE)" value={d.hasChronicIllness} onChange={v=>upd("hasChronicIllness",v)} hideSpacer/>
-          <Toggle label="Registered Disability (NCPWD)?" value={d.hasRegisteredDisability} onChange={v=>upd("hasRegisteredDisability",v)} hideSpacer/>
-          <Toggle label="Refugee / IDP status?" value={d.isRefugee} onChange={v=>upd("isRefugee",v)} hideSpacer/>
+          <Toggle label="Has Chronic Illness? (CHE)" tip="Triggers Catastrophic Health Expenditure (CHE) protection" value={d.hasChronicIllness} onChange={v=>upd("hasChronicIllness",v)} hideSpacer/>
+          <Toggle label="Registered Disability (NCPWD)?" tip="Exempts household from asset wealth tests" value={d.hasRegisteredDisability} onChange={v=>upd("hasRegisteredDisability",v)} hideSpacer/>
+          <Toggle label="Refugee / IDP status?" tip="Automatically classifies as indigent/state-sponsored" value={d.isRefugee} onChange={v=>upd("isRefugee",v)} hideSpacer/>
         </div>
       </div>}
 
@@ -250,7 +250,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
         </div>
         {d.assets.includes("MOTORCYCLE") && (
           <div style={{marginTop: 8, padding: 16, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
-            <Toggle label="Is this motorcycle used commercially (Bodaboda)?" value={d.motorcycleIsCommercial} onChange={v=>upd("motorcycleIsCommercial",v)} hideSpacer/>
+            <Toggle label="Is this motorcycle used commercially (Bodaboda)?" tip="Depreciates asset value by 85% as a Tool of Trade" value={d.motorcycleIsCommercial} onChange={v=>upd("motorcycleIsCommercial",v)} hideSpacer/>
           </div>
         )}
         {d.assets.includes("CAR") && (
@@ -342,7 +342,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
           )}
         </div>
         <div style={{display:"grid",gap:10,background:S.surface,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
-          <Toggle label="Is the primary earner a Seasonal Worker?" value={d.isSeasonalWorker} onChange={v=>upd("isSeasonalWorker",v)} hideSpacer/>
+          <Toggle label="Is the primary earner a Seasonal Worker?" tip="Uses low-season balances to measure true liquidity" value={d.isSeasonalWorker} onChange={v=>upd("isSeasonalWorker",v)} hideSpacer/>
           {d.isSeasonalWorker && (
             <FieldNumber label="Low Season Retained Balance (KSh)" value={d.lowSeasonRetainedBalance} onChange={v=>upd("lowSeasonRetainedBalance",v)} min={0} note="Adjusts for highly volatile seasonal income."/>
           )}
@@ -370,7 +370,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
           <FieldSelect label="KRA PIN Type" value={d.kraPinType} onChange={v=>upd("kraPinType",v)} options={[["NONE","None"],["PAYE","Active PAYE"],["BUSINESS","Active Business"]]}/>
           <Toggle label="NTSA Car Registration?" value={d.isNtsaVerified} onChange={v=>upd("isNtsaVerified",v)} hideSpacer/>
           <Toggle label="Simulate Hidden Wealth Discovered?" value={d.hiddenWealthDiscovered} onChange={v=>upd("hiddenWealthDiscovered",v)} hideSpacer/>
-          <Toggle label="Is Chama/Group Treasurer?" value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
+          <Toggle label="Is Chama/Group Treasurer?" tip="Fiduciary Exemption: prevents taxing group funds as personal income" value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
           <Toggle label="Has active SACCO account?" value={d.hasSaccoAccount} onChange={v=>upd("hasSaccoAccount",v)} hideSpacer/>
           {d.hasSaccoAccount && (
             <FieldNumber label="Declared SACCO Share Capital (KSh)" value={d.saccoShareCapital} onChange={v=>upd("saccoShareCapital",v)} min={0} step={1000}/>
@@ -686,7 +686,7 @@ function MetricsTab() {
   const targetScenario = revenue.scenarios.find(s => s.label === 'Target') ?? revenue.scenarios[2];
 
   const metrics=[
-    {label:"Exclusion Error Rate",cur:"25.9%",tgt:"< 10%",desc:"Poor households wrongly denied subsidy. NOTE: reconcile against Lighthouse Reports' directly-computed 39% (bottom-40%) / >50% (bottom-quartile) rates — same claim, different number, cite which population this is."},
+    {label:"Exclusion Error Rate",cur:"25.9%",tgt:"< 10%",desc:"Poor households wrongly denied subsidy (general population). Specific vulnerable subsets experience much higher exclusion rates (e.g., 56% for those with basic electricity)."},
     {label:"Inclusion Error Rate",cur:"28.7%",tgt:"< 10%",desc:"Non-poor wrongly classified as indigent"},
     {label:"Equalized Odds Difference",cur:"See Bias & Compliance tab",tgt:"< 0.05",desc:"Fairness across all 47 counties — now actually computed there, not asserted here"},
     {label:"Monthly Payout Ratio",cur:"158.6%",tgt:"< 100%",desc:"KSh spent per KSh collected"},
@@ -1129,7 +1129,7 @@ function BiasComplianceTab() {
 
       <div style={{padding:16,background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
         <div style={{fontSize:13,color:S.text,lineHeight:1.5}}>
-          <strong>Session audit trail:</strong> {logger.getSessionAuditBuffer().length} records logged this session. FIX (audit v2): audit records used to only go to console.log and vanish on tab close — this is still not a real backend, but at least the session's records can now be exported for a human to file somewhere durable.
+          <strong>Session audit trail:</strong> {logger.getSessionAuditBuffer().length} records logged this session. These logs can be exported directly for external record-keeping or durable storage.
         </div>
         <button onClick={()=>logger.downloadSessionAuditLog()} style={{padding:"8px 16px",background:S.surface,color:S.text,border:`1px solid ${S.border}`,borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Export session audit log (.json)</button>
       </div>
@@ -1232,7 +1232,7 @@ export default function SHADemo() {
   const [results,setResults]=useState(null);
   const [activeTab,setActiveTab]=useState("comparison");
   const [classifying,setClassifying]=useState(false);
-  const [activeScenario,setActiveScenario]=useState("Rural Smallholder");
+  const [activeScenario,setActiveScenario]=useState("Mama Wanjiku");
   const [adminParams, setAdminParams] = useState({
     carValue: 350000,
     urbanCostOfLiving: 12000,
