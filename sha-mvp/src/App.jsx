@@ -123,9 +123,48 @@ function FieldNumber({label,value,onChange,min=0,max,step=1,note}) {
 }
 
 function InfoTip({children}) {
+  const [show, setShow] = useState(false);
   return (
-    <span style={{marginLeft:6, color:S.muted, cursor:"help", position:"relative", display:"inline-flex", alignItems:"center"}} title={children}>
+    <span 
+      style={{marginLeft:6, color:S.muted, cursor:"help", position:"relative", display:"inline-flex", alignItems:"center"}}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+      onTouchStart={() => setShow(!show)}
+    >
       <Info size={14} />
+      {show && (
+        <div style={{
+          position: "absolute",
+          bottom: "100%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          marginBottom: 8,
+          background: "#1e293b",
+          color: "#f8fafc",
+          padding: "6px 10px",
+          borderRadius: 6,
+          fontSize: 12,
+          fontWeight: 500,
+          whiteSpace: "normal",
+          width: "max-content",
+          maxWidth: 220,
+          textAlign: "center",
+          zIndex: 9999,
+          pointerEvents: "none",
+          boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)",
+          lineHeight: 1.4
+        }}>
+          {children}
+          <div style={{
+            position: "absolute",
+            top: "100%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            border: "5px solid transparent",
+            borderTopColor: "#1e293b"
+          }} />
+        </div>
+      )}
     </span>
   );
 }
