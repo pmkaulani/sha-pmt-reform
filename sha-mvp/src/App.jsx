@@ -122,12 +122,12 @@ function FieldNumber({label,value,onChange,min=0,max,step=1,note}) {
   );
 }
 
-function Toggle({label,value,onChange,hideSpacer}) {
+function Toggle({label,value,onChange,hideSpacer,tip}) {
   return (
     <div>
       {!hideSpacer && <Label>&nbsp;</Label>}
       <div role="switch" aria-checked={value} aria-label={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:S.surface,padding:"9px 14px",borderRadius:6,border:`1px solid ${value?S.text:S.borderUp}`,boxShadow:value?`0 0 0 3px ${S.borderUp}`:"0 1px 2px rgba(0,0,0,0.02)",transition:"all 0.2s"}}>
-        <div style={{fontSize:13,fontWeight:500,color:value?S.text:S.text}}>{label}</div>
+        <div style={{fontSize:13,fontWeight:500,color:S.text,display:"flex",alignItems:"center"}}>{label}{tip && <InfoTip>{tip}</InfoTip>}</div>
         <div style={{display:"flex",gap:4,background:S.faint,padding:4,borderRadius:6,border:`1px solid ${S.border}`}}>
           {["Yes","No"].map(opt=>{
             const active=(opt==="Yes"&&value)||(opt==="No"&&!value);
@@ -168,7 +168,7 @@ function AssetGrid({assets,toggle}) {
 
 const STEPS=["Demographics","Housing","Services","Assets","Livelihood","Triangulation"];
 
-function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasConsented,setHasConsented}) {
+function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasConsented,setHasConsented,setInputs,setActiveScenario,addListItem,updListItem,removeListItem}) {
   const go=(n)=>setStep(Math.max(0,Math.min(5,n)));
   return (
     <div style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:12,padding:24,boxShadow:"0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)"}}>
@@ -373,7 +373,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
           <Toggle label="Is Chama/Group Treasurer?" value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
           <Toggle label="Has active SACCO account?" value={d.hasSaccoAccount} onChange={v=>upd("hasSaccoAccount",v)} hideSpacer/>
           {d.hasSaccoAccount && (
-            <NumIn label="Declared SACCO Share Capital" value={d.saccoShareCapital} onChange={v=>upd("saccoShareCapital",v)} help="KSh total share capital" />
+            <FieldNumber label="Declared SACCO Share Capital (KSh)" value={d.saccoShareCapital} onChange={v=>upd("saccoShareCapital",v)} min={0} step={1000}/>
           )}
           <Toggle label="DPA Consent Withheld?" value={d.consentWithheld} onChange={v=>upd("consentWithheld",v)} hideSpacer/>
         </div>
@@ -1541,7 +1541,7 @@ export default function SHADemo() {
             </div>
 
             {/* Form */}
-            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasConsented={hasConsented} setHasConsented={setHasConsented}/>
+            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasConsented={hasConsented} setHasConsented={setHasConsented} setInputs={setInputs} setActiveScenario={setActiveScenario} addListItem={addListItem} updListItem={updListItem} removeListItem={removeListItem}/>
 
           </div>
 
