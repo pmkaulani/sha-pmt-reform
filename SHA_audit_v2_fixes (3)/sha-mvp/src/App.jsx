@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from "recharts";
 import { 
   Radio, Tv, Refrigerator, Laptop, Smartphone, Phone, 
   Bike, Car, ShieldCheck, Info, CheckCircle2, AlertTriangle, Fingerprint, ChevronDown, Settings
 } from "lucide-react";
-import { calculateCurrentModel, calculateCurrentModelContribution, calculateProposedModel, calculateFraudRisk, analyzeSector, calculateFairnessMetrics, PRESETS, createAuditRecord, generateRevenueStressTest, testCurrentModelDisparityByCounty, generateFraudStatistics, generateSyntheticPopulation, calculatePopulationErrorRates } from "./lib/AlgorithmSimulation.js";
+import { calculateCurrentModel, calculateCurrentModelContribution, calculateProposedModel, calculateFraudRisk, analyzeSector, calculateFairnessMetrics, PRESETS, createAuditRecord, generateRevenueStressTest, testCurrentModelDisparityByCounty, generateFraudStatistics, generateSyntheticPopulation } from "./lib/AlgorithmSimulation.js";
 import { logger } from "./lib/Logger.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -69,16 +69,25 @@ const S = {
   blueBd: "#BAE6FD"
 };
 
-function Label({children}) {
-  return <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.5px",textTransform:"uppercase",color:S.muted,marginBottom:6}}>{children}</div>;
+function Label({children, hint}) {
+  return (
+    <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.5px",textTransform:"uppercase",color:S.muted,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
+      {children}
+      {hint && (
+        <span title={hint} style={{display:"inline-flex",cursor:"help"}}>
+          <Info size={12} color={S.muted} style={{opacity:0.7}}/>
+        </span>
+      )}
+    </div>
+  );
 }
 
-function FieldSelect({label,value,onChange,options}) {
+function FieldSelect({label,value,onChange,options,hint}) {
   return (
     <div>
-      <Label>{label}</Label>
+      <Label hint={hint}>{label}</Label>
       <div style={{position:"relative"}}>
-        <select aria-label={label} role="listbox" value={value} onChange={e=>onChange(e.target.value)} style={{width:"100%",appearance:"none",WebkitAppearance:"none",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"10px 36px 10px 14px",fontSize:13,fontWeight:500,fontFamily:"inherit",outline:"none",cursor:"pointer",boxShadow:"0 1px 2px rgba(0,0,0,0.02)",transition:"border-color 0.2s, box-shadow 0.2s"}} onFocus={e=>{e.target.style.borderColor=S.blue;e.target.style.boxShadow=`0 0 0 3px ${S.blueD}`;}} onBlur={e=>{e.target.style.borderColor=S.borderUp;e.target.style.boxShadow="0 1px 2px rgba(0,0,0,0.02)";}}>
+        <select aria-label={label} title={hint} role="listbox" value={value} onChange={e=>onChange(e.target.value)} style={{width:"100%",appearance:"none",WebkitAppearance:"none",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"10px 36px 10px 14px",fontSize:13,fontWeight:500,fontFamily:"inherit",outline:"none",cursor:"pointer",boxShadow:"0 1px 2px rgba(0,0,0,0.02)",transition:"border-color 0.2s, box-shadow 0.2s"}} onFocus={e=>{e.target.style.borderColor=S.blue;e.target.style.boxShadow=`0 0 0 3px ${S.blueD}`;}} onBlur={e=>{e.target.style.borderColor=S.borderUp;e.target.style.boxShadow="0 1px 2px rgba(0,0,0,0.02)";}}>
           {options.map(([v,l])=><option key={v} value={v}>{l}</option>)}
         </select>
         <ChevronDown size={16} color={S.muted} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}/>
@@ -87,7 +96,7 @@ function FieldSelect({label,value,onChange,options}) {
   );
 }
 
-function FieldNumber({label,value,onChange,min=0,max,step=1,note}) {
+function FieldNumber({label,value,onChange,min=0,max,step=1,note,hint}) {
   const handleChange = (e) => {
     let raw = e.target.value;
     if (raw === "") {
@@ -109,8 +118,8 @@ function FieldNumber({label,value,onChange,min=0,max,step=1,note}) {
 
   return (
     <div>
-      <Label>{label}</Label>
-      <input type="number" aria-label={label} aria-required="true" value={value} min={min} max={max} step={step}
+      <Label hint={hint}>{label}</Label>
+      <input type="number" aria-label={label} aria-required="true" title={hint} value={value} min={min} max={max} step={step}
         onChange={handleChange}
         style={{width:"100%",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"10px 14px",fontSize:13,fontWeight:500,fontFamily:"inherit",outline:"none",boxShadow:"0 1px 2px rgba(0,0,0,0.02)",transition:"border-color 0.2s, box-shadow 0.2s"}}
         onFocus={e=>{e.target.style.borderColor=S.blue;e.target.style.boxShadow=`0 0 0 3px ${S.blueD}`;}}
@@ -122,74 +131,15 @@ function FieldNumber({label,value,onChange,min=0,max,step=1,note}) {
   );
 }
 
-function InfoTip({children, id}) {
-  const [open, setOpen] = useState(false);
-  const tipId = id || `tip-${Math.random().toString(36).slice(2,9)}`;
-  const [align, setAlign] = useState('left');
-  const iconRef = useRef(null);
-
-  const handleOpen = () => {
-    if (iconRef.current) {
-      const rect = iconRef.current.getBoundingClientRect();
-      const spaceRight = window.innerWidth - rect.right;
-      setAlign(spaceRight < 240 ? 'right' : 'left');
-    }
-    setOpen(true);
-  };
-
-  return (
-    <span style={{position:"relative", display:"inline-flex", marginLeft:5, verticalAlign:"-2px"}}>
-      <span
-        ref={iconRef}
-        tabIndex={0}
-        role="button"
-        aria-label="More info"
-        aria-describedby={tipId}
-        onMouseEnter={handleOpen}
-        onMouseLeave={() => setOpen(false)}
-        onFocus={handleOpen}
-        onBlur={() => setOpen(false)}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open ? setOpen(false) : handleOpen(); }}}
-        style={{display:"inline-flex", cursor:"help", color:S.muted}}
-      >
-        <Info size={13} />
-      </span>
-      {open && (
-        <div
-          id={tipId}
-          role="tooltip"
-          style={{
-            position:"absolute",
-            top:"140%",
-            ...(align === 'right' ? {right:0} : {left:0}),
-            background:S.text,
-            color:"#fff",
-            padding:"9px 11px",
-            borderRadius:8,
-            fontSize:12,
-            fontWeight:400,
-            textTransform:"none",
-            letterSpacing:"normal",
-            lineHeight:1.5,
-            width:230,
-            zIndex:9999,
-            pointerEvents:"none",
-            boxShadow:"0 6px 16px rgba(0,0,0,0.25)"
-          }}
-        >
-          {children}
-        </div>
-      )}
-    </span>
-  );
-}
-
-function Toggle({label,value,onChange,hideSpacer,tip}) {
+function Toggle({label,value,onChange,hideSpacer,hint}) {
   return (
     <div>
       {!hideSpacer && <Label>&nbsp;</Label>}
-      <div role="switch" aria-checked={value} aria-label={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:S.surface,padding:"9px 14px",borderRadius:6,border:`1px solid ${value?S.text:S.borderUp}`,boxShadow:value?`0 0 0 3px ${S.borderUp}`:"0 1px 2px rgba(0,0,0,0.02)",transition:"all 0.2s"}}>
-        <div style={{fontSize:13,fontWeight:500,color:S.text,lineHeight:1.4,paddingRight:8}}>{label}{tip && <InfoTip>{tip}</InfoTip>}</div>
+      <div role="switch" aria-checked={value} aria-label={label} title={hint} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:S.surface,padding:"9px 14px",borderRadius:6,border:`1px solid ${value?S.text:S.borderUp}`,boxShadow:value?`0 0 0 3px ${S.borderUp}`:"0 1px 2px rgba(0,0,0,0.02)",transition:"all 0.2s"}}>
+        <div style={{fontSize:13,fontWeight:500,color:value?S.text:S.text,display:"flex",alignItems:"center",gap:5}}>
+          {label}
+          {hint && <Info size={12} color={S.muted} style={{opacity:0.7,flexShrink:0}}/>}
+        </div>
         <div style={{display:"flex",gap:4,background:S.faint,padding:4,borderRadius:6,border:`1px solid ${S.border}`}}>
           {["Yes","No"].map(opt=>{
             const active=(opt==="Yes"&&value)||(opt==="No"&&!value);
@@ -230,7 +180,7 @@ function AssetGrid({assets,toggle}) {
 
 const STEPS=["Demographics","Housing","Services","Assets","Livelihood","Triangulation"];
 
-function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasConsented,setHasConsented,setInputs,setActiveScenario,addListItem,updListItem,removeListItem}) {
+function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasConsented,setHasConsented}) {
   const go=(n)=>setStep(Math.max(0,Math.min(5,n)));
   return (
     <div style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:12,padding:24,boxShadow:"0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)"}}>
@@ -246,19 +196,19 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
 
       {/* Step 0: Demographics */}
       {step===0&&<div style={{display:"grid",gap:16}}>
-        <FieldSelect label="County" value={d.county} onChange={v=>upd("county",v)} options={COUNTIES.map(c=>[c,c])}/>
+        <FieldSelect label="County" value={d.county} onChange={v=>upd("county",v)} options={COUNTIES.map(c=>[c,c])} hint="Where this household actually lives. Determines your Cost of Living tier and whether ASAL (arid land) discounts apply."/>
         <div className="grid-2">
-          <FieldNumber label="Household size" value={d.householdSize} onChange={v=>upd("householdSize",Math.max(1,Math.round(v)))} min={1} max={15}/>
-          <FieldNumber label="Age of Head" value={d.headAge} onChange={v=>upd("headAge",v)} min={15} max={110}/>
+          <FieldNumber label="Household size" value={d.householdSize} onChange={v=>upd("householdSize",Math.max(1,Math.round(v)))} min={1} max={15} hint="Total people this income supports, including the head. Affects your dependency deduction."/>
+          <FieldNumber label="Age of Head" value={d.headAge} onChange={v=>upd("headAge",v)} min={15} max={110} hint="Age of the household head (main earner/decision-maker). Under 21 with dependents triggers an automatic vulnerable-household protection."/>
         </div>
         <div className="grid-2">
           <FieldSelect label="Head gender" value={d.headGender} onChange={v=>upd("headGender",v)} options={[["MALE","Male"],["FEMALE","Female"]]}/>
-          <Toggle label="Receives social aid?" tip="Such as Inua Jamii or HSFP cash transfers" value={d.receivesAid} onChange={v=>upd("receivesAid",v)}/>
+          <Toggle label="Receives social aid?" value={d.receivesAid} onChange={v=>upd("receivesAid",v)}/>
         </div>
         <div style={{display:"grid",gap:10}}>
-          <Toggle label="Has Chronic Illness? (CHE)" tip="Triggers Catastrophic Health Expenditure (CHE) protection" value={d.hasChronicIllness} onChange={v=>upd("hasChronicIllness",v)} hideSpacer/>
-          <Toggle label="Registered Disability (NCPWD)?" tip="Exempts household from asset wealth tests" value={d.hasRegisteredDisability} onChange={v=>upd("hasRegisteredDisability",v)} hideSpacer/>
-          <Toggle label="Refugee / IDP status?" tip="Automatically classifies as indigent/state-sponsored" value={d.isRefugee} onChange={v=>upd("isRefugee",v)} hideSpacer/>
+          <Toggle label="Has Chronic Illness? (CHE)" value={d.hasChronicIllness} onChange={v=>upd("hasChronicIllness",v)} hideSpacer hint="CHE = Catastrophic Health Expenditure. A long-term illness requiring ongoing, expensive treatment. Triggers a deduction on your assessed income."/>
+          <Toggle label="Registered Disability (NCPWD)?" value={d.hasRegisteredDisability} onChange={v=>upd("hasRegisteredDisability",v)} hideSpacer hint="NCPWD = National Council for Persons with Disabilities. A registered disability card holder qualifies for an additional deduction."/>
+          <Toggle label="Refugee / IDP status?" value={d.isRefugee} onChange={v=>upd("isRefugee",v)} hideSpacer/>
         </div>
       </div>}
 
@@ -312,14 +262,14 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
         </div>
         {d.assets.includes("MOTORCYCLE") && (
           <div style={{marginTop: 8, padding: 16, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
-            <Toggle label="Is this motorcycle used commercially (Bodaboda)?" tip="Depreciates asset value by 85% as a Tool of Trade" value={d.motorcycleIsCommercial} onChange={v=>upd("motorcycleIsCommercial",v)} hideSpacer/>
+            <Toggle label="Is this motorcycle used commercially (Bodaboda)?" value={d.motorcycleIsCommercial} onChange={v=>upd("motorcycleIsCommercial",v)} hideSpacer/>
           </div>
         )}
         {d.assets.includes("CAR") && (
           <div style={{marginTop: 8, padding: 16, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
             {(!d.vehicles || d.vehicles.length === 0) ? (
               <>
-                <FieldSelect label="Vehicle Type & Age" value={d.vehicleType || "STANDARD_OLD"} onChange={v=>upd("vehicleType",v)} options={[["STANDARD_OLD","Standard Car (Older than 7 yrs)"], ["STANDARD_NEW","Standard Car (Newer than 7 yrs)"], ["LUXURY","Luxury / SUV"], ["COMMERCIAL","Commercial (Matatu / Pick-up)"]]}/>
+                <FieldSelect label="Vehicle Type & Age" value={d.vehicleType || "STANDARD_OLD"} onChange={v=>upd("vehicleType",v)} options={[["STANDARD_OLD","Standard Car (Older than 7 yrs)"], ["STANDARD_NEW","Standard Car (Newer than 7 yrs)"], ["LUXURY","Luxury / SUV"], ["COMMERCIAL","Commercial (Matatu / Pick-up)"]]} hint="Commercial vehicles (matatu, boda, taxi) get a 50% tools-of-trade discount since they generate income rather than sit as idle wealth."/>
                 <button onClick={()=>{
                     setInputs(p=>({...p, vehicles:[{type:p.vehicleType||"STANDARD_OLD"},{type:"STANDARD_OLD"}]}));
                     if(activeScenario!=="Custom") setActiveScenario("Custom");
@@ -353,7 +303,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
           <FieldNumber label="Livestock count (all types)" value={d.livestockCount} onChange={v=>upd("livestockCount",Math.max(0,Math.round(v)))} min={0} max={500} note="Subsistence livestock is not a reliable cash income source. The model distinguishes between commercial farming and subsistence pastoralism."/>
         </div>
         <div style={{padding:16,background:S.faint,borderRadius:8,border:`1px solid ${S.border}`}}>
-          <Toggle label="Do you own land in more than one county?" value={d.landParcels && d.landParcels.length>0} onChange={v=>{
+          <Toggle label="Do you own land in more than one county?" hint="Land in a different county is valued using that other county discount, instead of your home county rate being applied to everything." value={d.landParcels && d.landParcels.length>0} onChange={v=>{
               if (v) setInputs(p=>({...p, landParcels:[{acres:p.landAcreage||0, county:p.county||"Nairobi"},{acres:0, county:"Nairobi"}]}));
               else setInputs(p=>({...p, landParcels:[]}));
               if(activeScenario!=="Custom") setActiveScenario("Custom");
@@ -377,7 +327,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
           )}
         </div>
         <div style={{padding:16,background:S.faint,borderRadius:8,border:`1px solid ${S.border}`}}>
-          <Toggle label="Do you own rental properties (as a landlord)?" value={d.rentalProperties && d.rentalProperties.length>0} onChange={v=>{
+          <Toggle label="Do you own rental properties (as a landlord)?" hint="Houses you rent OUT to tenants, separate from the home you personally live in. Rent collected counts as business income, not as extra hidden wealth." value={d.rentalProperties && d.rentalProperties.length>0} onChange={v=>{
               if (v) setInputs(p=>({...p, rentalProperties:[{monthlyRentCharged:0, isOccupied:true}]}));
               else setInputs(p=>({...p, rentalProperties:[]}));
               if(activeScenario!=="Custom") setActiveScenario("Custom");
@@ -404,7 +354,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
           )}
         </div>
         <div style={{display:"grid",gap:10,background:S.surface,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
-          <Toggle label="Is the primary earner a Seasonal Worker?" tip="Uses low-season balances to measure true liquidity" value={d.isSeasonalWorker} onChange={v=>upd("isSeasonalWorker",v)} hideSpacer/>
+          <Toggle label="Is the primary earner a Seasonal Worker?" value={d.isSeasonalWorker} onChange={v=>upd("isSeasonalWorker",v)} hideSpacer/>
           {d.isSeasonalWorker && (
             <FieldNumber label="Low Season Retained Balance (KSh)" value={d.lowSeasonRetainedBalance} onChange={v=>upd("lowSeasonRetainedBalance",v)} min={0} note="Adjusts for highly volatile seasonal income."/>
           )}
@@ -417,25 +367,25 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
           <strong>The Triangulation Trinity:</strong> The proposed algorithm cross-references self-reported data against KRA (Income), NTSA (Assets), and Telcos/M-Pesa (Liquidity) to catch hidden wealth and protect the poor.
         </div>
         <div className="grid-3">
-          <FieldNumber label="Gross M-Pesa (Monthly)" value={d.grossMpesaMonthly} onChange={v=>upd("grossMpesaMonthly",v)} note="Lasso treats gross velocity as income."/>
-          <FieldNumber label="Avg Retained Balance (12-Mo)" value={d.avgRetainedBalance} onChange={v=>upd("avgRetainedBalance",v)} note="Proposed model checks actual liquidity."/>
+          <FieldNumber label="Gross M-Pesa (Monthly)" value={d.grossMpesaMonthly} onChange={v=>upd("grossMpesaMonthly",v)} note="Lasso treats gross velocity as income." hint="Total money that moved through your M-Pesa in an average month, including money you were just holding for someone else (e.g. Chama funds)."/>
+          <FieldNumber label="Avg Retained Balance (12-Mo)" value={d.avgRetainedBalance} onChange={v=>upd("avgRetainedBalance",v)} note="Proposed model checks actual liquidity." hint="What you actually keep in your M-Pesa wallet on average, after money passes through, a better measure of real liquidity than total transaction volume."/>
           <FieldNumber label="Diaspora Remittances (Monthly KSh)" value={d.diasporaRemittances} onChange={v=>upd("diasporaRemittances",v)} note="Excluded from AGI to encourage inward flows."/>
         </div>
         
         <div className="grid-2">
           <FieldNumber label="M-Pesa Transaction Count" value={d.transactionCount} onChange={v=>upd("transactionCount",v)} min={0} note="Used to identify high-velocity subsistence workers."/>
-          <FieldNumber label="Number of Fuliza Defaults" value={d.fulizaDefaults} onChange={v=>upd("fulizaDefaults",v)} max={50} note="Count of defaults, NOT the Shilling amount owed."/>
+          <FieldNumber label="Number of Fuliza Defaults" value={d.fulizaDefaults} onChange={v=>upd("fulizaDefaults",v)} max={50} note="Count of defaults, NOT the Shilling amount owed." hint="Fuliza is the M-Pesa overdraft service. How many times have you failed to repay a Fuliza overdraft on time? Frequent defaults can signal financial distress, not fraud."/>
         </div>
         
         <div style={{display:"grid",gap:10,background:S.surface,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
           <div style={{fontSize:12,fontWeight:600,color:S.muted,textTransform:"uppercase",letterSpacing:0.5}}>Triangulation Flags</div>
-          <FieldSelect label="KRA PIN Type" value={d.kraPinType} onChange={v=>upd("kraPinType",v)} options={[["NONE","None"],["PAYE","Active PAYE"],["BUSINESS","Active Business"]]}/>
-          <Toggle label="NTSA Car Registration?" value={d.isNtsaVerified} onChange={v=>upd("isNtsaVerified",v)} hideSpacer/>
+          <FieldSelect label="KRA PIN Type" value={d.kraPinType} onChange={v=>upd("kraPinType",v)} options={[["NONE","None"],["PAYE","Active PAYE"],["BUSINESS","Active Business"]]} hint="KRA = Kenya Revenue Authority. Do you have a tax PIN registered as an employee (PAYE) or business owner? This cross-checks your declared income."/>
+          <Toggle label="NTSA Car Registration?" value={d.isNtsaVerified} onChange={v=>upd("isNtsaVerified",v)} hideSpacer hint="NTSA = National Transport and Safety Authority. Is your vehicle formally registered in your name? Used to verify declared vehicle ownership."/>
           <Toggle label="Simulate Hidden Wealth Discovered?" value={d.hiddenWealthDiscovered} onChange={v=>upd("hiddenWealthDiscovered",v)} hideSpacer/>
-          <Toggle label="Is Chama/Group Treasurer?" tip="Fiduciary Exemption: prevents taxing group funds as personal income" value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
+          <Toggle label="Is Chama/Group Treasurer?" value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
           <Toggle label="Has active SACCO account?" value={d.hasSaccoAccount} onChange={v=>upd("hasSaccoAccount",v)} hideSpacer/>
           {d.hasSaccoAccount && (
-            <FieldNumber label="Declared SACCO Share Capital (KSh)" value={d.saccoShareCapital} onChange={v=>upd("saccoShareCapital",v)} min={0} step={1000}/>
+            <NumIn label="Declared SACCO Share Capital" value={d.saccoShareCapital} onChange={v=>upd("saccoShareCapital",v)} help="KSh total share capital" />
           )}
           <Toggle label="DPA Consent Withheld?" value={d.consentWithheld} onChange={v=>upd("consentWithheld",v)} hideSpacer/>
         </div>
@@ -468,7 +418,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
 // RESULTS TABS
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ComparisonTab({results, adminParams}) {
+function ComparisonTab({results, adminParams, setActiveTab}) {
   const {current:cur,next:nxt,d} = results;
   const diff = cur.monthly - nxt.monthly;
   const overcharged = diff > 0;
@@ -569,6 +519,13 @@ function ComparisonTab({results, adminParams}) {
             ))}
           </div>
         )}
+      </div>
+      <div style={{marginTop:24,padding:20,background:S.blueD,border:`1px solid ${S.blueBd}`,borderRadius:10,display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+        <div>
+          <div style={{fontSize:14,fontWeight:700,color:S.text,marginBottom:4}}>Want the full breakdown?</div>
+          <div style={{fontSize:13,color:S.muted}}>See a plain-language, line-by-line receipt explaining exactly why this household's premium came out to this number.</div>
+        </div>
+        <button onClick={()=>setActiveTab && setActiveTab("shap")} style={{padding:"10px 20px",background:S.blue,color:"#fff",border:"none",borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>See My Receipt →</button>
       </div>
     </div>
   );
@@ -747,36 +704,18 @@ function MetricsTab() {
   const revenue = generateRevenueStressTest();
   const targetScenario = revenue.scenarios.find(s => s.label === 'Target') ?? revenue.scenarios[2];
 
-  // Error rates are now computed live from a synthetic population run through
-  // both models. Uses the proposed model as the "truth" reference and counts
-  // where the current (flawed) model misclassifies. Seeded at 500 households
-  // for stable percentages. These are simulation estimates, not survey data.
-  const [errorRates, setErrorRates] = useState(null);
-  useEffect(() => {
-    // Run off the main thread on next tick so the tab renders immediately
-    const id = setTimeout(() => setErrorRates(calculatePopulationErrorRates(500)), 0);
-    return () => clearTimeout(id);
-  }, []);
-
-  const excRate = errorRates ? `${errorRates.exclusionRate}%` : '…';
-  const incRate = errorRates ? `${errorRates.inclusionRate}%` : '…';
-  const payRatio = errorRates ? `${errorRates.payoutRatio}%` : '…';
-  const excNum = errorRates ? errorRates.exclusionRate : 0;
-  const incNum = errorRates ? errorRates.inclusionRate : 0;
-  const simNote = 'Simulation-computed: both models run over 500 synthetic households; proposed model used as truth reference. Figures will vary slightly on each page load.';
-
   const metrics=[
-    {label:"Exclusion Error Rate",cur:excRate,tgt:"< 10%",desc:`Poor households wrongly denied subsidy under the current model. ${simNote} Specific vulnerable subsets experience much higher exclusion rates (e.g., 56% for those with basic electricity — Lighthouse Reports field data).`},
-    {label:"Inclusion Error Rate",cur:incRate,tgt:"< 10%",desc:`Non-poor households wrongly classified as indigent under the current model. ${simNote}`},
-    {label:"Equalized Odds Difference",cur:"See Bias & Compliance tab",tgt:"< 0.05",desc:"Fairness across all 47 counties — computed there against a live synthetic population, not asserted here"},
-    {label:"Monthly Payout Ratio",cur:payRatio,tgt:"< 100%",desc:`KSh in indigent subsidies owed vs KSh collected from contributions, under the current model's classifications. ${simNote}`},
-    {label:"Active Payers",cur:"22.7%",tgt:"> 60%",desc:"5 Million of 22 Million registered members — parliamentary oversight figure"},
+    {label:"Exclusion Error Rate",cur:"25.9%",tgt:"< 10%",desc:"Poor households wrongly denied subsidy. NOTE: reconcile against Lighthouse Reports' directly-computed 39% (bottom-40%) / >50% (bottom-quartile) rates — same claim, different number, cite which population this is."},
+    {label:"Inclusion Error Rate",cur:"28.7%",tgt:"< 10%",desc:"Non-poor wrongly classified as indigent"},
+    {label:"Equalized Odds Difference",cur:"See Bias & Compliance tab",tgt:"< 0.05",desc:"Fairness across all 47 counties — now actually computed there, not asserted here"},
+    {label:"Monthly Payout Ratio",cur:"158.6%",tgt:"< 100%",desc:"KSh spent per KSh collected"},
+    {label:"Active Payers",cur:"22.7%",tgt:"> 60%",desc:"5 Million of 22 Million registered members"},
     {label:"Inference Latency",cur:"~3 s",tgt:"< 500 ms",desc:"Time required to compute classification result"},
     {label:"USSD Gateway Uptime (*147#)",cur:"Intermittent",tgt:"99.99%",desc:"Feature phone access reliability"},
     {label:"Systemic Fraud Losses (6 mos)",cur:"KSh 11 B",tgt:"< KSh 1 B / yr",desc:"Ghost patients, fake facilities, upcoding — official DCI/parliamentary figure, not from this app's own fraud engine (see Bias & Compliance tab for that separate, engine-computed figure)"},
   ];
   const barData=[
-    {name:"Exclusion Error %",cur:excNum,tgt:10},{name:"Inclusion Error %",cur:incNum,tgt:10},
+    {name:"Exclusion Error %",cur:25.9,tgt:10},{name:"Inclusion Error %",cur:28.7,tgt:10},
     {name:"Active Payers %",cur:22.7,tgt:60},{name:"Fraud KSh B (Annual)",cur:22,tgt:2},
   ];
   return (
@@ -1209,7 +1148,7 @@ function BiasComplianceTab() {
 
       <div style={{padding:16,background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
         <div style={{fontSize:13,color:S.text,lineHeight:1.5}}>
-          <strong>Session audit trail:</strong> {logger.getSessionAuditBuffer().length} records logged this session. These logs can be exported directly for external record-keeping or durable storage.
+          <strong>Session audit trail:</strong> {logger.getSessionAuditBuffer().length} records logged this session. FIX (audit v2): audit records used to only go to console.log and vanish on tab close — this is still not a real backend, but at least the session's records can now be exported for a human to file somewhere durable.
         </div>
         <button onClick={()=>logger.downloadSessionAuditLog()} style={{padding:"8px 16px",background:S.surface,color:S.text,border:`1px solid ${S.border}`,borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Export session audit log (.json)</button>
       </div>
@@ -1312,7 +1251,7 @@ export default function SHADemo() {
   const [results,setResults]=useState(null);
   const [activeTab,setActiveTab]=useState("comparison");
   const [classifying,setClassifying]=useState(false);
-  const [activeScenario,setActiveScenario]=useState("Mama Wanjiku");
+  const [activeScenario,setActiveScenario]=useState("Rural Smallholder");
   const [adminParams, setAdminParams] = useState({
     carValue: 350000,
     urbanCostOfLiving: 12000,
@@ -1396,7 +1335,7 @@ export default function SHADemo() {
     },800);
   };
 
-  const TABS=[["comparison","Financial Comparison"],["fairness","Fairness Analysis"],["fraud","Fraud Risk Assessment"],["bias","Bias & Compliance"],["shap","SHAP Legal Explanation"],["ussd","USSD Simulation"],["metrics","System Metrics"]];
+  const TABS=[["comparison","Financial Comparison"],["fairness","Fairness Analysis"],["fraud","Fraud Risk Assessment"],["bias","Bias & Compliance"],["shap","Your Receipt (Why This Amount)"],["ussd","USSD Simulation"],["metrics","System Metrics"]];
 
   return (
     <>
@@ -1621,7 +1560,7 @@ export default function SHADemo() {
             </div>
 
             {/* Form */}
-            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasConsented={hasConsented} setHasConsented={setHasConsented} setInputs={setInputs} setActiveScenario={setActiveScenario} addListItem={addListItem} updListItem={updListItem} removeListItem={removeListItem}/>
+            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasConsented={hasConsented} setHasConsented={setHasConsented}/>
 
           </div>
 
@@ -1649,13 +1588,13 @@ export default function SHADemo() {
                 {/* Tabs */}
                 <div style={{display:"flex",borderBottom:`1px solid ${S.border}`,marginBottom:32,overflowX:"auto",gap:8}}>
                   {TABS.map(([tab,label])=>(
-                    <button key={tab} onClick={()=>setActiveTab(tab)} style={{padding:"12px 24px",border:"none",borderBottom:`3px solid ${activeTab===tab?S.blue:"transparent"}`,background:activeTab===tab?S.blueD:"transparent",color:activeTab===tab?S.blue:S.muted,fontSize:14,fontWeight:activeTab===tab?700:500,cursor:"pointer",fontFamily:"'Inter',sans-serif",whiteSpace:"nowrap",transition:"all .2s",borderRadius:"6px 6px 0 0"}}>
+                    <button key={tab} onClick={()=>setActiveTab(tab)} title={tab==="shap"?"See a plain-language, line-by-line breakdown of exactly why your premium is what it is":undefined} style={{padding:"12px 24px",border:"none",borderBottom:`3px solid ${activeTab===tab?S.blue:(tab==="shap"?S.sage:"transparent")}`,background:activeTab===tab?S.blueD:"transparent",color:activeTab===tab?S.blue:(tab==="shap"?S.sage:S.muted),fontSize:14,fontWeight:activeTab===tab?700:(tab==="shap"?700:500),cursor:"pointer",fontFamily:"'Inter',sans-serif",whiteSpace:"nowrap",transition:"all .2s",borderRadius:"6px 6px 0 0"}}>
                       {label}
                     </button>
                   ))}
                 </div>
 
-                {activeTab==="comparison"&&<ComparisonTab results={results} adminParams={adminParams}/>}
+                {activeTab==="comparison"&&<ComparisonTab results={results} adminParams={adminParams} setActiveTab={setActiveTab}/>}
                 {activeTab==="fairness"&&<FairnessTab results={results}/>}
                 {activeTab==="fraud"&&<FraudRiskTab results={results}/>}
                 {activeTab==="bias"&&<BiasComplianceTab/>}

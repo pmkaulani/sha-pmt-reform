@@ -674,7 +674,7 @@ export const PRESETS = [
     },
   },
   {
-    name: 'Mama Wanjiku',
+    name: 'Rural Smallholder',
     description: 'Subsistence farmer with a stone house but zero cash liquidity.',
     icon: '🌽',
     badge: 'Ancestral Home',
@@ -714,7 +714,7 @@ export const PRESETS = [
       hasChronicIllness: false,
       hasRegisteredDisability: false,
       isGroupTreasurer: false,
-      vehicleType: 'STANDARD_NEW',
+      vehicleType: 'STANDARD_OLD',
       consentWithheld: false
     },
   },
@@ -809,7 +809,7 @@ export const PRESETS = [
     },
   },
   {
-    name: 'Mzee Kamau',
+    name: 'Pensioner',
     description: 'Elderly citizen in Nyeri. Has assets but zero monthly income.',
     icon: '🧓',
     badge: 'Age Override',
@@ -849,7 +849,7 @@ export const PRESETS = [
       hasChronicIllness: true,
       hasRegisteredDisability: false,
       isGroupTreasurer: false,
-      vehicleType: 'STANDARD_NEW',
+      vehicleType: 'STANDARD_OLD',
       consentWithheld: false
     },
   },
@@ -948,51 +948,6 @@ export const PRESETS = [
       hasRegisteredDisability: false,
       isGroupTreasurer: false,
       vehicleType: 'STANDARD_NEW',
-      consentWithheld: false
-    },
-  },
-  {
-    name: 'Samuel (Bodaboda)',
-    description: 'Motorcycle taxi rider. Earns daily, high digital transactions but low net retention.',
-    icon: '🏍️',
-    badge: 'Tools of Trade',
-    badgeColor: '#16a34a',
-    inputs: {
-      county: 'Nakuru',
-      householdSize: 3,
-      headGender: 'MALE',
-      headAge: 26,
-      dwellingType: 'ROOM',
-      wallMaterial: 'IRON_SHEETS',
-      roofMaterial: 'IRON_SHEETS',
-      floorMaterial: 'CEMENT',
-      rooms: 1,
-      ownershipStatus: 'RENTED',
-      monthlyRent: 3500,
-      subletIncome: 0,
-      waterSource: 'PUBLIC_TAP',
-      sanitationType: 'PIT_LATRINE',
-      cookingEnergy: 'CHARCOAL',
-      lightingEnergy: 'ELECTRICITY',
-      assets: ['SMARTPHONE', 'MOTORCYCLE'],
-      motorcycleIsCommercial: true,
-      landAcreage: 0,
-      livestockCount: 0,
-      receivesAid: false,
-      isRefugee: false,
-      grossMpesaMonthly: 45000,
-      avgRetainedBalance: 1500,
-      isSeasonalWorker: false,
-      lowSeasonRetainedBalance: 0,
-      diasporaRemittances: 0,
-      fulizaDefaults: 1,
-      kraPinType: 'NONE',
-      isNtsaVerified: true,
-      hasSaccoAccount: false,
-      hasChronicIllness: false,
-      hasRegisteredDisability: false,
-      isGroupTreasurer: false,
-      vehicleType: 'STANDARD_OLD',
       consentWithheld: false
     },
   }
@@ -2022,50 +1977,4 @@ export function generateSyntheticPopulation(n = 300, adminParams = {}) {
     population.push({ inputs, currentResult, proposedResult, fraudRisk });
   }
   return population;
-}
-
-/**
- * Runs both models over a synthetic population and computes population-level
- * error rates — the numbers that belong in the Bias & Compliance / Metrics
- * tabs. Uses the proposed model as the "truth" reference (it's this project's
- * own best estimate of correct classification) and counts where the current
- * model disagrees.
- *
- * Exclusion error: household that the proposed model marks as indigent
- *   (should receive subsidy) but the current model does not → wrongly denied.
- * Inclusion error: household that the current model marks as indigent but
- *   the proposed model does not → wrongly subsidised.
- * Monthly payout ratio: total current-model contributions collected vs total
- *   benefits paid out at the indigent flat rate (KSh 300/mo × indigent count).
- *
- * @param {number} n  Population size (default 500 for stable percentages)
- * @returns {{ exclusionRate: number, inclusionRate: number, payoutRatio: number,
- *             n: number, excludedCount: number, includedCount: number }}
- */
-export function calculatePopulationErrorRates(n = 500) {
-  const pop = generateSyntheticPopulation(n);
-  let excluded = 0; // proposed=indigent, current=not
-  let included = 0; // proposed=not-indigent, current=indigent
-  let totalContributions = 0;
-  let totalPayouts = 0;
-
-  for (const { currentResult, proposedResult } of pop) {
-    const curIndigent = currentResult.isIndigent;
-    const propIndigent = proposedResult.isIndigent;
-    if (propIndigent && !curIndigent) excluded++;
-    if (!propIndigent && curIndigent) included++;
-    totalContributions += currentResult.monthly;
-    totalPayouts += propIndigent ? 300 : 0; // cost of covering those who should be covered
-  }
-
-  return {
-    n,
-    excludedCount: excluded,
-    includedCount: included,
-    exclusionRate: Math.round((excluded / n) * 1000) / 10, // 1 decimal place
-    inclusionRate: Math.round((included / n) * 1000) / 10,
-    payoutRatio: totalContributions > 0
-      ? Math.round((totalPayouts / totalContributions) * 1000) / 10
-      : 0,
-  };
 }
