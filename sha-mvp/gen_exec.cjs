@@ -80,7 +80,7 @@ const doc = new Document({
           normal("1. SHA to adopt AGI model as the v2.1 means-testing standard\n"),
           normal("2. Data Commissioner to issue compliance certificate\n"),
           normal("3. KIPPRA to conduct independent policy review\n\n"),
-          bold("Contact: "), normal("0712260057 | 2507765@students.kcau.ac.ke")
+          bold("Contact: "), normal("0712260057 | pmkaulani@gmail.com")
         ]
       }),
     ],
