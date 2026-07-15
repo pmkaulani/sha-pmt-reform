@@ -1233,10 +1233,10 @@ function BiasComplianceTab() {
       </div>
 
       <div style={{padding:16,background:S.blueD,border:`1px solid ${S.blueBd}`,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-        <div style={{fontSize:13,color:S.text,lineHeight:1.5}}>
-          <strong style={{color:S.blue}}>SYNTHETIC DATA:</strong> these {population.length} households are generated, not real citizens or real SHA records — there is no pilot dataset yet. This demonstrates the tests run and produce a real number; it is not evidence about the real system's actual disparity. Replace with real assessment history the moment a pilot exists.
+        <div style={{flex:1, minWidth:250, fontSize:13,color:S.text,lineHeight:1.5}}>
+          <strong style={{color:S.blue}}>HOW THIS DEMO WORKS:</strong> We don't have access to the real SHA citizen database yet. To prove these automated fairness and fraud tests actually work, this dashboard is currently analyzing a randomly generated "fake" population of {population.length} households. Click the button to generate a completely new batch of households and watch the algorithms re-calculate the metrics below in real-time.
         </div>
-        <button onClick={()=>setPopulation(generateSyntheticPopulation(300))} style={{padding:"8px 16px",background:S.blue,color:"#fff",border:"none",borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Regenerate sample</button>
+        <button onClick={()=>setPopulation(generateSyntheticPopulation(300))} style={{padding:"8px 16px",background:S.blue,color:"#fff",border:"none",borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Simulate New Data</button>
       </div>
 
       <div style={{padding:16,background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
