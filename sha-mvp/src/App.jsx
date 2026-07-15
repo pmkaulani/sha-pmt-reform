@@ -1234,7 +1234,7 @@ function BiasComplianceTab() {
 
       <div style={{padding:16,background:S.blueD,border:`1px solid ${S.blueBd}`,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
         <div style={{flex:1, minWidth:250, fontSize:13,color:S.text,lineHeight:1.5}}>
-          <strong style={{color:S.blue}}>HOW THIS DEMO WORKS:</strong> We don't have access to the real SHA citizen database yet. To prove these automated fairness and fraud tests actually work, this dashboard is currently analyzing a randomly generated "fake" population of {population.length} households. Click the button to generate a completely new batch of households and watch the algorithms re-calculate the metrics below in real-time.
+          <strong style={{color:S.blue}}>HOW THIS DEMO WORKS:</strong> We don't have access to the real SHA citizen database yet. To prove these automated fairness and fraud tests actually work, this dashboard is currently analyzing a randomly generated "fake" population of {population.length} households. Click the button to generate a completely new batch of households and watch the algorithms re-calculate the metrics below in real-time. <strong>(Note: This only updates the statistics on this tab, it does not change the main citizen profile on the left).</strong>
         </div>
         <button onClick={()=>setPopulation(generateSyntheticPopulation(300))} style={{padding:"8px 16px",background:S.blue,color:"#fff",border:"none",borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Simulate New Data</button>
       </div>
