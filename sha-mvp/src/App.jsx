@@ -125,16 +125,67 @@ function FieldNumber({label,value,onChange,min=0,max,step=1,note}) {
 function InfoTip({children, id}) {
   const [open, setOpen] = useState(false);
   const tipId = id || `tip-${Math.random().toString(36).slice(2,9)}`;
-  const [align, setAlign] = useState('left');
+  const [align, setAlign] = useState('center');
   const iconRef = useRef(null);
 
   const handleOpen = () => {
     if (iconRef.current) {
       const rect = iconRef.current.getBoundingClientRect();
+      const spaceLeft = rect.left;
       const spaceRight = window.innerWidth - rect.right;
-      setAlign(spaceRight < 240 ? 'right' : 'left');
+      if (spaceLeft < 120) setAlign('left');
+      else if (spaceRight < 120) setAlign('right');
+      else setAlign('center');
     }
     setOpen(true);
+  };
+
+  const getStyles = () => {
+    const base = {
+      position: "absolute",
+      bottom: "100%",
+      marginBottom: 8,
+      background: "#1e293b",
+      color: "#f8fafc",
+      padding: "6px 10px",
+      borderRadius: 6,
+      fontSize: 12,
+      fontWeight: 500,
+      whiteSpace: "normal",
+      width: "max-content",
+      maxWidth: 220,
+      zIndex: 9999,
+      pointerEvents: "none",
+      boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)",
+      lineHeight: 1.4,
+      textTransform: "none",
+      letterSpacing: "normal"
+    };
+
+    if (align === 'left') {
+      return { ...base, left: -10, textAlign: "left" };
+    } else if (align === 'right') {
+      return { ...base, right: -10, textAlign: "right" };
+    } else {
+      return { ...base, left: "50%", transform: "translateX(-50%)", textAlign: "center" };
+    }
+  };
+
+  const getArrowStyles = () => {
+    const base = {
+      position: "absolute",
+      top: "100%",
+      border: "5px solid transparent",
+      borderTopColor: "#1e293b"
+    };
+
+    if (align === 'left') {
+      return { ...base, left: 12 };
+    } else if (align === 'right') {
+      return { ...base, right: 12 };
+    } else {
+      return { ...base, left: "50%", transform: "translateX(-50%)" };
+    }
   };
 
   return (
@@ -155,29 +206,9 @@ function InfoTip({children, id}) {
         <Info size={13} />
       </span>
       {open && (
-        <div
-          id={tipId}
-          role="tooltip"
-          style={{
-            position:"absolute",
-            top:"140%",
-            ...(align === 'right' ? {right:0} : {left:0}),
-            background:S.text,
-            color:"#fff",
-            padding:"9px 11px",
-            borderRadius:8,
-            fontSize:12,
-            fontWeight:400,
-            textTransform:"none",
-            letterSpacing:"normal",
-            lineHeight:1.5,
-            width:230,
-            zIndex:9999,
-            pointerEvents:"none",
-            boxShadow:"0 6px 16px rgba(0,0,0,0.25)"
-          }}
-        >
+        <div id={tipId} role="tooltip" style={getStyles()}>
           {children}
+          <div style={getArrowStyles()} />
         </div>
       )}
     </span>
