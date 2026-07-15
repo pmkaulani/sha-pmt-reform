@@ -808,8 +808,8 @@ function MetricsTab() {
     {label:"Systemic Fraud Losses (6 mos)",cur:"KSh 11 B",tgt:"< KSh 1 B / yr",desc:"Ghost patients, fake facilities, upcoding — official DCI/parliamentary figure, not from this app's own fraud engine (see Bias & Compliance tab for that separate, engine-computed figure)"},
   ];
   const barData=[
-    {name:"Exclusion Error %",cur:excNum,tgt:10},{name:"Inclusion Error %",cur:incNum,tgt:10},
-    {name:"Active Payers %",cur:22.7,tgt:60},{name:"Fraud KSh B (Annual)",cur:22,tgt:2},
+    {name:"Exclusion %",cur:excNum,tgt:10},{name:"Inclusion %",cur:incNum,tgt:10},
+    {name:"Active Payers %",cur:22.7,tgt:60},{name:"Fraud KSh B",cur:22,tgt:2},
   ];
   return (
     <div style={{display:"grid",gap:24}}>
@@ -834,7 +834,7 @@ function MetricsTab() {
       </div>
 
       {/* Chart */}
-      <div style={{padding:"20px",background:S.surface,border:`1px solid ${S.border}`,borderRadius:12}}>
+      <div style={{padding:"20px",background:S.surface,border:`1px solid ${S.border}`,borderRadius:12,minWidth:0,overflowX:"auto"}}>
         <Label>Key Metrics: Current vs. Target Benchmarks</Label>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={barData} margin={{top:10,right:0,left:-15,bottom:0}}>
@@ -885,21 +885,21 @@ function MetricsTab() {
           <div style={{background:S.terraD,padding:16,borderRadius:8,border:`1px solid ${S.terraBd}`}}>
             <div style={{fontSize:12,fontWeight:700,color:S.terra,marginBottom:12,textTransform:"uppercase"}}>Current System (The Collapse)</div>
             <div style={{display:"grid",gap:8,fontSize:13,color:S.text}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Registered members</span><span style={{fontWeight:600}}>22 Million</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Compliance rate</span><span style={{fontWeight:700,color:S.terra}}>22.7%</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>5 Million</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 1,500/mo</span></div>
-              <div style={{borderTop:`1px solid ${S.terraBd}`,paddingTop:8,display:"flex",justifyContent:"space-between",fontWeight:700}}><span>Annual Revenue</span><span style={{color:S.terra,fontSize:16}}>KSh 90 B</span></div>
+              <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Registered members</span><span style={{fontWeight:600}}>22 Million</span></div>
+              <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Compliance rate</span><span style={{fontWeight:700,color:S.terra}}>22.7%</span></div>
+              <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>5 Million</span></div>
+              <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 1,500/mo</span></div>
+              <div className="flex-wrap-mobile" style={{borderTop:`1px solid ${S.terraBd}`,paddingTop:8,justifyContent:"space-between",fontWeight:700}}><span>Annual Revenue</span><span style={{color:S.terra,fontSize:16}}>KSh 90 B</span></div>
             </div>
           </div>
           <div style={{background:S.sageD,padding:16,borderRadius:8,border:`1px solid ${S.sageBd}`}}>
             <div style={{fontSize:12,fontWeight:700,color:S.sage,marginBottom:12,textTransform:"uppercase"}}>Proposed AGI System (The Rescue)</div>
             <div style={{display:"grid",gap:8,fontSize:13,color:S.text}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Eligible population</span><span style={{fontWeight:600}}>15.5 Million</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Compliance rate</span><span style={{fontWeight:700,color:S.sage}}>60%</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>{(targetScenario.enrolledPopulation/1e6).toFixed(1)} Million</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 520/mo</span></div>
-              <div style={{borderTop:`1px solid ${S.sageBd}`,paddingTop:8,display:"flex",justifyContent:"space-between",fontWeight:700}}><span>Annual Revenue</span><span style={{color:S.sage,fontSize:16}}>KSh {targetScenario.annualRevenueBillions} B</span></div>
+              <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Eligible population</span><span style={{fontWeight:600}}>15.5 Million</span></div>
+              <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Compliance rate</span><span style={{fontWeight:700,color:S.sage}}>60%</span></div>
+              <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>{(targetScenario.enrolledPopulation/1e6).toFixed(1)} Million</span></div>
+              <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 520/mo</span></div>
+              <div className="flex-wrap-mobile" style={{borderTop:`1px solid ${S.sageBd}`,paddingTop:8,justifyContent:"space-between",fontWeight:700}}><span>Annual Revenue</span><span style={{color:S.sage,fontSize:16}}>KSh {targetScenario.annualRevenueBillions} B</span></div>
             </div>
           </div>
         </div>
