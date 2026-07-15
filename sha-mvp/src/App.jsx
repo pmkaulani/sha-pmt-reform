@@ -822,10 +822,10 @@ function MetricsTab() {
         {metrics.map(m=>(
           <div key={m.label} style={{padding:"20px",background:S.surface,borderRadius:10,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
             <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.muted,marginBottom:12}}>{m.label}</div>
-            <div style={{display:"flex",gap:20,alignItems:"flex-end",marginBottom:10}}>
-              <div><div style={{fontSize:11,fontWeight:600,color:S.terra,marginBottom:4}}>CURRENT</div><div style={{fontSize:22,fontWeight:800,color:S.terra}}>{m.cur}</div></div>
+            <div className="metrics-row">
+              <div><div style={{fontSize:11,fontWeight:600,color:S.terra,marginBottom:4}}>CURRENT</div><div className="metrics-val" style={{color:S.terra}}>{m.cur}</div></div>
               <div style={{color:S.borderUp,fontSize:20,paddingBottom:2}}>→</div>
-              <div><div style={{fontSize:11,fontWeight:600,color:S.sage,marginBottom:4}}>TARGET</div><div style={{fontSize:22,fontWeight:800,color:S.sage}}>{m.tgt}</div></div>
+              <div><div style={{fontSize:11,fontWeight:600,color:S.sage,marginBottom:4}}>TARGET</div><div className="metrics-val" style={{color:S.sage}}>{m.tgt}</div></div>
             </div>
             <div style={{fontSize:13,color:S.muted}}>{m.desc}</div>
           </div>

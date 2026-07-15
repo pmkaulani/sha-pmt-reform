@@ -172,6 +172,9 @@ h1, h2, h3, h4 {
 .tabs-container::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 4px; }
 .tabs-container::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
 
+.metrics-val { font-size: 22px; font-weight: 800; }
+.metrics-row { display: flex; gap: 20px; align-items: flex-end; margin-bottom: 10px; flex-wrap: wrap; }
+
 @media (max-width: 768px) {
   .results-container { padding: 16px; }
   .empty-state-wrapper { padding: 16px; }
@@ -182,4 +185,6 @@ h1, h2, h3, h4 {
   .tabs-container { margin-bottom: 24px; }
   .tabs-container button { padding: 10px 16px !important; font-size: 13px !important; }
   .big-number-val { font-size: 32px !important; }
+  .metrics-val { font-size: 18px !important; word-break: break-word; }
+  .metrics-row { gap: 10px; }
 }
