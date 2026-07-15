@@ -836,7 +836,7 @@ function MetricsTab() {
       {/* Chart */}
       <div style={{padding:"20px",background:S.surface,border:`1px solid ${S.border}`,borderRadius:12,minWidth:0,overflowX:"auto"}}>
         <Label>Key Metrics: Current vs. Target Benchmarks</Label>
-        <ResponsiveContainer width="100%" height={220}>
+        <ResponsiveContainer width="99%" height={220}>
           <BarChart data={barData} margin={{top:10,right:0,left:-15,bottom:0}}>
             <XAxis dataKey="name" tick={{fill:S.text,fontSize:12,fontWeight:500}} axisLine={false} tickLine={false}/>
             <YAxis tick={{fill:S.muted,fontSize:12}} axisLine={false} tickLine={false}/>
