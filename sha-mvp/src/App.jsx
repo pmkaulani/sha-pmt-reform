@@ -1678,13 +1678,32 @@ export default function SHADemo() {
             )}
             {results&&(
               <div className="results-container">
-                {/* Tabs */}
-                <div className="tabs-container">
+                {/* Desktop Tabs */}
+                <div className="tabs-container desktop-tabs">
                   {TABS.map(([tab,label])=>(
                     <button key={tab} onClick={()=>setActiveTab(tab)} style={{padding:"12px 24px",border:"none",borderBottom:`3px solid ${activeTab===tab?S.blue:"transparent"}`,background:activeTab===tab?S.blueD:"transparent",color:activeTab===tab?S.blue:S.muted,fontSize:14,fontWeight:activeTab===tab?700:500,cursor:"pointer",fontFamily:"'Inter',sans-serif",whiteSpace:"nowrap",transition:"all .2s",borderRadius:"6px 6px 0 0"}}>
                       {label}
                     </button>
                   ))}
+                </div>
+                
+                {/* Mobile Tabs Dropdown */}
+                <div className="mobile-tabs-dropdown" style={{marginBottom: 24, position: "relative"}}>
+                  <div style={{fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: S.muted, marginBottom: 8}}>Select Analysis View</div>
+                  <select 
+                    value={activeTab} 
+                    onChange={e => setActiveTab(e.target.value)}
+                    style={{width: "100%", padding: "14px 16px", borderRadius: 10, border: `2px solid ${S.border}`, background: S.surface, fontSize: 16, color: S.text, fontWeight: 700, appearance: "none", cursor: "pointer"}}
+                  >
+                    {TABS.map(([tab,label])=>(
+                      <option key={tab} value={tab}>{label}</option>
+                    ))}
+                  </select>
+                  <div style={{position: "absolute", right: 16, bottom: 16, pointerEvents: "none"}}>
+                    <svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 1L7 7L13 1" stroke={S.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                 </div>
 
                 {activeTab==="comparison"&&<ComparisonTab results={results} adminParams={adminParams}/>}

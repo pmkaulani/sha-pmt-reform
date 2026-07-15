@@ -66,6 +66,13 @@
   padding: 0;
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
 body {
   min-height: 100vh;
   background-color: var(--bg-primary);
@@ -197,4 +204,15 @@ h1, h2, h3, h4 {
   .big-number-val { font-size: 32px !important; }
   .metrics-val { font-size: 18px !important; word-break: break-word; }
   .metrics-row { gap: 10px; }
+  .desktop-tabs { display: none !important; }
+  .mobile-tabs-dropdown { display: block; }
+}
+
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.mobile-tabs-dropdown {
+  display: none;
 }
