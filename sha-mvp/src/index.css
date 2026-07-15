@@ -143,6 +143,7 @@ h1, h2, h3, h4 {
   .right-panel {
     min-width: 0; /* Prevent Recharts or flex rows from blowing out mobile width */
     overflow-x: hidden;
+    padding: 0;
   }
   
   .grid-2 {
@@ -185,7 +186,7 @@ h1, h2, h3, h4 {
 .metrics-row { display: flex; gap: 20px; align-items: flex-end; margin-bottom: 10px; flex-wrap: wrap; }
 
 @media (max-width: 768px) {
-  .results-container { padding: 16px; }
+  .results-container { padding: 32px; }
   .empty-state-wrapper { padding: 16px; }
   .empty-state-card { padding: 24px 16px; }
   .diff-callout { flex-direction: column; align-items: flex-start; gap: 16px; }
