@@ -284,9 +284,10 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
         </div>
         <div className="grid-2">
           <FieldSelect label="Head gender" value={d.headGender} onChange={v=>upd("headGender",v)} options={[["MALE","Male"],["FEMALE","Female"]]}/>
-          <Toggle label="Receives social aid?" tip="Such as Inua Jamii or HSFP cash transfers" value={d.receivesAid} onChange={v=>upd("receivesAid",v)}/>
+          <div /> {/* Keeps gender field half-width without squishing it */}
         </div>
         <div style={{display:"grid",gap:10}}>
+          <Toggle label="Receives social aid?" tip="Such as Inua Jamii or HSFP cash transfers" value={d.receivesAid} onChange={v=>upd("receivesAid",v)} hideSpacer/>
           <Toggle label="Has Chronic Illness? (CHE)" tip="Triggers Catastrophic Health Expenditure (CHE) protection" value={d.hasChronicIllness} onChange={v=>upd("hasChronicIllness",v)} hideSpacer/>
           <Toggle label="Registered Disability (NCPWD)?" tip="Exempts household from asset wealth tests" value={d.hasRegisteredDisability} onChange={v=>upd("hasRegisteredDisability",v)} hideSpacer/>
           <Toggle label="Refugee / IDP status?" tip="Automatically classifies as indigent/state-sponsored" value={d.isRefugee} onChange={v=>upd("isRefugee",v)} hideSpacer/>
