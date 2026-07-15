@@ -140,9 +140,18 @@ h1, h2, h3, h4 {
     border-bottom: 1px solid var(--border-subtle);
   }
   
+  .right-panel {
+    min-width: 0; /* Prevent Recharts or flex rows from blowing out mobile width */
+    overflow-x: hidden;
+  }
+  
   .grid-2 {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+  
+  .grid-2 > div {
+    min-width: 0;
   }
 }
 
