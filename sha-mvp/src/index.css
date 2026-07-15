@@ -189,6 +189,28 @@ h1, h2, h3, h4 {
 .tabs-container::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 4px; }
 .tabs-container::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
 
+/* Desktop Tab Styles */
+.tab-btn {
+  padding: 12px 24px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+  transition: all 0.2s;
+  border-radius: 6px 6px 0 0;
+}
+.tab-btn.active {
+  border-bottom-color: var(--text-accent);
+  background: #e0f2fe;
+  color: var(--text-accent);
+  font-weight: 700;
+}
+
 .metrics-val { font-size: 22px; font-weight: 800; }
 .metrics-row { display: flex; gap: 20px; align-items: flex-end; margin-bottom: 10px; flex-wrap: wrap; }
 
@@ -199,8 +221,28 @@ h1, h2, h3, h4 {
   .diff-callout { flex-direction: column; align-items: flex-start; gap: 16px; }
   .diff-callout-amount { margin-left: 0; align-self: flex-start; font-size: 32px; }
   .flex-wrap-mobile { flex-wrap: wrap; }
-  .tabs-container { margin-bottom: 24px; padding-bottom: 0; }
-  .tabs-container button { padding: 10px 16px !important; font-size: 13px !important; }
+  
+  /* Transform tabs into a wrapping pill cluster on mobile */
+  .tabs-container { 
+    flex-wrap: wrap; 
+    border-bottom: none; 
+    margin-bottom: 24px; 
+    padding-bottom: 0;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+  .tab-btn { 
+    padding: 8px 16px !important; 
+    font-size: 13px !important; 
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 20px !important;
+    background: var(--bg-card) !important;
+  }
+  .tab-btn.active {
+    background: #e0f2fe !important;
+    border-color: var(--text-accent) !important;
+  }
+
   .big-number-val { font-size: 32px !important; }
   .metrics-val { font-size: 18px !important; word-break: break-word; }
   .metrics-row { gap: 10px; }
