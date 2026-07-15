@@ -167,8 +167,10 @@ h1, h2, h3, h4 {
 .diff-callout { border-radius: 10px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 .diff-callout-amount { font-family: 'Inter', sans-serif; font-size: 38px; font-weight: 800; margin-left: 24px; white-space: nowrap; }
 .flex-wrap-mobile { display: flex; flex-wrap: nowrap; }
-.tabs-container { display: flex; border-bottom: 1px solid var(--border-subtle); margin-bottom: 32px; overflow-x: auto; gap: 8px; -ms-overflow-style: none; scrollbar-width: none; }
-.tabs-container::-webkit-scrollbar { display: none; }
+.tabs-container { display: flex; border-bottom: 1px solid var(--border-subtle); margin-bottom: 32px; overflow-x: auto; gap: 8px; padding-bottom: 4px; }
+.tabs-container::-webkit-scrollbar { height: 4px; }
+.tabs-container::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 4px; }
+.tabs-container::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
 
 @media (max-width: 768px) {
   .results-container { padding: 16px; }
