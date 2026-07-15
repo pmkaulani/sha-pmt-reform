@@ -73,6 +73,6 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then((buffer) => {
-  fs.writeFileSync(path.join(__dirname, '..', 'docs', 'PROJECT_COMPLETION_SUMMARY.docx'), buffer); // FIX (audit v2): was hardcoded to one specific Windows machine/profile (and in one case the wrong folder); now portable
+  fs.writeFileSync(path.join(__dirname, '..', 'docs', 'archive', 'PROJECT_COMPLETION_SUMMARY.docx'), buffer); // FIX (audit v2): was hardcoded to one specific Windows machine/profile (and in one case the wrong folder); now portable. Redirected to docs/archive/ after archiving.
   console.log("PROJECT_COMPLETION_SUMMARY.docx updated successfully");
 });
