@@ -812,7 +812,7 @@ function MetricsTab() {
     {name:"Active Payers %",cur:22.7,tgt:60},{name:"Fraud KSh B",cur:22,tgt:2},
   ];
   return (
-    <div style={{display:"grid",gap:24}}>
+    <div style={{display:"flex",flexDirection:"column",gap:24}}>
       <div>
         <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>System Performance Metrics</div>
         <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>Documented state of the current SHA system evaluated against launch requirements for the proposed architecture. Every metric is sourced from parliamentary oversight reports, the KNBS Economic Survey 2026, or provider data from RUPHA.</div>
@@ -1691,25 +1691,7 @@ export default function SHADemo() {
                     </button>
                   ))}
                 </div>
-                
-                {/* Mobile Tabs Dropdown */}
-                <div className="mobile-tabs-dropdown" style={{marginBottom: 24, position: "relative"}}>
-                  <div style={{fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: S.muted, marginBottom: 8}}>Select Analysis View</div>
-                  <select 
-                    value={activeTab} 
-                    onChange={e => setActiveTab(e.target.value)}
-                    style={{width: "100%", padding: "14px 16px", borderRadius: 10, border: `2px solid ${S.border}`, background: S.surface, fontSize: 16, color: S.text, fontWeight: 700, appearance: "none", cursor: "pointer"}}
-                  >
-                    {TABS.map(([tab,label])=>(
-                      <option key={tab} value={tab}>{label}</option>
-                    ))}
-                  </select>
-                  <div style={{position: "absolute", right: 16, bottom: 16, pointerEvents: "none"}}>
-                    <svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M1 1L7 7L13 1" stroke={S.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                </div>
+
 
                 {activeTab==="comparison"&&<ComparisonTab results={results} adminParams={adminParams}/>}
                 {activeTab==="fairness"&&<FairnessTab results={results}/>}
