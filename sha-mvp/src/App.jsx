@@ -1678,8 +1678,9 @@ export default function SHADemo() {
             )}
             {results&&(
               <div className="results-container">
-                {/* Desktop Tabs */}
-                <div className="tabs-container desktop-tabs">
+                <div className="mobile-swipe-hint" style={{fontSize: 11, color: S.muted, textAlign: "center", marginBottom: 8, fontStyle: "italic"}}>← Swipe to view all 7 analysis tabs →</div>
+                {/* Tabs */}
+                <div className="tabs-container">
                   {TABS.map(([tab,label])=>(
                     <button key={tab} onClick={()=>setActiveTab(tab)} style={{padding:"12px 24px",border:"none",borderBottom:`3px solid ${activeTab===tab?S.blue:"transparent"}`,background:activeTab===tab?S.blueD:"transparent",color:activeTab===tab?S.blue:S.muted,fontSize:14,fontWeight:activeTab===tab?700:500,cursor:"pointer",fontFamily:"'Inter',sans-serif",whiteSpace:"nowrap",transition:"all .2s",borderRadius:"6px 6px 0 0"}}>
                       {label}

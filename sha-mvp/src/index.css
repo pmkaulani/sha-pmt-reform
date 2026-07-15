@@ -204,8 +204,6 @@ h1, h2, h3, h4 {
   .big-number-val { font-size: 32px !important; }
   .metrics-val { font-size: 18px !important; word-break: break-word; }
   .metrics-row { gap: 10px; }
-  .desktop-tabs { display: none !important; }
-  .mobile-tabs-dropdown { display: block; }
 }
 
 html, body {
@@ -213,6 +211,5 @@ html, body {
   overflow-x: hidden;
 }
 
-.mobile-tabs-dropdown {
-  display: none;
-}
+.mobile-swipe-hint { display: none; }
+@media (max-width: 768px) { .mobile-swipe-hint { display: block; } }
