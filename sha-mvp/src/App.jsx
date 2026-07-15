@@ -850,9 +850,9 @@ function MetricsTab() {
       {/* Fairness constraint */}
       <div style={{padding:"20px",background:S.blueD,border:`1px solid ${S.blueBd}`,borderRadius:10,display:"flex",gap:16,alignItems:"flex-start"}}>
         <ShieldCheck size={24} color={S.blue} style={{flexShrink:0,marginTop:2}}/>
-        <div>
+        <div style={{minWidth: 0}}>
           <div style={{fontSize:13,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.blue,marginBottom:8}}>What "Equalized Odds" Actually Means Here</div>
-          <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>
+          <div style={{fontSize:14,color:S.text,lineHeight:1.6,wordBreak:"break-word",overflowWrap:"anywhere"}}>
             {/* FIX (audit v2): this used to claim the model was "trained with
                 an Equalized Odds constraint enforced at the optimization
                 level" and "cannot converge" past a 0.05 margin. It isn't
@@ -864,7 +864,7 @@ function MetricsTab() {
                 Bias & Compliance tab — but it's a property you verify by
                 running that test against real assessment data, not one the
                 formulas guarantee by construction. */}
-            This is a deterministic rules engine, not a trained model — there's no optimization step and nothing "converges". What actually backs the fairness claim: <code>testCurrentModelDisparityByCounty()</code> measures disparity in current-model overcharging across county and gender groups from real assessment data, gated on a minimum sample size per group. Live results are on the <strong>Bias & Compliance</strong> tab. That test — not a training guarantee — is the real evidence, and it should be re-run continuously against production data, not just at launch.
+            This is a deterministic rules engine, not a trained model — there's no optimization step and nothing "converges". What actually backs the fairness claim: <code style={{wordBreak:"break-all"}}>testCurrentModelDisparityByCounty()</code> measures disparity in current-model overcharging across county and gender groups from real assessment data, gated on a minimum sample size per group. Live results are on the <strong>Bias & Compliance</strong> tab. That test — not a training guarantee — is the real evidence, and it should be re-run continuously against production data, not just at launch.
           </div>
         </div>
       </div>
