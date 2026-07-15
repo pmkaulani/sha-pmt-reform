@@ -517,7 +517,7 @@ function ComparisonTab({results, adminParams}) {
         ].map(box=>(
           <div key={box.label} style={{background:box.bgColor,border:`1px solid ${box.bdColor}`,borderRadius:12,padding:24,boxShadow:"0 1px 3px rgba(0,0,0,0.02)"}}>
             <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:box.color,marginBottom:16}}>{box.label}</div>
-            <div style={{fontFamily:"'Inter',sans-serif",fontSize:42,fontWeight:800,color:box.color,lineHeight:1,letterSpacing:"-1px"}}>
+            <div className="big-number-val" style={{fontFamily:"'Inter',sans-serif",fontSize:42,fontWeight:800,color:box.color,lineHeight:1,letterSpacing:"-1px"}}>
               {box.indigent?"Gov't Subsidized":`KSh ${box.monthly.toLocaleString()}`}
             </div>
             <div style={{fontSize:13,color:S.muted,marginTop:6,fontWeight:500}}>per month</div>
@@ -536,7 +536,7 @@ function ComparisonTab({results, adminParams}) {
 
       {/* Difference callout */}
       {Math.abs(diff)>0&&(
-        <div style={{background:overcharged?S.terraD:S.sageD,border:`1px solid ${overcharged?S.terraBd:S.sageBd}`,borderRadius:10,padding:20,display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 2px 4px rgba(0,0,0,0.02)"}}>
+        <div className="diff-callout" style={{background:overcharged?S.terraD:S.sageD,border:`1px solid ${overcharged?S.terraBd:S.sageBd}`}}>
           <div>
             <div style={{fontSize:13,fontWeight:700,textTransform:"uppercase",color:overcharged?S.terra:S.sage,marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
               {overcharged?<AlertTriangle size={16}/>:<CheckCircle2 size={16}/>}
@@ -550,7 +550,7 @@ function ComparisonTab({results, adminParams}) {
                   : `The fairness-constrained model correctly assesses KSh ${Math.abs(diff).toLocaleString()} more per month. The current system allows high-income households to underpay.`}
             </div>
           </div>
-          <div style={{fontFamily:"'Inter',sans-serif",fontSize:38,fontWeight:800,color:overcharged?S.terra:S.sage,marginLeft:24,whiteSpace:"nowrap"}}>
+          <div className="diff-callout-amount" style={{color:overcharged?S.terra:S.sage}}>
             {overcharged?"–":"+"}KSh {Math.abs(diff).toLocaleString()}
           </div>
         </div>
@@ -937,7 +937,7 @@ function FairnessTab({results}) {
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
           <div>
             <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:fairnessColor,marginBottom:8}}>Fairness Score</div>
-            <div style={{fontSize:42,fontWeight:800,color:fairnessColor,lineHeight:1}}>{Math.round(f.fairnessScore)}/100</div>
+            <div className="big-number-val" style={{fontSize:42,fontWeight:800,color:fairnessColor,lineHeight:1}}>{Math.round(f.fairnessScore)}/100</div>
           </div>
           <div style={{textAlign:"right"}}>
             <div style={{fontSize:13,fontWeight:600,color:f.overchargePercent > 50 ? S.terra : f.overchargePercent > 20 ? S.blue : S.sage}}>
@@ -1097,7 +1097,7 @@ function FraudRiskTab({results}) {
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
           <div>
             <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:getSeverityColor(fraud.severityLevel),marginBottom:8}}>Fraud Risk Percentile</div>
-            <div style={{fontSize:42,fontWeight:800,color:getSeverityColor(fraud.severityLevel),lineHeight:1}}>{fraud.fraudRiskPercentile}%</div>
+            <div className="big-number-val" style={{fontSize:42,fontWeight:800,color:getSeverityColor(fraud.severityLevel),lineHeight:1}}>{fraud.fraudRiskPercentile}%</div>
           </div>
           <div style={{textAlign:"right"}}>
             <div style={{fontSize:13,fontWeight:600,color:fraud.severityLevel==="CRITICAL"?S.terra:fraud.severityLevel==="HIGH"?"#DC2626":S.text}}>
@@ -1562,7 +1562,7 @@ export default function SHADemo() {
         </div>
 
         {/* Main layout */}
-        <div className="main-layout" id="main-content">
+        <div className="app-container" id="main-content">
 
           {/* Left panel */}
           <div className="left-panel">
@@ -1659,8 +1659,8 @@ export default function SHADemo() {
           {/* Right panel */}
           <div className="right-panel">
             {!results&&!classifying&&(
-              <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",padding:40,background:S.bg}}>
-                <div style={{background:S.surface,padding:40,borderRadius:16,border:`1px solid ${S.border}`,boxShadow:"0 4px 6px rgba(0,0,0,0.02)",textAlign:"center",maxWidth:500}}>
+              <div className="empty-state-wrapper">
+                <div className="empty-state-card">
                   <Fingerprint size={48} color={S.blue} style={{marginBottom:24,opacity:0.8}}/>
                   <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:12}}>Awaiting Assessment Data</div>
                   <div style={{fontSize:15,color:S.muted,lineHeight:1.6}}>Select a demographic persona from the left sidebar or complete the form manually. The classification engine will run both the current Lasso PMT and the proposed fairness-constrained ensemble.</div>
@@ -1676,9 +1676,9 @@ export default function SHADemo() {
               </div>
             )}
             {results&&(
-              <div style={{padding:40,maxWidth:1000,margin:"0 auto"}}>
+              <div className="results-container">
                 {/* Tabs */}
-                <div style={{display:"flex",borderBottom:`1px solid ${S.border}`,marginBottom:32,overflowX:"auto",gap:8}}>
+                <div className="tabs-container">
                   {TABS.map(([tab,label])=>(
                     <button key={tab} onClick={()=>setActiveTab(tab)} style={{padding:"12px 24px",border:"none",borderBottom:`3px solid ${activeTab===tab?S.blue:"transparent"}`,background:activeTab===tab?S.blueD:"transparent",color:activeTab===tab?S.blue:S.muted,fontSize:14,fontWeight:activeTab===tab?700:500,cursor:"pointer",fontFamily:"'Inter',sans-serif",whiteSpace:"nowrap",transition:"all .2s",borderRadius:"6px 6px 0 0"}}>
                       {label}
