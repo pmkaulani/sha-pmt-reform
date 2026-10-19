@@ -330,7 +330,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
         </div>
         <div style={{fontSize:12,padding:"12px 14px",background:S.terraD,borderRadius:6,border:`1px solid ${S.terraBd}`,color:S.terra,lineHeight:1.5,display:"flex",gap:8,alignItems:"flex-start"}}>
           <Info size={16} style={{flexShrink:0,marginTop:2}}/>
-          <span>Rural electrification programmes mean even poor households now have electricity. The current Lasso algorithm incorrectly weights this as a strong wealth signal, causing systematic overcharging.</span>
+          <span>Rural electrification programmes mean even poor households now have electricity. The current linear PMT algorithm incorrectly weights this as a strong wealth signal, causing systematic overcharging.</span>
         </div>
       </div>}
 
@@ -449,7 +449,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
           <strong>The Triangulation Trinity:</strong> The proposed algorithm cross-references self-reported data against KRA (Income), NTSA (Assets), and Telcos/M-Pesa (Liquidity) to catch hidden wealth and protect the poor.
         </div>
         <div className="grid-3">
-          <FieldNumber label="Gross M-Pesa (Monthly)" value={d.grossMpesaMonthly} onChange={v=>upd("grossMpesaMonthly",v)} note="Lasso treats gross velocity as income."/>
+          <FieldNumber label="Gross M-Pesa (Monthly)" value={d.grossMpesaMonthly} onChange={v=>upd("grossMpesaMonthly",v)} note="Current PMT treats gross velocity as income."/>
           <FieldNumber label="Avg Retained Balance (12-Mo)" value={d.avgRetainedBalance} onChange={v=>upd("avgRetainedBalance",v)} note="Proposed model checks actual liquidity."/>
           <FieldNumber label="Diaspora Remittances (Monthly KSh)" value={d.diasporaRemittances} onChange={v=>upd("diasporaRemittances",v)} note="Excluded from AGI to encourage inward flows."/>
         </div>
@@ -513,7 +513,7 @@ function ComparisonTab({results, adminParams}) {
       {/* Big numbers */}
       <div className="grid-2">
         {[
-          {label:"Current System · Lasso PMT",monthly:cur.monthly,income:cur.annualIncome,tier:cur.tier,indigent:cur.isIndigent,color:S.terra,bdColor:S.terraBd,bgColor:S.terraD,note:null},
+          {label:"Current System · Linear PMT",monthly:cur.monthly,income:cur.annualIncome,tier:cur.tier,indigent:cur.isIndigent,color:S.terra,bdColor:S.terraBd,bgColor:S.terraD,note:null},
           {label:"Proposed · 3-Layer Ensemble",monthly:nxt.monthly,income:nxt.annualIncome,tier:nxt.tier,indigent:nxt.isIndigent,color:S.sage,bdColor:S.sageBd,bgColor:S.sageD,note:null /* FIX (audit v2): was nxt.fairnessPass?"Equalized Odds Constraint Active":null — that field was a hardcoded `true` literal on every assessment. Equalized odds is a population-level stat; see the Bias & Compliance tab for the real, computed version. */},
         ].map(box=>(
           <div key={box.label} style={{background:box.bgColor,border:`1px solid ${box.bdColor}`,borderRadius:12,padding:24,boxShadow:"0 1px 3px rgba(0,0,0,0.02)"}}>
@@ -547,7 +547,7 @@ function ComparisonTab({results, adminParams}) {
               {diff === 0 
                 ? "Both the current system and the fairness-constrained model agree on this assessment, resulting in an equitable contribution."
                 : overcharged
-                  ? `The flawed Lasso algorithm currently charges KSh ${diff.toLocaleString()} more per month than an equitable assessment. That is ${((diff/nxt.monthly)*100).toFixed(0)}% above their fair contribution.`
+                  ? `The current linear PMT algorithm charges KSh ${diff.toLocaleString()} more per month than an equitable assessment. That is ${((diff/nxt.monthly)*100).toFixed(0)}% above their fair contribution.`
                   : `The fairness-constrained model correctly assesses KSh ${Math.abs(diff).toLocaleString()} more per month. The current system allows high-income households to underpay.`}
             </div>
           </div>
@@ -895,7 +895,7 @@ function MetricsTab() {
           <div style={{background:S.sageD,padding:16,borderRadius:8,border:`1px solid ${S.sageBd}`}}>
             <div style={{fontSize:12,fontWeight:700,color:S.sage,marginBottom:12,textTransform:"uppercase"}}>Proposed AGI System (The Rescue)</div>
             <div style={{display:"grid",gap:8,fontSize:13,color:S.text}}>
-              <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Eligible population</span><span style={{fontWeight:600}}>15.5 Million</span></div>
+              <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Eligible informal workers</span><span style={{fontWeight:600}}>15.5M – 16.7M</span></div>
               <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Compliance rate</span><span style={{fontWeight:700,color:S.sage}}>60%</span></div>
               <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Active payers</span><span style={{fontWeight:600}}>{(targetScenario.enrolledPopulation/1e6).toFixed(1)} Million</span></div>
               <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Avg. premium collected</span><span style={{fontWeight:600}}>KSh 520/mo</span></div>
@@ -1556,7 +1556,7 @@ export default function SHADemo() {
             </div>
           </div>
           <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
-            <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.terraD,color:S.terra,whiteSpace:"nowrap"}}>Current: Flawed Lasso</span>
+            <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.terraD,color:S.terra,whiteSpace:"nowrap"}}>Current: Flawed Linear PMT</span>
             <span style={{color:S.borderUp,fontSize:16}}>→</span>
             <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.sageD,color:S.sage,whiteSpace:"nowrap"}}>Proposed: Fairlearn Ensemble</span>
           </div>
@@ -1664,7 +1664,7 @@ export default function SHADemo() {
                 <div className="empty-state-card">
                   <Fingerprint size={48} color={S.blue} style={{marginBottom:24,opacity:0.8}}/>
                   <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:12}}>Awaiting Assessment Data</div>
-                  <div style={{fontSize:15,color:S.muted,lineHeight:1.6}}>Select a demographic persona from the left sidebar or complete the form manually. The classification engine will run both the current Lasso PMT and the proposed fairness-constrained ensemble.</div>
+                  <div style={{fontSize:15,color:S.muted,lineHeight:1.6}}>Select a demographic persona from the left sidebar or complete the form manually. The classification engine will run both the current linear PMT and the proposed fairness-constrained ensemble.</div>
                 </div>
               </div>
             )}

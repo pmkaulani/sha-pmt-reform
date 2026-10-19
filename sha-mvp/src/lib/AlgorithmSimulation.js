@@ -66,7 +66,7 @@ const DEFAULT_MAX_RENT = {
 };
 
 /**
- * Calculates the current flawed "Lasso" PMT model for baseline comparison.
+ * Calculates the current flawed baseline linear PMT model for comparison.
  * Simulates overcharging by weighting gross M-Pesa, visible assets, and penalizing urban residency.
  */
 export function calculateCurrentModel(d) {
@@ -1777,8 +1777,8 @@ export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'co
  * P-47 (CAJ BLOCKER): Generates revenue sensitivity analysis across compliance scenarios.
  * Shows projected monthly national revenue at varying compliance rates.
  * Data sources cited: NHIF, ILO, Rwanda CBHI, Ethiopia CBHI.
- * @param {number} totalPopulation - Total eligible population (default: ~15.5M non-salaried households)
- * @param {number} avgContribution - Average monthly contribution in KSh (default: 575)
+ * @param {number} totalPopulation - Total eligible informal population (default: ~15.5M informal earners)
+ * @param {number} avgContribution - Average monthly contribution in KSh (default: 520)
  * @returns {Object} { scenarios: Array, breakeven: Object, summary: string }
  */
 export function generateRevenueStressTest(totalPopulation = 15500000, avgContribution = 520) {
