@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "verify:tax": "node verify_tax.mjs",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },

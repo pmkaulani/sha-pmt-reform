@@ -93,6 +93,7 @@ This reform aligns with major policy, judicial, and statistical developments acr
 │   ├── LEGAL_ETHICAL_ARCHITECTURAL_EVALUATION.docx
 │   ├── PRIVACY_POLICY.docx
 │   ├── KIPPRA_SUBMISSION_LETTER.docx
+│   ├── TAX_MODE.md                 # Informal-sector tax assessment concept documentation
 │   └── ... (full document set)
 │
 ├── explainer/                      # Standalone interactive explainer webpage
@@ -101,8 +102,15 @@ This reform aligns with major policy, judicial, and statistical developments acr
 ├── sha-mvp/                        # Interactive web MVP (Vite + React / JavaScript)
 │   ├── src/
 │   │   ├── App.jsx                 # Simulation UI, deduction toggles & receipts
+│   │   ├── TaxModeTab.jsx          # Tax Mode screen (informal-sector income assessment)
 │   │   └── lib/
-│   │       └── AlgorithmSimulation.js # AGI math, proxy models & SHAP logic
+│   │       ├── AlgorithmSimulation.js # AGI math, proxy models & SHAP logic
+│   │       ├── TaxMode.js          # Tax Mode assessment engine & rules (1.5% turnover tax)
+│   │       ├── TaxFairness.js      # Fairness check on synthetic traders
+│   │       └── TaxCalibration.js   # Cost-ratio calibration engine
+│   ├── calibrate_costs.mjs         # CLI calibration script for survey cost ratios
+│   ├── sample_calibration.csv      # Synthetic calibration demonstration data
+│   ├── verify_tax.mjs              # Test suite for Tax Mode (466k+ assertions)
 │   ├── public/
 │   ├── index.html
 │   └── package.json
@@ -133,6 +141,7 @@ This reform aligns with major policy, judicial, and statistical developments acr
 - **AI Bill 2026 Compliance** — Regulatory compliance framework ([docs/AI_BILL_2026_COMPLIANCE.docx](docs/AI_BILL_2026_COMPLIANCE.docx))
 - **Legal Ethical Architectural Evaluation** — Constitutional and statutory compliance framework ([docs/LEGAL_ETHICAL_ARCHITECTURAL_EVALUATION.docx](docs/LEGAL_ETHICAL_ARCHITECTURAL_EVALUATION.docx))
 - **SHAP Deduction Receipts** — Citizen-facing explainability framework ([docs/SHAP_DEDUCTION_RECEIPTS.docx](docs/SHAP_DEDUCTION_RECEIPTS.docx))
+- **Tax Mode Concept** — Informal-sector tax assessment documentation and legal framework ([docs/TAX_MODE.md](docs/TAX_MODE.md))
 - **Privacy Policy** — DPA 2019 compliant data protection policy ([docs/PRIVACY_POLICY.docx](docs/PRIVACY_POLICY.docx))
 
 ---
@@ -145,8 +154,37 @@ Or run it locally:
 ```bash
 cd sha-mvp
 npm install
-npm run dev
+npm run dev          # Launch dev server (toggle "SHA Premium" / "Tax Mode" in header)
+npm run verify:tax   # Run the Tax Mode test suite (466,993 checks)
 ```
+
+---
+
+## Tax Mode (concept)
+
+Tax Mode applies the SHA PMT Reform assessment and deduction architecture to **informal-sector micro-enterprise tax assessment**, developed as a concept demonstration for the KCA TaxNovation Challenge 2026. It explores how transparent, verifiable income assessment can replace crude turnover tax for informal traders.
+
+### Turnover Tax (TOT) vs. Tax Mode
+
+Under current statutory rules, Turnover Tax (TOT) charges a flat **1.5% of gross sales** (effective 19 March 2024, revised from 3%) with **no expense deductions permitted**, applying strictly to businesses with annual turnover between **KSh 1,000,000 and KSh 25,000,000**. For example, a trader with KSh 1,800,000 gross annual turnover pays **KSh 27,000** under Turnover Tax (1.5%), regardless of margins or operating expenses.
+
+| Dimension | Turnover Tax (TOT) | Tax Mode (Ability-to-Pay) |
+|---|---|---|
+| **Statutory Rate** | Flat 1.5% of gross turnover | Graduated individual income tax bands (10% to 35%) with KSh 28,800 personal relief |
+| **Allowable Expenses** | None (gross turnover is taxed directly) | Typical sector running costs (or verified records), capped loan repayments, tools/equipment allowances |
+| **Low-Margin Protection** | Penalizes low-margin traders (e.g. kiosks) whose revenues are consumed by stock costs | Taxes net retained income; often results in nil tax after personal relief |
+| **Micro-Traders (< KSh 1M)** | Excluded from TOT, leaving them without a transparent assessment mechanism | Generates an itemized assessment receipt, preserving registration without premature liability |
+| **Seasonality** | Fixed monthly filing requirement | Calibrated strictly to active trading months |
+
+### Key Features & Architectural Safeguards
+
+- **"I Keep Records" Option:** Traders maintaining expense documentation can submit actual running costs rather than relying on presumptive sector ratios. Costs exceeding sector norms by >15% trigger non-punitive officer review.
+- **Auditable Officer Discretion:** Field officers can adjust monthly assessments with mandatory reason codes, logged officer IDs, and evidence references. Adjustments exceeding 25% require secondary officer approval before taking effect.
+- **Instalment Payment Schedules:** Provides structured lump-sum, quarterly (4×), or monthly (12×) payment plans with whole-shilling precision.
+- **Fairness & Calibration Tooling:** Includes an empirical fairness simulation (`sha-mvp/src/lib/TaxFairness.js`) and a CLI calibration script (`sha-mvp/calibrate_costs.mjs`) to adjust sector cost ratios from real survey data.
+- **Automated Verification Harness:** Verified by 466,993 automated test assertions (`npm run verify:tax`).
+
+*For complete legal analysis, design safeguards, and calibration instructions, see [docs/TAX_MODE.md](docs/TAX_MODE.md).*
 
 ---
 

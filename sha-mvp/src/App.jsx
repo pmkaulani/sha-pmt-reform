@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { calculateCurrentModel, calculateCurrentModelContribution, calculateProposedModel, calculateFraudRisk, analyzeSector, calculateFairnessMetrics, PRESETS, createAuditRecord, generateRevenueStressTest, testCurrentModelDisparityByCounty, generateFraudStatistics, generateSyntheticPopulation, calculatePopulationErrorRates } from "./lib/AlgorithmSimulation.js";
 import { logger } from "./lib/Logger.js";
+import TaxModeTab from "./TaxModeTab.jsx";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -1338,6 +1339,7 @@ function ConsentScreen({ onConsent }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function SHADemo() {
+  const [mode, setMode] = useState("premium");
   const [hasConsented, setHasConsented] = useState(false);
   const [inputs,setInputs]=useState({...DEFAULTS});
   const [step,setStep]=useState(0);
@@ -1555,14 +1557,58 @@ export default function SHADemo() {
               <div style={{fontSize:12,color:S.muted,marginTop:2,fontWeight:500}}>Social Health Authority · Means Testing Instrument</div>
             </div>
           </div>
-          <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
-            <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.terraD,color:S.terra,whiteSpace:"nowrap"}}>Current: Flawed Linear PMT</span>
-            <span style={{color:S.borderUp,fontSize:16}}>→</span>
-            <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.sageD,color:S.sage,whiteSpace:"nowrap"}}>Proposed: Fairlearn Ensemble</span>
+          <div style={{display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
+            <div style={{display:"flex",gap:4,background:S.faint,padding:3,borderRadius:8,border:`1px solid ${S.border}`}}>
+              <button
+                type="button"
+                onClick={()=>setMode("premium")}
+                style={{
+                  padding:"5px 12px",
+                  borderRadius:6,
+                  border:mode==="premium"?`1px solid ${S.text}`:"1px solid transparent",
+                  background:mode==="premium"?S.text:"transparent",
+                  color:mode==="premium"?"#FFF":S.muted,
+                  fontSize:12,
+                  fontWeight:mode==="premium"?700:500,
+                  cursor:"pointer",
+                  fontFamily:"inherit",
+                  transition:"all .2s"
+                }}
+              >
+                SHA Premium
+              </button>
+              <button
+                type="button"
+                onClick={()=>setMode("tax")}
+                style={{
+                  padding:"5px 12px",
+                  borderRadius:6,
+                  border:mode==="tax"?`1px solid ${S.text}`:"1px solid transparent",
+                  background:mode==="tax"?S.text:"transparent",
+                  color:mode==="tax"?"#FFF":S.muted,
+                  fontSize:12,
+                  fontWeight:mode==="tax"?700:500,
+                  cursor:"pointer",
+                  fontFamily:"inherit",
+                  transition:"all .2s"
+                }}
+              >
+                Tax Mode
+              </button>
+            </div>
+            {mode==="premium"&&(
+              <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
+                <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.terraD,color:S.terra,whiteSpace:"nowrap"}}>Current: Flawed Linear PMT</span>
+                <span style={{color:S.borderUp,fontSize:16}}>→</span>
+                <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.sageD,color:S.sage,whiteSpace:"nowrap"}}>Proposed: Fairlearn Ensemble</span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Main layout */}
+        {mode==="tax"&&<TaxModeTab/>}
+        {mode==="premium"&&(
+        /* Main layout */
         <div className="app-container" id="main-content">
 
           {/* Left panel */}
@@ -1704,6 +1750,7 @@ export default function SHADemo() {
             )}
           </div>
         </div>
+        )}
       </div>
     </>
   );
