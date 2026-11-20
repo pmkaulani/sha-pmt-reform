@@ -507,7 +507,7 @@ function ComparisonTab({results, adminParams}) {
   const overcharged = diff > 0;
   const chartData = [
     {name:"Illustrative Baseline",v:cur.monthly,fill:S.terra},
-    {name:"Proposed Model",v:nxt.monthly,fill:S.sage},
+    {name:"Proposed AGI Rules Engine",v:nxt.monthly,fill:S.sage},
   ];
   return (
     <div style={{display:"grid",gap:24}}>
@@ -529,7 +529,7 @@ function ComparisonTab({results, adminParams}) {
             </div>
             <div style={{marginTop:16,display:"flex",gap:8,flexWrap:"wrap"}}>
               <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"4px 10px",borderRadius:4,background:S.surface,border:`1px solid ${box.bdColor}`,color:box.color}}>{box.tier} TIER</span>
-              {box.indigent&&<span style={{fontSize:10,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"4px 10px",borderRadius:4,background:S.sage,color:"#FFF"}}>INDIGENT</span>}
+              {box.indigent&&<span style={{fontSize:10,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"4px 10px",borderRadius:4,background:S.sage,color:"#FFF"}}>PROPOSED INDIGENT TIER</span>}
               {box.note&&<span style={{fontSize:10,fontWeight:600,letterSpacing:"0.5px",padding:"4px 10px",borderRadius:4,background:S.amber,color:"#FFF",display:"flex",alignItems:"center",gap:4}}><ShieldCheck size={12}/>{box.note}</span>}
             </div>
           </div>
@@ -576,7 +576,7 @@ function ComparisonTab({results, adminParams}) {
       <div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
           <Label style={{marginBottom:0}}>Illustrative source indicators · no live agency connections</Label>
-          {adminParams?.triangulationOffline && <span style={{fontSize:11,fontWeight:700,background:S.amber,color:"#FFF",padding:"2px 8px",borderRadius:12}}>FALLBACK MODE</span>}
+          {adminParams?.triangulationOffline && <span style={{fontSize:11,fontWeight:700,background:S.amber,color:"#FFF",padding:"2px 8px",borderRadius:12}}>FALLBACK DEMONSTRATION</span>}
         </div>
         
         {adminParams?.triangulationOffline ? (
@@ -676,8 +676,8 @@ function USSDTab({results}) {
   const screens=[
     {title:"Main Menu · *147#",content:[
       {t:"SHA Kenya — Afya Yangu",y:true},{t:"—".repeat(22),y:false},
-      {t:"1. My status & contribution",y:false},{t:"2. Pay (Lipa Pole Pole)",y:false},
-      {t:"3. Appeal my assessment",y:false},{t:"4. Why this amount?",y:false},
+      {t:"1. My status & contribution",y:false},{t:"2. Payment options (illustrative)",y:false},
+      {t:"Contributions Appeal",y:false},{t:"Why this amount?",y:false},
       {t:"0. Cancel",y:false},{t:"",y:false},{t:"Enter option:",y:false},
     ]},
     {title:"My Status",content:[
@@ -751,7 +751,7 @@ function USSDTab({results}) {
               <div style={{width:32,height:32,borderRadius:"50%",background:screen===i?S.blue:S.faint,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:screen===i?"#FFF":S.muted,flexShrink:0}}>{i+1}</div>
               <div>
                 <div style={{fontSize:14,fontWeight:600,color:screen===i?S.blue:S.text,marginBottom:4}}>{s.title}</div>
-                <div style={{fontSize:12,color:S.muted,fontFamily:"monospace"}}>{"*147*"+i+"#"}</div>
+                <div style={{fontSize:12,color:S.muted,fontFamily:"monospace"}}>{"Step " + (i + 1)}</div>
               </div>
             </button>
           ))}
@@ -799,8 +799,8 @@ function MetricsTab() {
   const simNote = 'Synthetic demonstration only: both prototype calculations run over 500 generated households. The proposed model is a comparison reference, not independently verified ground truth.';
 
   const metrics=[
-    {label:"Exclusion Error Rate",cur:excRate,tgt:"< 10%",desc:`Poor households wrongly denied subsidy under the current model. ${simNote} Specific vulnerable subsets experience much higher exclusion rates (e.g., 56% for those with basic electricity — Lighthouse Reports field data).`},
-    {label:"Inclusion Error Rate",cur:incRate,tgt:"< 10%",desc:`Non-poor households wrongly classified as indigent under the current model. ${simNote}`},
+    {label:"Disagreement: proposed model classifies indigent",cur:excRate,tgt:"Design target: < 10%",desc:`Households the proposed rules engine classifies as indigent while the illustrative baseline does not. ${simNote} The external Lighthouse Reports subgroup figure is a separate published finding, not an output of this simulation.`},
+    {label:"Disagreement: baseline classifies indigent",cur:incRate,tgt:"Design target: < 10%",desc:`Households the illustrative baseline classifies as indigent while the proposed rules engine does not. ${simNote}`},
     {label:"Group disparity check",cur:"Synthetic test only",tgt:"Design target: ≤ 3 pp",desc:"The current test measures a model-disagreement proxy, not formal equalized odds. Real outcome labels and adequately sized groups are required."},
     {label:"Monthly Payout Ratio",cur:payRatio,tgt:"< 100%",desc:`KSh in indigent subsidies owed vs KSh collected from contributions, under the current model's classifications. ${simNote}`},
     {label:"Active Payers",cur:"22.7%",tgt:"> 60%",desc:"5 Million of 22 Million registered members — parliamentary oversight figure"},
