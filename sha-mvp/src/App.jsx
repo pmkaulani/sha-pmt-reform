@@ -447,7 +447,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
       {/* Step 5: Triangulation Data */}
       {step===5&&<div style={{display:"grid",gap:16}}>
         <div style={{fontSize:13,color:S.text,lineHeight:1.4,marginBottom:2,padding:10,background:S.blueD,borderRadius:8,border:`1px solid ${S.blueBd}`}}>
-          <strong>The Triangulation Trinity:</strong> The proposed algorithm cross-references self-reported data against KRA (Income), NTSA (Assets), and Telcos/M-Pesa (Liquidity) to catch hidden wealth and protect the poor.
+          <strong>The Potential data-source checks:</strong> The proposed algorithm cross-references self-reported data against KRA (Income), NTSA (Assets), and Telcos/M-Pesa (Liquidity) to catch hidden wealth and protect the poor.
         </div>
         <div className="grid-3">
           <FieldNumber label="Gross M-Pesa (Monthly)" value={d.grossMpesaMonthly} onChange={v=>upd("grossMpesaMonthly",v)} note="Current PMT treats gross velocity as income."/>
@@ -575,14 +575,14 @@ function ComparisonTab({results, adminParams}) {
       {/* Data fusion signals */}
       <div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-          <Label style={{marginBottom:0}}>Layer 3 · Asynchronous Data Fusion Signals</Label>
+          <Label style={{marginBottom:0}}>Illustrative source indicators · no live agency connections</Label>
           {adminParams?.triangulationOffline && <span style={{fontSize:11,fontWeight:700,background:S.amber,color:"#FFF",padding:"2px 8px",borderRadius:12}}>FALLBACK MODE</span>}
         </div>
         
         {adminParams?.triangulationOffline ? (
           <div style={{background:"#FEF3C7",padding:"16px",borderRadius:8,border:"1px solid #FDE68A"}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#B45309",marginBottom:4}}>⚠️ Triangulation APIs Offline</div>
-            <div style={{fontSize:13,color:"#92400E",lineHeight:1.5}}>The system has engaged the <strong>Secondary Proxy Layer</strong>. Wealth is currently being approximated using physical assets, land, livestock, and dependency ratios. If the citizen claims indigence and has zero digital footprint, they will be flagged as a <strong>Digital Ghost</strong> and routed for mandatory physical CHP verification.</div>
+            <div style={{fontSize:14,fontWeight:700,color:"#B45309",marginBottom:4}}>⚠️ Illustrative fallback mode</div>
+            <div style={{fontSize:13,color:"#92400E",lineHeight:1.5}}>No KRA, NTSA, IPRS or mobile-network APIs are connected in this prototype. This panel only demonstrates how a fallback pathway could be presented; it does not trigger a real verification or CHP referral.</div>
           </div>
         ) : (
           <div className="grid-2">
@@ -688,14 +688,14 @@ function USSDTab({results}) {
       {t:`Monthly: KSh ${nxt.monthly}`,col:"#4ADE80"},{t:"",y:false},
       {t:"1. Why this amount?",y:false},{t:"2. Pay now",y:false},{t:"0. Back",y:false},
     ]},
-    {title:"SHAP Explanation · *147*4#",content:[
+    {title:"Calculation explanation · mock",content:[
       {t:"SHA — Explanation",y:true},{t:"—".repeat(22),y:false},
       {t:`Assessment: KSh ${nxt.monthly}/mo`,col:"#4ADE80"},{t:"",y:false},
       {t:"Key factors (AGI Model v2.1):",y:false},
       {t:`Household: ${results.d.householdSize} members`,y:false},
       {t:`Retained Bal: KSh ${results.d.avgRetainedBalance.toLocaleString()}`,y:false},
       {t:`Assets: ${results.d.assets.length} declared`,y:false},{t:"",y:false},
-      {t:"Full detail: sha.go.ke/why",col:"#38BDF8"},{t:"1. Appeal  0. Back",y:false},
+      {t:"Explanation screen: demonstration only",col:"#38BDF8"},{t:"1. Appeal  0. Back",y:false},
     ]},
     {title:"Pay · Lipa Pole Pole",content:[
       {t:"SHA — Flexible Payment",y:true},{t:"—".repeat(22),y:false},
@@ -706,14 +706,14 @@ function USSDTab({results}) {
       {t:`   KSh ${Math.ceil(nxt.monthly/4)}`,col:"#4ADE80"},
       {t:"3. Daily",y:false},
       {t:`   KSh ${Math.ceil(nxt.monthly/30)}`,col:"#4ADE80"},
-      {t:"Paybill: 200222  0. Back",y:false},
+      {t:"Use official SHA payment instructions  0. Back",y:false},
     ]},
-    {title:"Appeal · *147*3#",content:[
-      {t:"SHA — Instant Appeal",y:true},{t:"—".repeat(22),y:false},
+    {title:"Contributions Appeal route · illustrative",content:[
+      {t:"SHA — Appeal entry (mock)",y:true},{t:"—".repeat(22),y:false},
       {t:`Your tier: ${nxt.tier}`,y:false},
-      {t:"Re-verify my data via:",y:false},{t:"",y:false},
+      {t:"Select the information you want reviewed:",y:false},{t:"",y:false},
       {t:"1. KRA PIN",y:false},{t:"2. M-Pesa Velocity",y:false},{t:"3. NTSA Assets",y:false},{t:"",y:false},
-      {t:"Result is immediate.",col:"#94A3B8"},
+      {t:"A real SHA review is not performed by this demo.",col:"#94A3B8"},
       {t:"0. Back",y:false},
     ]},
   ];
@@ -722,7 +722,7 @@ function USSDTab({results}) {
     <div style={{display:"grid",gap:24}}>
       <div>
         <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>USSD Architectural Simulation</div>
-        <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>Over 60% of Kenyan phones are basic feature phones. The entire classification, payment, and appeals flow must be completed in under 120 seconds on a 2G network. This is the architectural floor, not a fallback.</div>
+        <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>This is a proposed USSD interaction storyboard, not a connected USSD gateway or timed performance test. The flow, response times and handset compatibility require implementation and field testing.</div>
       </div>
       <div className="ussd-container">
         {/* Phone */}
@@ -1075,12 +1075,9 @@ function FraudRiskTab({results}) {
   return (
     <div style={{display:"grid",gap:24}}>
       <div>
-        <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Fraud Risk Assessment (SHA PMT v2.1)</div>
+        <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Prototype fraud-risk rules</div>
         <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>
-          Fraud detection flags inconsistencies in household declarations against external data sources 
-          (KRA tax records, NTSA vehicle registry, Safaricom transaction history). In compliance with the Kenya Data Protection Act §35, 
-          <strong>no assessment is automatically rejected</strong>. All flagged cases are escalated to an SHA officer for manual review, 
-          and citizens retain the right to explanation and appeal.
+          The prototype applies hand-authored rules to demonstration inputs. It does not query KRA, NTSA or mobile-network records, and its heuristic score is not a calibrated fraud probability. Flags are prompts for human examination, not findings of fraud and not grounds for automatic rejection. No officer is notified by this demo.
         </div>
       </div>
 
@@ -1088,8 +1085,8 @@ function FraudRiskTab({results}) {
         <div style={{padding:"20px",background:"#FEF2F2",border:"2px solid #DC2626",borderRadius:12,display:"flex",gap:16,alignItems:"flex-start"}}>
           <AlertTriangle size={24} color="#DC2626" style={{flexShrink:0}}/>
           <div>
-            <div style={{fontSize:16,fontWeight:700,color:"#991B1B",marginBottom:4}}>DIGITAL GHOST DETECTED: CHP Verification Required</div>
-            <div style={{fontSize:14,color:"#991B1B",lineHeight:1.5}}>This citizen claims indigence but has a zero digital footprint (No KRA, No NTSA, Zero M-Pesa). To prevent cash-based tax evasion, they have been granted a provisional KSh 300 subsidy pending physical verification by a Community Health Promoter within 90 days.</div>
+            <div style={{fontSize:16,fontWeight:700,color:"#991B1B",marginBottom:4}}>Offline / cash-only pathway · demonstration only</div>
+            <div style={{fontSize:14,color:"#991B1B",lineHeight:1.5}}>The entered demonstration profile meets the prototype’s offline-pathway rule. No external database has been checked, no subsidy has been granted, and no CHP referral has been created. Any real-world pathway would require a defined human-review process.</div>
           </div>
         </div>
       )}
@@ -1099,7 +1096,7 @@ function FraudRiskTab({results}) {
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
           <div>
             <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:getSeverityColor(fraud.severityLevel),marginBottom:8}}>Heuristic rule score · not a probability</div>
-            <div className="big-number-val" style={{fontSize:42,fontWeight:800,color:getSeverityColor(fraud.severityLevel),lineHeight:1}}>{fraud.fraudRiskPercentile}%</div>
+            <div className="big-number-val" style={{fontSize:42,fontWeight:800,color:getSeverityColor(fraud.severityLevel),lineHeight:1}}>{(fraud.heuristicRiskScore ?? fraud.fraudRiskPercentile)}%</div>
           </div>
           <div style={{textAlign:"right"}}>
             <div style={{fontSize:13,fontWeight:600,color:fraud.severityLevel==="CRITICAL"?S.terra:fraud.severityLevel==="HIGH"?"#DC2626":S.text}}>
@@ -1134,7 +1131,7 @@ function FraudRiskTab({results}) {
                 <div style={{fontSize:14,fontWeight:600,color:getSeverityColor(flag.severity),marginBottom:4}}>
                   {flag.name}
                   <span style={{fontSize:11,fontWeight:500,color:S.muted,marginLeft:8}}>
-                    Rule weight: {Math.round(flag.confidence * 100)}%
+                    Uncalibrated rule weight: {Math.round(flag.confidence * 100)}%
                   </span>
                 </div>
                 <div style={{fontSize:12,color:S.muted,lineHeight:1.5,marginBottom:8}}>{flag.reason}</div>
@@ -1168,10 +1165,10 @@ function FraudRiskTab({results}) {
         <div style={{fontSize:14,fontWeight:600,color:S.text,marginBottom:12}}>Fraud Prevention Framework</div>
         <div style={{display:"grid",gap:10}}>
           {[
-            {label:"Triangulation Trinity",desc:"KRA (tax), NTSA (vehicles), Safaricom (transactions) cross-reference"},
+            {label:"Triangulation Trinity",desc:"Would require authenticated, consented agency integrations; none are connected here."},
             {label:"Phantom Dependent Detection",desc:"Can flag unusual declared household sizes for a human check; size alone is not evidence of fraud."},
             {label:"Asset-Liquidity Consistency",desc:"Flags mismatches (luxury car + near-zero M-Pesa)"},
-            {label:"Geographic Impossibility",desc:"Flags simultaneous registrations >400km apart"},
+            {label:"Geographic Impossibility",desc:"Flags simultaneous registrations across separate time-stamped records"},
             {label:"Behavioral Anomalies",desc:"Rapid re-classification attempts, income suppression patterns"}
           ].map((item,i)=>(
             <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start"}}>
