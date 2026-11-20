@@ -262,7 +262,7 @@ function AssetGrid({assets,toggle}) {
 
 const STEPS=["Demographics","Housing","Services","Assets","Livelihood","Triangulation"];
 
-function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAcknowledgedDemo,setHasConsented,setInputs,setActiveScenario,addListItem,updListItem,removeListItem}) {
+function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAcknowledgedDemo,setHasAcknowledgedDemo,setInputs,setActiveScenario,addListItem,updListItem,removeListItem}) {
   const go=(n)=>setStep(Math.max(0,Math.min(5,n)));
   return (
     <div style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:12,padding:24,boxShadow:"0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)"}}>
@@ -477,7 +477,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
       {step===5 && (
         <div style={{marginTop: 20, padding: 14, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
           <label style={{display:"flex", alignItems:"center", gap:10, fontSize:13, fontWeight:500, color:S.text, cursor:"pointer"}}>
-            <input type="checkbox" checked={hasAcknowledgedDemo} onChange={(e)=>setHasConsented(e.target.checked)} style={{transform:"scale(1.1)"}} />
+            <input type="checkbox" checked={hasAcknowledgedDemo} onChange={(e)=>setHasAcknowledgedDemo(e.target.checked)} style={{transform:"scale(1.1)"}} />
             I understand this is a browser-only demonstration. No KRA, NTSA, IPRS or MNO data is retrieved, and no information or appeal is submitted to SHA.
           </label>
         </div>
@@ -852,7 +852,7 @@ function MetricsTab() {
       <div style={{padding:"20px",background:S.blueD,border:`1px solid ${S.blueBd}`,borderRadius:10,display:"flex",gap:16,alignItems:"flex-start"}}>
         <ShieldCheck size={24} color={S.blue} style={{flexShrink:0,marginTop:2}}/>
         <div style={{minWidth: 0}}>
-          <div style={{fontSize:13,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.blue,marginBottom:8}}>What "Equalized Odds" Actually Means Here</div>
+          <div style={{fontSize:13,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.blue,marginBottom:8}}>What this prototype can and cannot establish</div>
           <div style={{fontSize:14,color:S.text,lineHeight:1.6,wordBreak:"break-word",overflowWrap:"anywhere"}}>
             {/* FIX (audit v2): this used to claim the model was "trained with
                 an Equalized Odds constraint enforced at the optimization
@@ -934,7 +934,7 @@ function FairnessTab({results}) {
         </div>
       </div>
 
-      {/* Fairness Score */}
+      {/* Comparison indicator (heuristic) */}
       <div style={{padding:"24px",background:fairnessBgColor,border:`2px solid ${fairnessColor}`,borderRadius:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
           <div>
@@ -1282,7 +1282,7 @@ function BiasComplianceTab() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function SHADemo() {
-  const [hasAcknowledgedDemo, setHasConsented] = useState(false);
+  const [hasAcknowledgedDemo, setHasAcknowledgedDemo] = useState(false);
   const [inputs,setInputs]=useState({...DEFAULTS});
   const [step,setStep]=useState(0);
   const [results,setResults]=useState(null);
@@ -1324,7 +1324,7 @@ export default function SHADemo() {
   const loadScenario=(name)=>{
     setActiveScenario(name);
     setInputs({...DEFAULTS, ...SCENARIOS[name].d});
-    setHasConsented(true);
+    setHasAcknowledgedDemo(true);
     setResults(null); setStep(0);
   };
 
@@ -1372,7 +1372,7 @@ export default function SHADemo() {
     },800);
   };
 
-  const TABS=[["comparison","Financial Comparison"],["fairness","Fairness Analysis"],["fraud","Fraud Risk Assessment"],["bias","Bias & Compliance"],["shap","Calculation Breakdown"],["ussd","USSD Simulation"],["metrics","System Metrics"]];
+  const TABS=[["comparison","Financial Comparison"],["challenge","Prepare Challenge"],["fairness","Fairness Analysis"],["fraud","Fraud Risk Assessment"],["bias","Bias & Compliance"],["shap","Calculation Breakdown"],["ussd","USSD Simulation"],["metrics","Evidence & Targets"]];
 
   return (
     <>
@@ -1527,7 +1527,7 @@ export default function SHADemo() {
                 ))}
                 
                 {/* Custom Entry Button */}
-                <button onClick={()=>{setActiveScenario("Custom"); setInputs({...DEFAULTS}); setResults(null); setStep(0); setHasConsented(false);}} style={{padding:"14px 16px",border:`2px dashed ${activeScenario==="Custom"?S.text:S.borderUp}`,borderRadius:10,background:activeScenario==="Custom"?S.text:"transparent",cursor:"pointer",textAlign:"left",transition:"all .2s",width:"100%",boxShadow:activeScenario==="Custom"?"0 4px 6px rgba(15,23,42,0.3)":"none",transform:activeScenario==="Custom"?"scale(1.02)":"scale(1)"}}>
+                <button onClick={()=>{setActiveScenario("Custom"); setInputs({...DEFAULTS}); setResults(null); setStep(0); setHasAcknowledgedDemo(false);}} style={{padding:"14px 16px",border:`2px dashed ${activeScenario==="Custom"?S.text:S.borderUp}`,borderRadius:10,background:activeScenario==="Custom"?S.text:"transparent",cursor:"pointer",textAlign:"left",transition:"all .2s",width:"100%",boxShadow:activeScenario==="Custom"?"0 4px 6px rgba(15,23,42,0.3)":"none",transform:activeScenario==="Custom"?"scale(1.02)":"scale(1)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                     <div style={{fontSize:14,fontWeight:700,color:activeScenario==="Custom"?"#FFF":S.text}}>Custom Entry</div>
                   </div>
@@ -1597,7 +1597,7 @@ export default function SHADemo() {
             </div>
 
             {/* Form */}
-            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasAcknowledgedDemo={hasAcknowledgedDemo} setHasConsented={setHasConsented} setInputs={setInputs} setActiveScenario={setActiveScenario} addListItem={addListItem} updListItem={updListItem} removeListItem={removeListItem}/>
+            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasAcknowledgedDemo={hasAcknowledgedDemo} setHasAcknowledgedDemo={setHasAcknowledgedDemo} setInputs={setInputs} setActiveScenario={setActiveScenario} addListItem={addListItem} updListItem={updListItem} removeListItem={removeListItem}/>
 
           </div>
 
