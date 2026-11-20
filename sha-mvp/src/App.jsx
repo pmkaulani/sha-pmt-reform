@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { calculateCurrentModel, calculateCurrentModelContribution, calculateProposedModel, calculateFraudRisk, analyzeSector, calculateFairnessMetrics, PRESETS, createAuditRecord, generateRevenueStressTest, testCurrentModelDisparityByCounty, generateFraudStatistics, generateSyntheticPopulation, calculatePopulationErrorRates } from "./lib/AlgorithmSimulation.js";
 import { logger } from "./lib/Logger.js";
+import AppealPreparationTab from "./AppealPreparationTab.jsx";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -261,7 +262,7 @@ function AssetGrid({assets,toggle}) {
 
 const STEPS=["Demographics","Housing","Services","Assets","Livelihood","Triangulation"];
 
-function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasConsented,setHasConsented,setInputs,setActiveScenario,addListItem,updListItem,removeListItem}) {
+function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAcknowledgedDemo,setHasConsented,setInputs,setActiveScenario,addListItem,updListItem,removeListItem}) {
   const go=(n)=>setStep(Math.max(0,Math.min(5,n)));
   return (
     <div style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:12,padding:24,boxShadow:"0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)"}}>
@@ -476,8 +477,8 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
       {step===5 && (
         <div style={{marginTop: 20, padding: 14, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
           <label style={{display:"flex", alignItems:"center", gap:10, fontSize:13, fontWeight:500, color:S.text, cursor:"pointer"}}>
-            <input type="checkbox" checked={hasConsented} onChange={(e)=>setHasConsented(e.target.checked)} style={{transform:"scale(1.1)"}} />
-            I consent to cross-referencing my data with KRA, NTSA, and MNOs.
+            <input type="checkbox" checked={hasAcknowledgedDemo} onChange={(e)=>setHasConsented(e.target.checked)} style={{transform:"scale(1.1)"}} />
+            I understand this is a browser-only demonstration. No KRA, NTSA, IPRS or MNO data is retrieved, and no information or appeal is submitted to SHA.
           </label>
         </div>
       )}
@@ -487,7 +488,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasCon
         <button onClick={()=>go(step-1)} disabled={step===0} style={{padding:"10px 20px",borderRadius:6,border:`1px solid ${S.borderUp}`,background:S.surface,color:step===0?S.borderUp:S.text,fontSize:14,fontWeight:500,cursor:step===0?"default":"pointer",fontFamily:"inherit",transition:"all .2s",whiteSpace:"nowrap"}}>← Back</button>
         {step<5
           ?<button onClick={()=>go(step+1)} style={{padding:"10px 24px",borderRadius:6,border:"none",background:S.blue,color:"#FFF",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 4px rgba(2,132,199,0.2)",transition:"all .2s",whiteSpace:"nowrap"}}>Next →</button>
-          :<button onClick={onClassify} disabled={classifying || !hasConsented} style={{padding:"10px 24px",borderRadius:6,border:"none",background:classifying||!hasConsented?S.borderUp:S.sage,color:classifying||!hasConsented?S.muted:"#FFF",fontSize:14,fontWeight:600,cursor:classifying||!hasConsented?"default":"pointer",fontFamily:"inherit",boxShadow:classifying||!hasConsented?"none":"0 2px 4px rgba(5,150,105,0.2)",transition:"all .2s",whiteSpace:"nowrap"}}>
+          :<button onClick={onClassify} disabled={classifying || !hasAcknowledgedDemo} style={{padding:"10px 24px",borderRadius:6,border:"none",background:classifying||!hasAcknowledgedDemo?S.borderUp:S.sage,color:classifying||!hasAcknowledgedDemo?S.muted:"#FFF",fontSize:14,fontWeight:600,cursor:classifying||!hasAcknowledgedDemo?"default":"pointer",fontFamily:"inherit",boxShadow:classifying||!hasAcknowledgedDemo?"none":"0 2px 4px rgba(5,150,105,0.2)",transition:"all .2s",whiteSpace:"nowrap"}}>
              {classifying?"Computing…":"Run Classification →"}
            </button>
         }
@@ -505,7 +506,7 @@ function ComparisonTab({results, adminParams}) {
   const diff = cur.monthly - nxt.monthly;
   const overcharged = diff > 0;
   const chartData = [
-    {name:"Current System",v:cur.monthly,fill:S.terra},
+    {name:"Illustrative Baseline",v:cur.monthly,fill:S.terra},
     {name:"Proposed Model",v:nxt.monthly,fill:S.sage},
   ];
   return (
@@ -513,8 +514,8 @@ function ComparisonTab({results, adminParams}) {
       {/* Big numbers */}
       <div className="grid-2">
         {[
-          {label:"Current System · Linear PMT",monthly:cur.monthly,income:cur.annualIncome,tier:cur.tier,indigent:cur.isIndigent,color:S.terra,bdColor:S.terraBd,bgColor:S.terraD,note:null},
-          {label:"Proposed · 3-Layer Ensemble",monthly:nxt.monthly,income:nxt.annualIncome,tier:nxt.tier,indigent:nxt.isIndigent,color:S.sage,bdColor:S.sageBd,bgColor:S.sageD,note:null /* FIX (audit v2): was nxt.fairnessPass?"Equalized Odds Constraint Active":null — that field was a hardcoded `true` literal on every assessment. Equalized odds is a population-level stat; see the Bias & Compliance tab for the real, computed version. */},
+          {label:"Illustrative baseline · PMT-style",monthly:cur.monthly,income:cur.annualIncome,tier:cur.tier,indigent:cur.isIndigent,color:S.terra,bdColor:S.terraBd,bgColor:S.terraD,note:null},
+          {label:"Proposed · AGI rules engine",monthly:nxt.monthly,income:nxt.annualIncome,tier:nxt.tier,indigent:nxt.isIndigent,color:S.sage,bdColor:S.sageBd,bgColor:S.sageD,note:null},
         ].map(box=>(
           <div key={box.label} style={{background:box.bgColor,border:`1px solid ${box.bdColor}`,borderRadius:12,padding:24,boxShadow:"0 1px 3px rgba(0,0,0,0.02)"}}>
             <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:box.color,marginBottom:16}}>{box.label}</div>
@@ -523,7 +524,7 @@ function ComparisonTab({results, adminParams}) {
             </div>
             <div style={{fontSize:13,color:S.muted,marginTop:6,fontWeight:500}}>per month</div>
             <div style={{marginTop:20,paddingTop:16,borderTop:`1px solid ${box.bdColor}`}}>
-              <div style={{fontSize:12,color:S.muted,fontWeight:500}}>Estimated Annual Income</div>
+              <div style={{fontSize:12,color:S.muted,fontWeight:500}}>Indicative pre-adjustment base</div>
               <div style={{fontSize:18,fontWeight:700,color:S.text,marginTop:2}}>KSh {box.income.toLocaleString()}</div>
             </div>
             <div style={{marginTop:16,display:"flex",gap:8,flexWrap:"wrap"}}>
@@ -541,14 +542,14 @@ function ComparisonTab({results, adminParams}) {
           <div>
             <div style={{fontSize:13,fontWeight:700,textTransform:"uppercase",color:overcharged?S.terra:S.sage,marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
               {overcharged?<AlertTriangle size={16}/>:<CheckCircle2 size={16}/>}
-              {overcharged?"This household is being overcharged":"New system captures higher capacity"}
+              {overcharged?"Illustrative baseline is higher":"Proposed calculation is higher"}
             </div>
             <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>
               {diff === 0 
-                ? "Both the current system and the fairness-constrained model agree on this assessment, resulting in an equitable contribution."
+                ? "Both prototype calculations currently produce the same indicative monthly amount. Agreement between simulations does not establish that either amount is correct."
                 : overcharged
-                  ? `The current linear PMT algorithm charges KSh ${diff.toLocaleString()} more per month than an equitable assessment. That is ${((diff/nxt.monthly)*100).toFixed(0)}% above their fair contribution.`
-                  : `The fairness-constrained model correctly assesses KSh ${Math.abs(diff).toLocaleString()} more per month. The current system allows high-income households to underpay.`}
+                  ? `The illustrative PMT-style baseline is KSh ${diff.toLocaleString()} higher per month than the proposed rules-engine result. This comparison does not establish that an actual SHA assessment is wrong.`
+                  : `The proposed rules-engine result is KSh ${Math.abs(diff).toLocaleString()} higher per month than the illustrative baseline. This is a model comparison, not a finding about an actual household assessment.`}
             </div>
           </div>
           <div className="diff-callout-amount" style={{color:overcharged?S.terra:S.sage}}>
@@ -614,9 +615,9 @@ function SHAPTab({results, adminParams}) {
   return (
     <div style={{display:"grid",gap:24}}>
       <div>
-        <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Algorithmic Explicability (SHAP & AGI)</div>
+        <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Proposed calculation breakdown</div>
         <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>
-          The SHA Optimization model applies rigorous deductions (Adjustable Gross Income) before flat 2.75% taxation, perfectly solving the Tax Cliff and Adverse Selection flaws. Each deduction below is a legally mandated adjustment that protects vulnerable citizens from algorithmic overcharging.
+          This screen displays factors and deductions produced by the prototype rules engine. It is a calculation breakdown, not a SHAP/Shapley attribution, an official SHA assessment, or proof that the proposed deductions are legally mandated or empirically validated.
         </div>
       </div>
       {isCustom && (
@@ -795,12 +796,12 @@ function MetricsTab() {
   const payRatio = errorRates ? `${errorRates.payoutRatio}%` : '…';
   const excNum = errorRates ? errorRates.exclusionRate : 0;
   const incNum = errorRates ? errorRates.inclusionRate : 0;
-  const simNote = 'Simulation-computed: both models run over 500 synthetic households; proposed model used as truth reference. Figures will vary slightly on each page load.';
+  const simNote = 'Synthetic demonstration only: both prototype calculations run over 500 generated households. The proposed model is a comparison reference, not independently verified ground truth.';
 
   const metrics=[
     {label:"Exclusion Error Rate",cur:excRate,tgt:"< 10%",desc:`Poor households wrongly denied subsidy under the current model. ${simNote} Specific vulnerable subsets experience much higher exclusion rates (e.g., 56% for those with basic electricity — Lighthouse Reports field data).`},
     {label:"Inclusion Error Rate",cur:incRate,tgt:"< 10%",desc:`Non-poor households wrongly classified as indigent under the current model. ${simNote}`},
-    {label:"Equalized Odds Difference",cur:"See Bias & Compliance tab",tgt:"< 0.05",desc:"Fairness across all 47 counties — computed there against a live synthetic population, not asserted here"},
+    {label:"Group disparity check",cur:"Synthetic test only",tgt:"Design target: ≤ 3 pp",desc:"The current test measures a model-disagreement proxy, not formal equalized odds. Real outcome labels and adequately sized groups are required."},
     {label:"Monthly Payout Ratio",cur:payRatio,tgt:"< 100%",desc:`KSh in indigent subsidies owed vs KSh collected from contributions, under the current model's classifications. ${simNote}`},
     {label:"Active Payers",cur:"22.7%",tgt:"> 60%",desc:"5 Million of 22 Million registered members — parliamentary oversight figure"},
     {label:"Inference Latency",cur:"~3 s",tgt:"< 500 ms",desc:"Time required to compute classification result"},
@@ -814,8 +815,8 @@ function MetricsTab() {
   return (
     <div style={{display:"flex",flexDirection:"column",gap:24}}>
       <div>
-        <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>System Performance Metrics</div>
-        <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>Documented state of the current SHA system evaluated against launch requirements for the proposed architecture. Every metric is sourced from parliamentary oversight reports, the KNBS Economic Survey 2026, or provider data from RUPHA.</div>
+        <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Evidence indicators and design targets</div>
+        <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>This panel mixes synthetic prototype outputs, external figures cited in project materials, and proposed engineering targets. It is not a live SHA monitoring dashboard. Verify each external source and publication date before quoting a figure outside this demonstration.</div>
       </div>
 
       {/* Metrics grid */}
@@ -824,9 +825,9 @@ function MetricsTab() {
           <div key={m.label} style={{padding:"20px",background:S.surface,borderRadius:10,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
             <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.muted,marginBottom:12}}>{m.label}</div>
             <div className="metrics-row">
-              <div><div style={{fontSize:11,fontWeight:600,color:S.terra,marginBottom:4}}>CURRENT</div><div className="metrics-val" style={{color:S.terra}}>{m.cur}</div></div>
+              <div><div style={{fontSize:11,fontWeight:600,color:S.terra,marginBottom:4}}>VALUE SHOWN</div><div className="metrics-val" style={{color:S.terra}}>{m.cur}</div></div>
               <div style={{color:S.borderUp,fontSize:20,paddingBottom:2}}>→</div>
-              <div><div style={{fontSize:11,fontWeight:600,color:S.sage,marginBottom:4}}>TARGET</div><div className="metrics-val" style={{color:S.sage}}>{m.tgt}</div></div>
+              <div><div style={{fontSize:11,fontWeight:600,color:S.sage,marginBottom:4}}>DESIGN TARGET</div><div className="metrics-val" style={{color:S.sage}}>{m.tgt}</div></div>
             </div>
             <div style={{fontSize:13,color:S.muted}}>{m.desc}</div>
           </div>
@@ -835,14 +836,14 @@ function MetricsTab() {
 
       {/* Chart */}
       <div style={{padding:"20px",background:S.surface,border:`1px solid ${S.border}`,borderRadius:12,minWidth:0,overflowX:"auto"}}>
-        <Label>Key Metrics: Current vs. Target Benchmarks</Label>
+        <Label>Values shown vs proposed design targets</Label>
         <ResponsiveContainer width="99%" height={220}>
           <BarChart data={barData} margin={{top:10,right:0,left:-15,bottom:0}}>
             <XAxis dataKey="name" tick={{fill:S.text,fontSize:12,fontWeight:500}} axisLine={false} tickLine={false}/>
             <YAxis tick={{fill:S.muted,fontSize:12}} axisLine={false} tickLine={false}/>
             <Tooltip cursor={{fill:S.faint}} contentStyle={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,color:S.text,fontSize:13,fontWeight:500,boxShadow:"0 4px 6px rgba(0,0,0,0.05)"}}/>
-            <Bar dataKey="cur" name="Current State" fill={S.terra} radius={[4,4,0,0]} maxBarSize={60}/>
-            <Bar dataKey="tgt" name="Target Architecture" fill={S.sage} radius={[4,4,0,0]} maxBarSize={60}/>
+            <Bar dataKey="cur" name="Value shown" fill={S.terra} radius={[4,4,0,0]} maxBarSize={60}/>
+            <Bar dataKey="tgt" name="Design target" fill={S.sage} radius={[4,4,0,0]} maxBarSize={60}/>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -875,15 +876,15 @@ function MetricsTab() {
           <div style={{width:40,height:40,borderRadius:8,background:S.sageD,display:"flex",alignItems:"center",justifyContent:"center"}}><CheckCircle2 color={S.sage} size={24}/></div>
           <div>
             <div style={{fontSize:16,fontWeight:700,color:S.text}}>Revenue Sustainability Projection</div>
-            <div style={{fontSize:13,color:S.muted}}>Mathematical proof that fairness increases total fund revenue — figures below are computed live from generateRevenueStressTest(), not hardcoded</div>
+            <div style={{fontSize:13,color:S.muted}}>Scenario arithmetic generated by the prototype from stated population, premium and compliance assumptions. It does not predict actual SHA collections.</div>
           </div>
         </div>
         <div style={{fontSize:13,color:S.text,lineHeight:1.6,marginBottom:16}}>
-          The government's core concern is revenue. The data below proves that the current system's high premiums generate <strong>less</strong> total revenue than fair premiums, because unfair charges cause mass non-compliance (the Opt-Out Cascade, Flaw 27).
+          The government's core concern includes revenue sustainability. This scenario illustrates how assumed premiums and compliance rates affect projected collections. It is not a validated forecast or proof that the proposed model will increase revenue.
         </div>
         <div className="grid-2">
           <div style={{background:S.terraD,padding:16,borderRadius:8,border:`1px solid ${S.terraBd}`}}>
-            <div style={{fontSize:12,fontWeight:700,color:S.terra,marginBottom:12,textTransform:"uppercase"}}>Current System (The Collapse)</div>
+            <div style={{fontSize:12,fontWeight:700,color:S.terra,marginBottom:12,textTransform:"uppercase"}}>Illustrative baseline scenario</div>
             <div style={{display:"grid",gap:8,fontSize:13,color:S.text}}>
               <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Registered members</span><span style={{fontWeight:600}}>22 Million</span></div>
               <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Compliance rate</span><span style={{fontWeight:700,color:S.terra}}>22.7%</span></div>
@@ -893,7 +894,7 @@ function MetricsTab() {
             </div>
           </div>
           <div style={{background:S.sageD,padding:16,borderRadius:8,border:`1px solid ${S.sageBd}`}}>
-            <div style={{fontSize:12,fontWeight:700,color:S.sage,marginBottom:12,textTransform:"uppercase"}}>Proposed AGI System (The Rescue)</div>
+            <div style={{fontSize:12,fontWeight:700,color:S.sage,marginBottom:12,textTransform:"uppercase"}}>Proposed-model scenario</div>
             <div style={{display:"grid",gap:8,fontSize:13,color:S.text}}>
               <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Eligible informal workers</span><span style={{fontWeight:600}}>15.5M – 16.7M</span></div>
               <div className="flex-wrap-mobile" style={{justifyContent:"space-between"}}><span>Compliance rate</span><span style={{fontWeight:700,color:S.sage}}>60%</span></div>
@@ -929,7 +930,7 @@ function FairnessTab({results}) {
       <div>
         <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Fairness & Equity Analysis</div>
         <div style={{fontSize:14,color:S.muted,lineHeight:1.6}}>
-          This household's assessment is evaluated against fairness principles: Is the contribution proportional to income? Does the algorithm systematically over/undercharge specific demographic groups?
+          This prototype compares two calculated amounts and displays a heuristic comparison indicator. It does not establish that a household has been fairly or unfairly assessed, nor does it measure population-level discrimination by itself.
         </div>
       </div>
 
@@ -937,7 +938,7 @@ function FairnessTab({results}) {
       <div style={{padding:"24px",background:fairnessBgColor,border:`2px solid ${fairnessColor}`,borderRadius:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
           <div>
-            <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:fairnessColor,marginBottom:8}}>Fairness Score</div>
+            <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:fairnessColor,marginBottom:8}}>Comparison indicator (heuristic)</div>
             <div className="big-number-val" style={{fontSize:42,fontWeight:800,color:fairnessColor,lineHeight:1}}>{Math.round(f.fairnessScore)}/100</div>
           </div>
           <div style={{textAlign:"right"}}>
@@ -959,7 +960,7 @@ function FairnessTab({results}) {
         <div style={{padding:"20px",background:S.surface,border:`1px solid ${S.border}`,borderRadius:10}}>
           <div style={{fontSize:12,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:12}}>Equity Gap</div>
           <div style={{fontSize:32,fontWeight:800,color:f.equityGap > 30 ? S.terra : f.equityGap > 10 ? S.blue : S.sage}}>{f.equityGap.toFixed(1)}%</div>
-          <div style={{fontSize:11,color:S.muted,marginTop:8}}>Current system overcharges by this percentage</div>
+          <div style={{fontSize:11,color:S.muted,marginTop:8}}>Difference between the two prototype calculations</div>
         </div>
         <div style={{padding:"20px",background:S.surface,border:`1px solid ${S.border}`,borderRadius:10}}>
           <div style={{fontSize:12,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:12}}>Compliance Likelihood</div>
@@ -1097,7 +1098,7 @@ function FraudRiskTab({results}) {
       <div style={{padding:"24px",background:getSeverityBgColor(fraud.severityLevel),border:`2px solid ${getSeverityColor(fraud.severityLevel)}`,borderRadius:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
           <div>
-            <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:getSeverityColor(fraud.severityLevel),marginBottom:8}}>Fraud Risk Percentile</div>
+            <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:getSeverityColor(fraud.severityLevel),marginBottom:8}}>Heuristic rule score · not a probability</div>
             <div className="big-number-val" style={{fontSize:42,fontWeight:800,color:getSeverityColor(fraud.severityLevel),lineHeight:1}}>{fraud.fraudRiskPercentile}%</div>
           </div>
           <div style={{textAlign:"right"}}>
@@ -1133,7 +1134,7 @@ function FraudRiskTab({results}) {
                 <div style={{fontSize:14,fontWeight:600,color:getSeverityColor(flag.severity),marginBottom:4}}>
                   {flag.name}
                   <span style={{fontSize:11,fontWeight:500,color:S.muted,marginLeft:8}}>
-                    Confidence: {Math.round(flag.confidence * 100)}%
+                    Rule weight: {Math.round(flag.confidence * 100)}%
                   </span>
                 </div>
                 <div style={{fontSize:12,color:S.muted,lineHeight:1.5,marginBottom:8}}>{flag.reason}</div>
@@ -1156,8 +1157,8 @@ function FraudRiskTab({results}) {
         <div style={{padding:"24px",background:S.sageD,border:`1px solid ${S.sageBd}`,borderRadius:10,display:"flex",gap:12,alignItems:"center"}}>
           <CheckCircle2 size={24} color={S.sage} style={{flexShrink:0}}/>
           <div>
-            <div style={{fontSize:14,fontWeight:600,color:S.sage,marginBottom:4}}>No Fraud Flags Detected</div>
-            <div style={{fontSize:12,color:S.muted}}>This assessment passed automated fraud screening and can proceed with standard processing.</div>
+            <div style={{fontSize:14,fontWeight:600,color:S.sage,marginBottom:4}}>No configured rules were triggered</div>
+            <div style={{fontSize:12,color:S.muted}}>This is not a fraud clearance. The prototype has no live registry checks, and normal verification may still be required.</div>
           </div>
         </div>
       )}
@@ -1168,7 +1169,7 @@ function FraudRiskTab({results}) {
         <div style={{display:"grid",gap:10}}>
           {[
             {label:"Triangulation Trinity",desc:"KRA (tax), NTSA (vehicles), Safaricom (transactions) cross-reference"},
-            {label:"Phantom Dependent Detection",desc:"Flags households >2σ above mean size (biological implausibility)"},
+            {label:"Phantom Dependent Detection",desc:"Can flag unusual declared household sizes for a human check; size alone is not evidence of fraud."},
             {label:"Asset-Liquidity Consistency",desc:"Flags mismatches (luxury car + near-zero M-Pesa)"},
             {label:"Geographic Impossibility",desc:"Flags simultaneous registrations >400km apart"},
             {label:"Behavioral Anomalies",desc:"Rapid re-classification attempts, income suppression patterns"}
@@ -1241,7 +1242,7 @@ function BiasComplianceTab() {
 
       <div style={{padding:16,background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
         <div style={{fontSize:13,color:S.text,lineHeight:1.5}}>
-          <strong>Session audit trail:</strong> {logger.getSessionAuditBuffer().length} records logged this session. These logs can be exported directly for external record-keeping or durable storage.
+          <strong>Demo session log:</strong> {logger.getSessionAuditBuffer().length} records are held in this browser tab only and are cleared on reload. Export manually to keep a local copy; this is not a durable audit service or a statutory retention system.
         </div>
         <button onClick={()=>logger.downloadSessionAuditLog()} style={{padding:"8px 16px",background:S.surface,color:S.text,border:`1px solid ${S.border}`,borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Export session audit log (.json)</button>
       </div>
@@ -1277,68 +1278,11 @@ function BiasComplianceTab() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONSENT SCREEN (DPA COMPLIANCE)
-// ─────────────────────────────────────────────────────────────────────────────
-function ConsentScreen({ onConsent }) {
-  const [kra, setKra] = useState(false);
-  const [ntsa, setNtsa] = useState(false);
-  const [safaricom, setSafaricom] = useState(false);
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: S.bg, padding: 20 }}>
-      <div style={{ background: S.surface, padding: 40, borderRadius: 16, border: `1px solid ${S.border}`, boxShadow: "0 4px 6px rgba(0,0,0,0.02)", maxWidth: 600 }}>
-        <ShieldCheck size={48} color={S.blue} style={{ marginBottom: 24 }} />
-        <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 24, fontWeight: 700, color: S.text, marginBottom: 12 }}>Data Privacy & Consent</div>
-        <div style={{ fontSize: 14, color: S.muted, lineHeight: 1.6, marginBottom: 24 }}>
-          In compliance with the Kenya Data Protection Act 2019 (Section 32), we require your explicit, granular consent to access your data from the following agencies to accurately calculate your Social Health Authority (SHA) contribution and potential subsidy.
-        </div>
-        
-        <div style={{ display: "grid", gap: 16, marginBottom: 32 }}>
-          <label style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer", background: kra ? S.blueD : S.faint, padding: 16, borderRadius: 8, border: `1px solid ${kra ? S.blueBd : S.border}` }}>
-            <input type="checkbox" checked={kra} onChange={(e) => setKra(e.target.checked)} style={{ marginTop: 4, transform: "scale(1.2)" }} />
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: S.text }}>KRA Tax Records</div>
-              <div style={{ fontSize: 12, color: S.muted }}>Used to verify your formal income and tax compliance status.</div>
-            </div>
-          </label>
-          <label style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer", background: ntsa ? S.blueD : S.faint, padding: 16, borderRadius: 8, border: `1px solid ${ntsa ? S.blueBd : S.border}` }}>
-            <input type="checkbox" checked={ntsa} onChange={(e) => setNtsa(e.target.checked)} style={{ marginTop: 4, transform: "scale(1.2)" }} />
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: S.text }}>NTSA Vehicle Registry</div>
-              <div style={{ fontSize: 12, color: S.muted }}>Used to identify commercial or personal vehicles to assess your capital assets.</div>
-            </div>
-          </label>
-          <label style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer", background: safaricom ? S.blueD : S.faint, padding: 16, borderRadius: 8, border: `1px solid ${safaricom ? S.blueBd : S.border}` }}>
-            <input type="checkbox" checked={safaricom} onChange={(e) => setSafaricom(e.target.checked)} style={{ marginTop: 4, transform: "scale(1.2)" }} />
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: S.text }}>Telecom/M-Pesa Transaction History</div>
-              <div style={{ fontSize: 12, color: S.muted }}>Used to assess your retained liquidity and business velocity (e.g., Safaricom).</div>
-            </div>
-          </label>
-        </div>
-
-        <div style={{ fontSize: 12, color: S.amber, marginBottom: 24, padding: 12, background: S.amberD, borderRadius: 8, border: `1px solid ${S.amberBd}` }}>
-          <strong>Note:</strong> Declining automated verification will require you to submit certified physical documents for manual review or default to a flat-rate tier. Data is securely retained for only 1-2 years per our Tiered Retention Policy.
-        </div>
-
-        <button 
-          onClick={() => onConsent({ kra, ntsa, safaricom })}
-          disabled={!kra && !ntsa && !safaricom}
-          style={{ width: "100%", padding: "14px", borderRadius: 8, border: "none", background: (kra || ntsa || safaricom) ? S.blue : S.borderUp, color: "#FFF", fontSize: 16, fontWeight: 600, cursor: (kra || ntsa || safaricom) ? "pointer" : "default", transition: "all .2s" }}
-        >
-          I Consent & Proceed
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // ROOT COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function SHADemo() {
-  const [hasConsented, setHasConsented] = useState(false);
+  const [hasAcknowledgedDemo, setHasConsented] = useState(false);
   const [inputs,setInputs]=useState({...DEFAULTS});
   const [step,setStep]=useState(0);
   const [results,setResults]=useState(null);
@@ -1422,13 +1366,13 @@ export default function SHADemo() {
       const auditRecord = createAuditRecord(inputs, cur, nxt, fraudRisk);
       logger.audit('assessment_run', { auditRecord });
       
-      setResults({current:cur, next:nxt, d:inputs, fraudRisk:fraudRisk, sectorAnalysis:sectorAnalysis, fairnessMetrics:fairnessMetrics});
+      setResults({current:cur, next:nxt, d:inputs, fraudRisk:fraudRisk, sectorAnalysis:sectorAnalysis, fairnessMetrics:fairnessMetrics, auditRecord});
       setClassifying(false);
       setActiveTab("comparison");
     },800);
   };
 
-  const TABS=[["comparison","Financial Comparison"],["fairness","Fairness Analysis"],["fraud","Fraud Risk Assessment"],["bias","Bias & Compliance"],["shap","SHAP Legal Explanation"],["ussd","USSD Simulation"],["metrics","System Metrics"]];
+  const TABS=[["comparison","Financial Comparison"],["fairness","Fairness Analysis"],["fraud","Fraud Risk Assessment"],["bias","Bias & Compliance"],["shap","Calculation Breakdown"],["ussd","USSD Simulation"],["metrics","System Metrics"]];
 
   return (
     <>
@@ -1556,9 +1500,9 @@ export default function SHADemo() {
             </div>
           </div>
           <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
-            <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.terraD,color:S.terra,whiteSpace:"nowrap"}}>Current: Flawed Linear PMT</span>
+            <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.terraD,color:S.terra,whiteSpace:"nowrap"}}>Illustrative baseline · PMT-style</span>
             <span style={{color:S.borderUp,fontSize:16}}>→</span>
-            <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.sageD,color:S.sage,whiteSpace:"nowrap"}}>Proposed: Fairlearn Ensemble</span>
+            <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.sageD,color:S.sage,whiteSpace:"nowrap"}}>Proposed: AGI rules engine</span>
           </div>
         </div>
 
@@ -1653,7 +1597,7 @@ export default function SHADemo() {
             </div>
 
             {/* Form */}
-            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasConsented={hasConsented} setHasConsented={setHasConsented} setInputs={setInputs} setActiveScenario={setActiveScenario} addListItem={addListItem} updListItem={updListItem} removeListItem={removeListItem}/>
+            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasAcknowledgedDemo={hasAcknowledgedDemo} setHasConsented={setHasConsented} setInputs={setInputs} setActiveScenario={setActiveScenario} addListItem={addListItem} updListItem={updListItem} removeListItem={removeListItem}/>
 
           </div>
 
@@ -1664,7 +1608,7 @@ export default function SHADemo() {
                 <div className="empty-state-card">
                   <Fingerprint size={48} color={S.blue} style={{marginBottom:24,opacity:0.8}}/>
                   <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:12}}>Awaiting Assessment Data</div>
-                  <div style={{fontSize:15,color:S.muted,lineHeight:1.6}}>Select a demographic persona from the left sidebar or complete the form manually. The classification engine will run both the current linear PMT and the proposed fairness-constrained ensemble.</div>
+                  <div style={{fontSize:15,color:S.muted,lineHeight:1.6}}>Select a demographic persona from the left sidebar or complete the form manually. The demonstration compares an illustrative PMT-style baseline with a deterministic, rules-based Adjusted Gross Income proposal.</div>
                 </div>
               </div>
             )}
@@ -1672,8 +1616,8 @@ export default function SHADemo() {
               <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",background:S.bg}}>
                 <div style={{width:48,height:48,border:`4px solid ${S.borderUp}`,borderTopColor:S.blue,borderRadius:"50%",animation:"spin 1s linear infinite",marginBottom:24}}/>
                 <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-                <div style={{fontFamily:"'Inter',sans-serif",fontSize:20,fontWeight:600,color:S.text,marginBottom:8}}>Running Model Ensemble</div>
-                <div style={{fontSize:14,color:S.muted}}>Executing Layer 1 → Layer 2 → Data Fusion → SHAP generation</div>
+                <div style={{fontFamily:"'Inter',sans-serif",fontSize:20,fontWeight:600,color:S.text,marginBottom:8}}>Calculating demonstration results</div>
+                <div style={{fontSize:14,color:S.muted}}>Applying the illustrative baseline and proposed AGI rules</div>
               </div>
             )}
             {results&&(
@@ -1694,6 +1638,7 @@ export default function SHADemo() {
 
 
                 {activeTab==="comparison"&&<ComparisonTab results={results} adminParams={adminParams}/>}
+                {activeTab==="challenge"&&<AppealPreparationTab results={results}/ >}
                 {activeTab==="fairness"&&<FairnessTab results={results}/>}
                 {activeTab==="fraud"&&<FraudRiskTab results={results}/>}
                 {activeTab==="bias"&&<BiasComplianceTab/>}
