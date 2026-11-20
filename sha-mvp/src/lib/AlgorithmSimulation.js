@@ -1,7 +1,7 @@
 // SHA Means-Testing Algorithm - v2.1 prototype rules engine
-// This engine implements the Adjustable Gross Income (AGI) model to calculate SHA contributions.
-// It complies with the legally mandated 2.75% rate while fixing 28 systemic flaws by applying
-// mathematically rigorous deductions before the flat rate is calculated.
+// This prototype implements a proposed Adjusted Gross Income (AGI) rules engine.
+// It applies a 2.75% contribution-rate assumption and illustrative deductions for comparison.
+// The policy inputs, valuation rules and legal treatment require independent validation.
 //
 // IMPORTANT (audit v2, read before citing this file to a technical reviewer):
 // This entire module is a deterministic rules engine (if/else + fixed
@@ -66,8 +66,9 @@ const DEFAULT_MAX_RENT = {
 };
 
 /**
- * Calculates the current flawed baseline linear PMT model for comparison.
- * Simulates overcharging by weighting gross M-Pesa, visible assets, and penalizing urban residency.
+ * Calculates an illustrative PMT-style baseline for side-by-side demonstration.
+ * This hand-authored comparator is NOT a reconstruction of SHA's disclosed 43-variable regression
+ * and must not be described as SHA's actual formula or as evidence of real overcharging.
  */
 export function calculateCurrentModel(d) {
   let score = 0;
@@ -1001,9 +1002,9 @@ export const PRESETS = [
 ];
 
 /**
- * Calculates fraud risk score for a household assessment.
- * Returns risk flags that trigger automatic escalation to SHA fraud unit.
- * Each flag is documented with reason and confidence score.
+ * Applies hand-authored fraud-risk heuristics to the supplied household inputs/context.
+ * Returns review prompts with manually assigned rule weights; it does not contact or escalate to
+ * an SHA fraud unit, establish fraud, or produce calibrated statistical probabilities.
  * 
  * Fraud flags are designed to identify:
  * 1. Phantom Dependents (claiming >10x national average household size)
@@ -1404,7 +1405,7 @@ export function calculateFraudRisk(d, contextData = {}) {
     overallRiskScore += 0.45;
   }
 
-  // Calculate overall fraud risk percentile (0-100)
+  // Calculate a combined heuristic rule score (0-100), not a statistical percentile.
   // FIX (audit v2): the fixed-last-time formula below (1 - Π(1-c)) is the
   // correct way to combine *independent* evidence, but several flags above
   // are tagged `cluster: 'household_size'` because they all key off the
@@ -1837,9 +1838,9 @@ export function generateRevenueStressTest(totalPopulation = 15500000, avgContrib
 }
 
 /**
- * P-77/P-31 (CAJ BLOCKER): Creates an audit trail record for every assessment.
- * Each assessment is logged with full inputs, outputs, fraud flags, algorithm version,
- * and a modification history for appeals tracking.
+ * Creates a demo assessment-record object for the current browser application.
+ * The object contains selected inputs/outputs and retention schedule metadata, but the app does
+ * not persist it to a backend. This is not an immutable or durable statutory audit record.
  * @param {Object} inputs - The household data (d)
  * @param {Object} currentResult - Result from calculateCurrentModel
  * @param {Object} proposedResult - Result from calculateProposedModel
