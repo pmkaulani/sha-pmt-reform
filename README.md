@@ -1,8 +1,8 @@
-# SHA PMT v2.1 — Fixing Kenya's Health Insurance Algorithm
+# SHA PMT Reform — Prototype Proposal for Kenya
 
 **Social Health Authority (SHA) Means-Testing Algorithm Reform**
 
-An evidence-based proposal to replace Kenya's opaque linear-regression Proxy Means Test (PMT) algorithm with a transparent, constitutionally compliant Adjusted Gross Income (AGI) model.
+A prototype policy and software proposal exploring whether a transparent Adjusted Gross Income (AGI) rules engine could improve on proxy-based means testing. The proposal is intended for independent technical, legal and policy evaluation; it is not an approved SHA replacement or a certified compliant system.
 
 ---
 
@@ -102,7 +102,8 @@ This reform aligns with major policy, judicial, and statistical developments acr
 │   ├── src/
 │   │   ├── App.jsx                 # Simulation UI, deduction toggles & receipts
 │   │   └── lib/
-│   │       └── AlgorithmSimulation.js # AGI math, proxy models & SHAP logic
+│   │       ├── AlgorithmSimulation.js # Deterministic AGI rules engine and illustrative PMT-style baseline
+│   │       └── AppealPreparationTab.jsx # Local challenge-statement preparation demo
 │   ├── public/
 │   ├── index.html
 │   └── package.json
@@ -113,13 +114,13 @@ This reform aligns with major policy, judicial, and statistical developments acr
 
 ---
 
-## Legal Framework
+## Legal Design Mapping (Not Legal Certification)
 
 | Legal Instrument | Requirement | v2.1 Status |
 |---|---|---|
-| Constitution Art. 27(4) | Protection against sex, economic, and regional discrimination | ✅ Compliant: Eliminates gender penalty and rural/ASAL bias through standardized deductions |
-| DPA 2019 §32/35/39 | Consent, human oversight, and automated decision explainability | ✅ Compliant by design: SHAP factor receipts and mandatory CHP manual-review pathway |
-| AI Bill 2026 | Algorithmic impact assessment, bias testing, and explainability | ✅ Compliant: Open test harnesses, transparent variables, and verifiable feature weights |
+| Constitution Art. 27(4) | Protection against sex, economic, and regional discrimination | Design objective: demographic and regional impact must be tested on validated outcome data |
+| DPA 2019 §32/35/39 | Consent, human oversight, and automated decision explainability | Design mapping only: production consent, access controls, human review and retention are not implemented in this browser prototype |
+| AI Bill 2026 | Algorithmic impact assessment, bias testing, and explainability | Design mapping only: no legal certification or independent algorithmic impact assessment has been completed |
 | Ombudsman Direction (Nov 2025) | Access to Information compliance (Africa Uncensored FOI) | ⚠️ Partly complied by SHA: Model formula and 43 variables disclosed; regression coefficients withheld |
 | High Court (Mwita, June 2025) | Salaried deduction double taxation observation | ℹ️ Judicial observation only; petition struck out as premature; Ministry continues salaried deductions noting tax-deductibility under Tax Laws (Amendment) Act 2024 |
 | High Court (Mwamuye, March 19, 2026) | 90-day structural interdict on constitutional violations in rollout | 📋 Complementary: Open-source reference addressing means-testing transparency alongside the Ministry's mandated corrective affidavit process |
@@ -150,9 +151,25 @@ npm run dev
 
 ---
 
+## Prototype Status, Scope & Limitations
+
+This repository contains a **demonstration prototype and policy proposal**, not a live SHA service. Interpret the screens and outputs within these boundaries:
+
+- **Illustrative baseline:** the existing-system comparator is a hand-authored PMT-style approximation. It is not a reconstruction of SHA's disclosed 43-variable regression, and it must not be described as SHA's actual scoring formula.
+- **Proposed calculation:** the AGI implementation is a deterministic JavaScript rules engine using fixed rules and constants. It is not a trained machine-learning model, a Fairlearn ensemble, or an optimized model.
+- **No agency integrations:** KRA, NTSA, IPRS and mobile-network records are not queried. Status indicators are derived from demonstration form inputs, not independently verified agency records.
+- **Synthetic testing:** fairness and error-rate outputs are calculated from generated households. The proposed rules engine is used as a comparison reference in some calculations, not as independently verified ground truth. Small groups may be excluded because they do not meet the minimum sample size.
+- **Fraud indicators:** the fraud screen uses hand-authored heuristic rules and manually assigned weights. Its score is not a calibrated probability, percentile, or finding that a person committed fraud.
+- **Calculation explanation:** the interface displays factors and deduction lines from the rules engine. This is a transparent calculation breakdown, not a SHAP/Shapley attribution unless a separate validated Shapley implementation is added.
+- **Assessment challenge:** the challenge screen prepares a statement locally and allows a user to download it as text. It does not submit an appeal to SHA, upload evidence, create a case, or start an official review period. Members must use SHA's existing official appeal channel for an actual submission.
+- **Audit and privacy:** audit entries remain in the current browser session and are cleared on reload unless manually exported. The prototype does not provide durable audit storage, production encryption, backend access controls, or enforced retention/deletion.
+- **Test data only:** do not enter real citizen identifiers, account numbers, mobile numbers, health details, or other sensitive personal information.
+
+The repository's legal and policy tables describe **design intentions and questions for review**, not a legal opinion, certification, or confirmation that the prototype satisfies statutory requirements.
+
 ## Fraud Detection
 
-Kenya lost **KSh 11 billion** to ghost patients, fake facilities, and upcoding in just 6 months (Oct 2024 – Apr 2025), resulting in the closure of over 1,000 facilities. The AGI model includes an **18-flag fraud detection engine** that identifies phantom dependents, hidden high-value assets (NTSA cross-check), formal vs business income under-reporting (KRA PIN Type cross-check), and geographic impossibility—addressing systemic vulnerabilities without penalising honest informal workers.
+Kenya lost **KSh 11 billion** to ghost patients, fake facilities, and upcoding in just 6 months (Oct 2024 – Apr 2025), resulting in the closure of over 1,000 facilities. The prototype includes an **18-rule fraud-risk heuristic** intended to illustrate potential checks such as household-composition inconsistencies, declared asset mismatches, income discrepancies and geographic conflicts. Without live agency integrations and independently validated outcomes, these are review prompts—not verified detections or calibrated fraud probabilities.
 
 ---
 
@@ -172,11 +189,11 @@ While SHA announced plans in February 2025 to triangulate data across multiple s
 
 ---
 
-## Triangulation, MNO-Agnostic Gateway & Fallback Protocol
+## Proposed Triangulation Architecture (Not Yet Connected)
 
 In February 2025, SHA announced that an enhanced means-testing system would incorporate data from state databases (including KRA, NTSA, KNBS, Hustler Fund, Immigration, and KIAMIS) to verify applicant details. 
 
-The v2.1 architecture demonstrates how triangulated data should be governed:
+The proposed architecture illustrates how triangulated data could be governed if authenticated integrations, consent controls and legal authority were established:
 
 1. **MNO-Agnostic Design:** While Safaricom (M-Pesa) holds dominant market share, the triangulation engine uses an MNO-agnostic gateway supporting Safaricom, Airtel, and Telkom equally to prevent carrier-based bias and comply with Communications Authority interoperability standards.
 2. **KRA PIN Type Granularity:** Granular tax identifiers (`kraPinType`) differentiate formal payroll employees (`PAYE`) from self-declared informal business owners (`BUSINESS`), applying appropriate confidence weighting to income records.
