@@ -1212,16 +1212,28 @@ function BiasComplianceTab() {
   const genderTest = testCurrentModelDisparityByCounty(population, 'headGender');
   const fraudStats = generateFraudStatistics(population);
 
-  const ResultCard = ({ test, label }) => (
-    <div style={{padding:16,background:test.passed?S.sageD:S.terraD,border:`1px solid ${test.passed?S.sageBd:S.terraBd}`,borderRadius:8}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-        {test.passed ? <CheckCircle2 size={18} color={S.sage}/> : <AlertTriangle size={18} color={S.terra}/>}
-        <div style={{fontSize:13,fontWeight:700,color:test.passed?S.sage:S.terra}}>{label}: {test.passed?"PASS":"FAIL"}</div>
+  const ResultCard = ({ test, label }) => {
+    const insufficient = !test.groupCount;
+    const title = insufficient ? "INSUFFICIENT SAMPLE" : test.passed ? "PASS" : "FAIL";
+    const foreground = insufficient ? S.amber : test.passed ? S.sage : S.terra;
+    const background = insufficient ? S.amberD : test.passed ? S.sageD : S.terraD;
+    const border = insufficient ? S.amberBd : test.passed ? S.sageBd : S.terraBd;
+    return (
+      <div style={{padding:16,background,border:"1px solid " + border,borderRadius:8}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+          {insufficient ? <Info size={18} color={foreground}/> : test.passed ? <CheckCircle2 size={18} color={foreground}/> : <AlertTriangle size={18} color={foreground}/>}
+          <div style={{fontSize:13,fontWeight:700,color:foreground}}>{label}: {title}</div>
+        </div>
+        <div style={{fontSize:13,color:S.text,marginBottom:4}}>
+          Max disparity: <strong>{insufficient ? "Not measurable" : String(test.maxDisparity) + "%"}</strong>
+          {!insufficient && " (threshold ≤" + test.threshold + "%)"}
+        </div>
+        <div style={{fontSize:12,color:S.muted}}>
+          {test.groupCount} groups included (N≥30 each){test.excludedGroups?.length ? ", " + test.excludedGroups.length + " excluded for small sample size" : ""}. Synthetic sample results are not a population fairness finding.
+        </div>
       </div>
-      <div style={{fontSize:13,color:S.text,marginBottom:4}}>Max disparity: <strong>{test.maxDisparity}%</strong> (threshold ≤{test.threshold}%)</div>
-      <div style={{fontSize:12,color:S.muted}}>{test.groupCount} groups included (N≥30 each){test.excludedGroups?.length ? `, ${test.excludedGroups.length} excluded for small sample size` : ""}.</div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div style={{display:"grid",gap:24}}>
