@@ -100,10 +100,12 @@ This reform aligns with major policy, judicial, and statistical developments acr
 │
 ├── sha-mvp/                        # Interactive web MVP (Vite + React / JavaScript)
 │   ├── src/
-│   │   ├── App.jsx                 # Simulation UI, deduction toggles & receipts
+│   │   ├── App.jsx                    # Simulation UI and demonstration tabs
+│   │   ├── AppealPreparationTab.jsx   # Local challenge-statement preparation demo
 │   │   └── lib/
 │   │       ├── AlgorithmSimulation.js # Deterministic AGI rules engine and illustrative PMT-style baseline
-│   │       └── AppealPreparationTab.jsx # Local challenge-statement preparation demo
+│   │       ├── Logger.js              # Browser-session audit buffer
+│   │       └── hash.js                # Demo identifier hashing utility
 │   ├── public/
 │   ├── index.html
 │   └── package.json
@@ -133,8 +135,8 @@ This reform aligns with major policy, judicial, and statistical developments acr
 - **Algorithm Documentation** — Full technical specification with formulae ([docs/SHA_Algorithm_v2.1_Documentation.docx](docs/SHA_Algorithm_v2.1_Documentation.docx))
 - **AI Bill 2026 Compliance** — Regulatory compliance framework ([docs/AI_BILL_2026_COMPLIANCE.docx](docs/AI_BILL_2026_COMPLIANCE.docx))
 - **Legal Ethical Architectural Evaluation** — Constitutional and statutory compliance framework ([docs/LEGAL_ETHICAL_ARCHITECTURAL_EVALUATION.docx](docs/LEGAL_ETHICAL_ARCHITECTURAL_EVALUATION.docx))
-- **SHAP Deduction Receipts** — Citizen-facing explainability framework ([docs/SHAP_DEDUCTION_RECEIPTS.docx](docs/SHAP_DEDUCTION_RECEIPTS.docx))
-- **Privacy Policy** — DPA 2019 compliant data protection policy ([docs/PRIVACY_POLICY.docx](docs/PRIVACY_POLICY.docx))
+- **Calculation Receipts** — Proposed citizen-facing explanation framework ([docs/SHAP_DEDUCTION_RECEIPTS.docx](docs/SHAP_DEDUCTION_RECEIPTS.docx))
+- **Privacy Policy** — Draft data protection policy for proposed deployment; not a compliance certification ([docs/PRIVACY_POLICY.docx](docs/PRIVACY_POLICY.docx))
 
 ---
 
