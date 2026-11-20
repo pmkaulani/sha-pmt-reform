@@ -1,7 +1,10 @@
-// SHA Means-Testing Algorithm - v2.1 prototype rules engine
-// This prototype implements a proposed Adjusted Gross Income (AGI) rules engine.
-// It applies a 2.75% contribution-rate assumption and illustrative deductions for comparison.
-// The policy inputs, valuation rules and legal treatment require independent validation.
+// SHA Means-Testing Evaluation - v2.1 prototype rules engine
+// The 2.75% contribution rate and KSh 300 monthly floor are regulatory reference parameters
+// for non-salaried households under Regulation 18 of the Social Health Insurance Regulations.
+// This prototype does NOT implement or represent the official SHA means-testing instrument established
+// under Regulation 21 and the Fifth Schedule. Current income estimations, illustrative deductions,
+// and calculation rules are research prototype assumptions that require validation against SHA's
+// official instrument, model parameters, and administrative implementation.
 //
 // IMPORTANT (audit v2, read before citing this file to a technical reviewer):
 // This entire module is a deterministic rules engine (if/else + fixed
@@ -27,15 +30,37 @@ export function deriveVehicleList(d) {
   return d.assets.includes('CAR') ? [{ type: d.vehicleType || 'STANDARD_OLD' }] : [];
 }
 
+/**
+ * Validates household assessment inputs.
+ * Ensures the authoritative declared net earned income is present and non-negative.
+ */
+export function validateAssessmentInputs(d) {
+  const errors = [];
+  if (d.monthlyNetEarnedIncome === null || d.monthlyNetEarnedIncome === undefined || d.monthlyNetEarnedIncome === "") {
+    errors.push("Declared monthly net earned income is required.");
+  } else {
+    const income = Number(d.monthlyNetEarnedIncome);
+    if (isNaN(income)) {
+      errors.push("Declared monthly net earned income must be a valid number.");
+    } else if (income < 0) {
+      errors.push("Declared monthly net earned income cannot be negative.");
+    }
+  }
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
 export const BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: true, tier: 'Indigent (Subsidized)' },
-  { min: 131001, max: 450000, isIndigent: false, tier: 'Standard' }, // Flat 2.75%
-  { min: 450001, max: Infinity, isIndigent: false, tier: 'Upper' }, // Flat 2.75% — same formula as Standard; kept separate for reporting/tier-label purposes only
+  { min: 0, max: 131000, monthly: 300, isIndigent: true, tier: 'Low-Income (Reg. 18 Reference: KSh 300 Floor)' },
+  { min: 131001, max: 450000, isIndigent: false, tier: 'Standard' }, // Reg. 18 2.75% reference parameter
+  { min: 450001, max: Infinity, isIndigent: false, tier: 'Upper' }, // Reg. 18 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
 ];
 
 export const PROPOSED_BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: true }, // Subsidized by government
-  { min: 131001, max: Infinity, isIndigent: false }, // Flat 2.75% of AGI
+  { min: 0, max: 131000, monthly: 300, isIndigent: true }, // Reg. 18 reference minimum contribution (KSh 300 floor for non-salaried households)
+  { min: 131001, max: Infinity, isIndigent: false }, // Reg. 18 2.75% rate applied to evaluated AGI (prototype policy model; requires validation against Regulation 21 means-testing instrument)
 ];
 
 const ASAL_COUNTIES = {
@@ -138,50 +163,50 @@ export function calculateCurrentModelContribution(lassoAnnual) {
  * Calculates the proposed SHA PMT v2.1 Optimization using the AGI model.
  */
 export function calculateProposedModel(d, adminParams = {}) {
-  let factors = [];
-  let deductions = [];
-  let baseIncome = 0;
+  // 1. Authoritative input validation
+  const validation = validateAssessmentInputs(d);
+  if (!validation.isValid) {
+    throw new Error(`Assessment input validation failed: ${validation.errors.join("; ")}`);
+  }
 
-  // --- TRIANGULATION: INCOME & LIQUIDITY ---
-  // Flaw 1, 2, 6: Use 12-month rolling avgRetainedBalance, not gross velocity.
-  // Flaw 6: Chama Treasurer Fiduciary Exception
+  let factors = [];
+  const postBaseDeductions = [];
+
+  // Authoritative earned income base: annualised net declared earned income
+  const annualBaseTotal = Math.round(Number(d.monthlyNetEarnedIncome) * 12);
+  const annualBaseItems = [
+    {
+      description: "Declared net earned household income (annualised)",
+      amount: annualBaseTotal,
+      type: "DECLARED_EARNED_INCOME",
+      explanation: "Average monthly net earnings × 12 months"
+    }
+  ];
+
+  // --- CONTEXTUAL FACTORS: LIQUIDITY & TRANSACTION ACTIVITY ---
+  // Assets, debts, and transaction activity are treated as contextual verification factors
+  // rather than arbitrarily converted into annual earned income.
   let isOffline = adminParams.triangulationOffline || false;
   let effectiveBalance = isOffline ? 0 : (d.avgRetainedBalance || 0);
   
   if (!isOffline && d.isGroupTreasurer) {
-    effectiveBalance *= 0.2; // Discount 80% as fiduciary funds
-    deductions.push({ name: 'Fiduciary Exemption', amount: (d.avgRetainedBalance * 0.8) * 12, reason: 'Chama Treasurer Trap' });
-    factors.push({ name: 'Group Treasurer', impact: 'High', direction: 'down', description: 'Discounted retained balance by 80%', isFlaw: false });
+    effectiveBalance *= 0.2; // Discount 80% for group funds (illustrative prototype policy assumption — requires SHA validation)
+    factors.push({ name: 'Group Treasurer Context', impact: 'High', direction: 'neutral', description: 'Retained balance discounted 80% for group fund holding (illustrative prototype policy assumption — requires SHA validation)', isFlaw: false });
   }
 
   // Transaction-size distribution check to prevent misclassifying active-but-poor digital finance users
   let avgTransactionSize = d.avgTransactionSize || (d.grossMpesaMonthly && d.transactionCount ? d.grossMpesaMonthly / d.transactionCount : 0);
   if (!avgTransactionSize && d.grossMpesaMonthly && d.grossMpesaMonthly > 0) {
-    // If no count, assume an average number of transactions (e.g. 80 transactions per month)
     avgTransactionSize = d.grossMpesaMonthly / 80;
   }
   let isSubsistenceUser = false;
-  // FIX (audit v2) — real, previously-undiscovered crash bug: this was
-  // declared with `let` down near the Digital Ghost check (~230 lines
-  // below) but assigned right here on the seasonal-worker branch, which
-  // runs first. That's a JS temporal-dead-zone ReferenceError, not a typo
-  // that silently does the wrong thing — it CRASHES the whole assessment
-  // for any seasonal worker (farm/tourism-sector labourer, exactly who the
-  // "Seasonal Worker Override" feature exists to help) who declares a zero
-  // low-season balance. The 6 hand-picked PRESETS never hit this combination,
-  // so verify_logic.js never caught it; a 500-household synthetic
-  // population (see generateSyntheticPopulation, used by the new Bias &
-  // Compliance tab) hit it on the first run. Declared here now, before the
-  // branch that assigns to it.
   let requiresChpVerification = false;
   if (d.grossMpesaMonthly && d.grossMpesaMonthly > 25000 && (d.avgRetainedBalance || 0) < 3000 && avgTransactionSize < 450) {
     isSubsistenceUser = true;
-    effectiveBalance *= 0.4; // 60% discount on the retained balance due to subsistence activity
-    deductions.push({ name: 'Subsistence Digital User Exemption', amount: (d.avgRetainedBalance * 0.6) * 12, reason: 'High velocity of small subsistence transactions' });
-    factors.push({ name: 'Subsistence Digital User', impact: 'Medium', direction: 'down', description: 'Discounted retained balance by 60% due to low average transaction size', isFlaw: false });
+    effectiveBalance *= 0.4;
+    factors.push({ name: 'Subsistence Digital User', impact: 'Medium', direction: 'neutral', description: 'High transaction velocity with low average size reflects subsistence digital finance', isFlaw: false });
   }
 
-  // Base income is extrapolated from retained liquidity plus formal declarations
   if (!isOffline) {
     if (d.isSeasonalWorker && d.lowSeasonRetainedBalance !== undefined) {
       const SEASONAL_FLOOR = 500; // KSh 500 minimum prevents zero-balance exploit
@@ -189,21 +214,16 @@ export function calculateProposedModel(d, adminParams = {}) {
       let seasonalBalance = Math.min(effectiveBalance, effectiveLow);
       if (d.lowSeasonRetainedBalance === 0) {
         requiresChpVerification = true;
-        factors.push({ name: "Zero Low-Season Balance", impact: "High", description: "Self-declared zero requires CHP verification within 30 days.", direction: "down", isFlaw: false });
+        factors.push({ name: "Zero Low-Season Balance", impact: "High", description: "Self-declared zero requires CHP verification within 30 days.", direction: "neutral", isFlaw: false });
       }
-      baseIncome += (seasonalBalance * 12);
-      factors.push({ name: 'Seasonal Worker Override', impact: 'Medium', direction: 'down', description: 'Used low-season baseline to prevent harvest/tourism peak extrapolation', isFlaw: false });
+      factors.push({ name: 'Seasonal Worker Override', impact: 'Medium', direction: 'neutral', description: `Used low-season baseline (KSh ${seasonalBalance.toLocaleString()}/mo) to prevent seasonal peak extrapolation`, isFlaw: false });
     } else {
-      baseIncome += (effectiveBalance * 12);
-      factors.push({ name: 'Retained Liquidity', impact: 'High', direction: 'up', description: 'Based on 12-month rolling avg balance, ignoring velocity', isFlaw: false });
+      factors.push({ name: 'Retained Liquidity Context', impact: 'Medium', direction: 'neutral', description: `12-month rolling avg balance: KSh ${effectiveBalance.toLocaleString()} (used as liquidity context, not direct earned income)`, isFlaw: false });
     }
 
-    // Diaspora Remittance Deduction
+    // Diaspora Remittance Context
     if (d.diasporaRemittances && d.diasporaRemittances > 0) {
-      let remittanceDeduction = d.diasporaRemittances * 12;
-      deductions.push({ name: 'Diaspora Remittances', amount: remittanceDeduction, reason: 'Exempt transfer payments (not domestic earnings)' });
-      baseIncome -= remittanceDeduction;
-      factors.push({ name: 'Diaspora Exclusion', impact: 'Medium', direction: 'down', description: 'Excluded international transfer payments from base income', isFlaw: false });
+      factors.push({ name: 'Diaspora Exclusion', impact: 'Medium', direction: 'neutral', description: `Excluded monthly diaspora remittance of KSh ${d.diasporaRemittances.toLocaleString()} from earned income`, isFlaw: false });
     }
   } else {
     let saccoBypass = d.hasSaccoAccount ? 'SACCO/Bank history active.' : '';
@@ -212,175 +232,108 @@ export function calculateProposedModel(d, adminParams = {}) {
 
   if (d.hasSaccoAccount && d.saccoShareCapital && d.saccoShareCapital > 0) {
     const totalSaccoCapital = Math.max(0, d.saccoShareCapital);
-    const exemptSaccoCapital = totalSaccoCapital * 0.5;
-    const assessableSaccoCapital = totalSaccoCapital - exemptSaccoCapital;
-    baseIncome += assessableSaccoCapital;
-    deductions.push({ name: 'SACCO Capital Exemption', amount: exemptSaccoCapital, reason: '50% of declared SACCO share capital excluded as illiquid savings; remaining 50% included in the illustrative base' });
+    factors.push({ name: 'SACCO Capital Holding', impact: 'Medium', direction: 'neutral', description: `Declared SACCO share capital: KSh ${totalSaccoCapital.toLocaleString()} (illiquid savings / wealth asset, excluded from annual earned income base)`, isFlaw: false });
   }
 
-  // Informal Sub-landlord Income Addition
+  // Informal Sub-landlord Income Context (Contextual Verification)
+  // Subletting income is an earned income component already captured within declared monthly net earnings.
+  // It is recorded here as a contextual factor and NOT added a second time to the annual earned income base.
   if (d.subletIncome && d.subletIncome > 0) {
-    baseIncome += (d.subletIncome * 12);
-    factors.push({ name: 'Sublet Income Addition', impact: 'Medium', direction: 'up', description: 'Added declared informal rental income', isFlaw: false });
+    factors.push({
+      name: 'Sublet Income Context',
+      impact: 'Medium',
+      direction: 'neutral',
+      description: `Informal sublet income of KSh ${d.subletIncome.toLocaleString()}/mo recorded for contextual verification (already represented in declared net earnings; not added a second time to earned income base)`,
+      isFlaw: false
+    });
   }
 
-  // Flaw 3: Digital Credit Punishment
-  // Active Fuliza defaults/digital debt strictly deduct from liquidity
+  // Digital debt defaults strictly noted as financial obligation
   if (!isOffline && d.fulizaDefaults && d.fulizaDefaults > 0) {
     let cappedDefaults = Math.min(10, d.fulizaDefaults);
-    let fulizaPenalty = adminParams.fulizaPenalty ?? 5000;
-    let debtDeduction = cappedDefaults * fulizaPenalty;
-    deductions.push({ name: 'Active Digital Debt', amount: debtDeduction, reason: 'Fuliza/M-Shwari defaults' });
-    baseIncome -= debtDeduction;
+    factors.push({ name: 'Digital Debt Obligations', impact: 'Medium', direction: 'neutral', description: `${cappedDefaults} active digital debt default(s) noted as debt obligation / financial distress signal`, isFlaw: false });
   }
 
-  // --- ASSETS & DEPRECIATION ---
-  // Note: The AGI model treats car/motorcycle value as a proxy for cumulative earned income 
-  // saved into a capital asset, not as liquid income — therefore it flows into the same AGI 
-  // pool that all living costs are deducted from. This is consistent with World Bank PMT asset annualization methodology.
-  // Flaw 7 & 8: Asset Age and Dead Asset Fallacy
-  // We use standard depreciation if there are no high-wealth triangulated signals
+  // --- CAPITAL ASSETS (CONTEXTUAL VERIFICATION) ---
   let hasHighWealthSignal = (d.kraPinType && d.kraPinType !== 'NONE') || d.isNtsaVerified || effectiveBalance > 50000;
-
-  // ===========================================================================
-  // FEATURE (system design, post-audit-v2): MULTI-ITEM ASSET OWNERSHIP
-  // ---------------------------------------------------------------------------
-  // Previously, `d.assets.includes('CAR')` was a boolean and `d.vehicleType`
-  // was a single value for the whole household — two cars priced identically
-  // to one, and a household with one beater + one luxury SUV could report
-  // "Standard Old" and make the luxury vehicle disappear from the AGI
-  // entirely. Land and livestock were single scalars tied to one reported
-  // county, so a parcel in a wealthy peri-urban area and a parcel in a
-  // remote ASAL county got the same multiplier. Housing had no concept of a
-  // second property at all.
-  //
-  // New optional array fields — `d.vehicles`, `d.landParcels`,
-  // `d.rentalProperties` — support real multiplicity, per-item location, and
-  // (for rental properties specifically) a proper landlord-business
-  // treatment. All three are backward compatible: if omitted or empty, the
-  // code falls back to the legacy singular fields so every existing preset,
-  // and every existing caller that hasn't been updated, produces identical
-  // output to before this change (verified — see verify_logic.js).
-  // ===========================================================================
 
   // ---- Vehicles (cars) ----
   const vehicleList = deriveVehicleList(d);
-
-  let carBaseValue = adminParams.carValue ?? 350000; // Base reference
+  let carBaseValue = adminParams.carValue ?? 350000;
   const CAR_MULTIPLIERS = { STANDARD_OLD: 1.0, STANDARD_NEW: 3.0, LUXURY: 10.0, COMMERCIAL: 2.5 };
 
   let totalCarValue = 0;
-  vehicleList.forEach((v, idx) => {
+  vehicleList.forEach((v) => {
     const vType = v.type || 'STANDARD_OLD';
     const vMultiplier = CAR_MULTIPLIERS[vType] ?? 1.0;
     let vValue = carBaseValue * vMultiplier;
-    const label = vehicleList.length > 1 ? ` (vehicle ${idx + 1}/${vehicleList.length})` : '';
-
     if (vValue > 0 && !hasHighWealthSignal && vType === 'STANDARD_OLD') {
-      const depAmount = vValue * 0.4;
       vValue *= 0.6;
-      deductions.push({ name: `Old Asset Depreciation${label}`, amount: depAmount, reason: 'Dead Asset / Age Adjustment' });
     } else if (vValue > 0 && vType === 'COMMERCIAL') {
-      const exAmount = vValue * 0.5;
       vValue *= 0.5;
-      deductions.push({ name: `Commercial Tool Exemption${label}`, amount: exAmount, reason: 'Income-generating tool, not liquid savings' });
     }
     totalCarValue += vValue;
   });
-  if (vehicleList.length > 1) {
-    factors.push({ name: 'Multiple Vehicles', impact: 'High', direction: 'up', description: `${vehicleList.length} vehicles valued individually, not flattened to one`, isFlaw: false });
+  if (vehicleList.length > 0) {
+    factors.push({
+      name: vehicleList.length > 1 ? 'Multiple Vehicles' : 'Vehicle Ownership',
+      impact: 'Medium',
+      direction: 'neutral',
+      description: `${vehicleList.length} vehicle(s) valued at KSh ${Math.round(totalCarValue).toLocaleString()} (capital asset, not added to earned income)`,
+      isFlaw: false
+    });
   }
-  baseIncome += totalCarValue;
 
-  // ---- Commercial vehicle fleet income (matatu / boda / taxi / ride-hailing) ----
-  // NEW (system design, post-audit-v2): the "Commercial Tool Exemption" above
-  // discounts a commercial vehicle's ASSET value on the assumption it's a
-  // working tool — but that alone was silent on the actual INCOME such a
-  // vehicle generates when a HIRED driver operates it, not the owner. A
-  // single owner-operator's own earnings already show up in
-  // grossMpesaMonthly; a fleet owner's cut from each hired driver (Kenya's
-  // common "daily target" structure — the driver pays the owner a fixed
-  // daily amount and keeps the rest) usually does not, since it's a
-  // separate cash/M-Pesa line from the owner's personal earnings. This was
-  // the exact same invisible-income gap fixed for rental properties,
-  // applying here to vehicle fleets. Opt-in per vehicle via
-  // `v.isOwnerOperated` (default true, meaning: assume already captured via
-  // grossMpesaMonthly, add nothing extra) and `v.dailyTargetIncome` (only
-  // read when isOwnerOperated is explicitly false).
+  // Commercial fleet income context
   let fleetIncomeMonthly = 0;
   let fleetVehicleCount = 0;
   vehicleList.forEach(v => {
     if (v.type === 'COMMERCIAL' && v.isOwnerOperated === false) {
-      fleetIncomeMonthly += Math.max(0, v.dailyTargetIncome || 0) * 26; // ~26 working days/month
+      fleetIncomeMonthly += Math.max(0, v.dailyTargetIncome || 0) * 26;
       fleetVehicleCount++;
     }
   });
   if (fleetVehicleCount > 0) {
-    baseIncome += fleetIncomeMonthly * 12;
     factors.push({
       name: 'Commercial Fleet Income',
-      impact: 'High',
-      direction: 'up',
-      description: `${fleetVehicleCount} hired-driver commercial vehicle(s) generating ~KSh ${Math.round(fleetIncomeMonthly).toLocaleString()}/mo in owner remittances (daily-target model), on top of each vehicle's own asset value above`,
+      impact: 'Medium',
+      direction: 'neutral',
+      description: `${fleetVehicleCount} hired-driver commercial vehicle(s) generating daily target remittances (noted for verification)`,
       isFlaw: false,
     });
   }
 
   // ---- Motorcycles ----
-  // FIX (audit v2): motorcycle base value was a bare 150000 literal with no
-  // adminParams hook, unlike carBaseValue above. Bodaboda/PSV motorcycles are
-  // exactly the asset class this v2.1 pass says it's protecting, so it
-  // shouldn't be second-class in the admin-configurability story.
   let motoBaseValue = adminParams.motoValue ?? 150000;
   const motoList = (Array.isArray(d.motorcycles) && d.motorcycles.length > 0)
     ? d.motorcycles
     : (d.assets.includes('MOTORCYCLE') ? [{ isCommercial: !!d.motorcycleIsCommercial }] : []);
 
   let totalMotoValue = 0;
-  motoList.forEach((m, idx) => {
+  motoList.forEach((m) => {
     let mValue = motoBaseValue;
-    const label = motoList.length > 1 ? ` (motorcycle ${idx + 1}/${motoList.length})` : '';
     if (mValue > 0 && m.isCommercial) {
-      const exemptionAmount = mValue * 0.5;
       mValue *= 0.5;
-      deductions.push({ name: `Motorcycle Commercial Exemption${label}`, amount: exemptionAmount, reason: 'Bodaboda/PSV motorcycle — income-generating tool' });
     } else if (mValue > 0 && !hasHighWealthSignal) {
-      // FIX (audit v2): this depreciation used to reduce baseIncome silently,
-      // with no deductions.push() entry — the equivalent car-depreciation
-      // branch does record one. Since SHAP Deduction Receipts are built
-      // from the `deductions` array, a bodaboda owner's receipt was missing
-      // this line item even though it materially lowered their AGI.
-      const depreciationAmount = mValue * 0.4;
       mValue *= 0.6;
-      deductions.push({ name: `Motorcycle Age Depreciation${label}`, amount: depreciationAmount, reason: 'Dead Asset / Age Adjustment — same basis as Old Asset Depreciation for cars' });
     }
     totalMotoValue += mValue;
   });
-  baseIncome += totalMotoValue;
+  if (motoList.length > 0) {
+    factors.push({
+      name: 'Motorcycle Asset Context',
+      impact: 'Low',
+      direction: 'neutral',
+      description: `${motoList.length} motorcycle(s) valued at KSh ${Math.round(totalMotoValue).toLocaleString()} (tool of trade / capital asset)`,
+      isFlaw: false
+    });
+  }
 
   // --- HOUSING & INFRASTRUCTURE ---
-  // EXCLUDED BY DESIGN: Housing variables (wallMaterial, roofMaterial, floorMaterial)
-  // are NOT used in the proposed AGI model. These are the exact intrusive PMT proxies
-  // that the 'Error by Design' investigation proved are unreliable wealth indicators:
-  //   - Flaw 11 (Ancestral Home Trap): Stone walls/tile roofs on inherited homes
-  //     do not reflect current income or ability to pay.
-  //   - Flaw 18 (Electricity as Luxury): Basic infrastructure ≠ wealth signal.
-  // Using them here would contradict the core thesis of our reform proposal.
-  // Housing has ZERO impact on the AGI calculation.
-
   factors.push({ name: 'Housing Variables (Wall/Roof/Floor)', impact: 'None', direction: 'neutral', description: 'EXCLUDED — intrusive PMT proxies proven unreliable by Error by Design investigation (Flaws 11, 18)', isFlaw: true, isIgnored: true });
   factors.push({ name: 'Electricity Connectivity', impact: 'None', direction: 'neutral', description: 'Excluded as wealth proxy (Last Mile Connectivity)', isFlaw: true, isIgnored: true });
 
   // ---- Rental properties (landlord business) ----
-  // NEW: a landlord's rental houses are a business generating income, not a
-  // personal-wealth signal to be valued the same way as a primary residence.
-  // Design choice (avoiding double-counting): an OCCUPIED unit's rent is
-  // counted as income (like any other cash flow) — the asset's economic
-  // value already shows up there, so it is NOT also separately imputed as a
-  // wealth signal. A VACANT unit generates no cash flow but is still real,
-  // untaxed wealth that would otherwise be entirely invisible (this was the
-  // single biggest gap identified in the audit) — so vacant units get a
-  // conservative imputed monthly value instead of being ignored.
   const rentalProperties = Array.isArray(d.rentalProperties) ? d.rentalProperties : [];
   let rentalIncomeMonthly = 0;
   let vacantRentalImputedMonthly = 0;
@@ -393,45 +346,18 @@ export function calculateProposedModel(d, adminParams = {}) {
     }
   });
   if (rentalProperties.length > 0) {
-    const totalRentalAnnual = (rentalIncomeMonthly + vacantRentalImputedMonthly) * 12;
-    baseIncome += totalRentalAnnual;
     const occupiedCount = rentalProperties.filter(p => p.isOccupied).length;
     const vacantCount = rentalProperties.length - occupiedCount;
     factors.push({
       name: 'Rental Property Business',
       impact: 'High',
-      direction: 'up',
-      description: `${rentalProperties.length} rental unit(s): ${occupiedCount} occupied (KSh ${rentalIncomeMonthly.toLocaleString()}/mo actual rent) + ${vacantCount} vacant (imputed at KSh ${imputedVacantRate.toLocaleString()}/mo each, admin-configurable) — treated as business income, not double-counted as a separate asset value`,
+      direction: 'neutral',
+      description: `${rentalProperties.length} rental unit(s): ${occupiedCount} occupied + ${vacantCount} vacant — recorded for commercial activity verification`,
       isFlaw: false,
     });
   }
 
   // --- LIVELIHOOD (LAND & LIVESTOCK) ---
-  // Flaw 10: Arid Land Overcharge & Flaw 9: Livestock Capital
-  // NEW: land can be declared either as one flat total (legacy `landAcreage`,
-  // priced using the person's own `county`) or as a list of parcels, each
-  // with its OWN county — so someone with land split across an ASAL county
-  // and a non-ASAL county gets each parcel priced correctly instead of one
-  // multiplier applied to the whole total based on wherever they personally live.
-  //
-  // KNOWN LIMITATION, flagged not silently fixed: the KSh 80,000/acre base
-  // below IS a real, cited figure (ASSUMPTIONS.docx: "Ministry of Lands
-  // average smallholding valuations"), but it's a single NATIONAL average
-  // with only a 3-tier arid/semi-arid/other adjustment on top of it. Real
-  // 2026 Kenyan land prices vary roughly 200x by location — published
-  // market data (HassConsult Land Price Index; county valuation rolls under
-  // the Unimproved Site Value system used for land rates) shows rural
-  // non-ASAL farmland at KSh 400,000-2,000,000/acre, and land in Nairobi's
-  // satellite growth corridors (Kiambu, Ngong, Ruiru, Kitengela — appreciating
-  // 13-15%/year) at KSh 30,000,000+/acre. A flat 80,000 base drastically
-  // undervalues land wealth for anyone outside the ASAL/non-ASAL binary this
-  // model actually checks, which is exactly the kind of oversimplified,
-  // location-blind proxy the "Error by Design" investigation criticized the
-  // OLD system for using on housing materials. `marketValuePerAcre` below is
-  // an optional per-parcel override so real, sourced regional data (start
-  // with HassConsult's quarterly index or county valuation rolls, both
-  // public) can replace the flat default parcel-by-parcel as it's gathered,
-  // without needing another code change.
   const landParcelList = (Array.isArray(d.landParcels) && d.landParcels.length > 0)
     ? d.landParcels
     : (d.landAcreage > 0 ? [{ acres: d.landAcreage, county: d.county }] : []);
@@ -448,34 +374,35 @@ export function calculateProposedModel(d, adminParams = {}) {
     const perAcreRate = parcel.marketValuePerAcre ?? (adminParams.landValuePerAcre ?? 80000);
     totalLandValue += (parcel.acres || 0) * perAcreRate * parcelLandMultiplier;
   });
-  if (landParcelList.length > 1) {
-    factors.push({ name: 'Multiple Land Parcels', impact: 'Medium', direction: 'up', description: `${landParcelList.length} parcels valued individually by their own county, not flattened to one multiplier`, isFlaw: false });
+  if (landParcelList.length > 0) {
+    factors.push({
+      name: landParcelList.length > 1 ? 'Multiple Land Parcels' : 'Land Ownership',
+      impact: 'Medium',
+      direction: 'neutral',
+      description: `${landParcelList.length} parcel(s) total valuation KSh ${Math.round(totalLandValue).toLocaleString()} (immovable property, not added to earned income)`,
+      isFlaw: false
+    });
   }
-  baseIncome += totalLandValue;
 
-  // Livestock: kept as a single aggregate count (not split per-item) — the
-  // person's own reported county still governs the discount, matching how
-  // it worked before this change. Flagging as a smaller, known simplification
-  // rather than restructuring a field nobody asked to fix.
   const { livestock: livestockMultiplier } = landLivestockMultipliers(d.county);
-  if (ASAL_COUNTIES[d.county] === 'arid' || ASAL_COUNTIES[d.county] === 'semi-arid') {
-    factors.push({ name: 'Arid Land Adjustment', impact: 'Medium', direction: 'down', description: 'Discounted ASAL land/livestock valuation', isFlaw: false });
+  if (d.livestockCount && d.livestockCount > 0) {
+    const livestockVal = d.livestockCount * 3800 * livestockMultiplier;
+    factors.push({
+      name: 'Livestock Holdings',
+      impact: 'Medium',
+      direction: 'neutral',
+      description: `${d.livestockCount} head of livestock (valuation KSh ${Math.round(livestockVal).toLocaleString()}; livelihood asset, not earned income)`,
+      isFlaw: false
+    });
   }
-  if (d.livestockCount) baseIncome += (d.livestockCount * 3800 * livestockMultiplier);
 
-  // --- DEMOGRAPHIC OVERRIDES & DEDUCTIONS ---
-  let agi = baseIncome;
+  // --- ILLUSTRATIVE HOUSEHOLD ADJUSTMENTS & ADJUSTED GROSS INCOME (AGI) ---
+  let preFloorAdjustedGrossIncome = annualBaseTotal;
 
-  // Flaw 16: Urban Cost-of-Living Penalty (Deduct rent, don't tax it)
+  // 1. Cost of Living Allowance
   const urbanTier = URBAN_TIER_1.includes(d.county) ? 'TIER_1'
     : URBAN_TIER_2.includes(d.county) ? 'TIER_2' : 'RURAL';
-  
-  // Base CoL without rent
-  // FIX (audit v2): this override used to only ever apply when
-  // urbanTier === 'TIER_1' — Tier 2 and Rural COL were hardcoded regardless
-  // of adminParams, unlike the rent caps below which are fully configurable
-  // across all three tiers. `urbanCostOfLiving` is kept as a Tier-1 alias
-  // for backward compatibility with any existing caller.
+
   const colOverrides = {
     TIER_1: adminParams.tier1CostOfLiving ?? adminParams.urbanCostOfLiving,
     TIER_2: adminParams.tier2CostOfLiving,
@@ -486,8 +413,8 @@ export function calculateProposedModel(d, adminParams = {}) {
     : COST_OF_LIVING[urbanTier];
 
   let colDeduction;
+  let colReason;
   if (d.ownershipStatus === 'RENTED' && d.monthlyRent > 0) {
-    // Dynamic admin override for ceilings, or fallback to defaults
     const tier1Cap = adminParams.tier1RentCap ?? DEFAULT_MAX_RENT.TIER_1;
     const tier2Cap = adminParams.tier2RentCap ?? DEFAULT_MAX_RENT.TIER_2;
     const ruralCap = adminParams.ruralRentCap ?? DEFAULT_MAX_RENT.RURAL;
@@ -496,97 +423,174 @@ export function calculateProposedModel(d, adminParams = {}) {
     const cappedRent = Math.min(d.monthlyRent, maxRent);
     
     colDeduction = Math.max(baseCol, cappedRent) * 12;
-    deductions.push({ name: 'Rent-Adjusted Cost of Living', amount: colDeduction, reason: `Renter in ${urbanTier} — capped at KSh ${maxRent.toLocaleString()}` });
+    colReason = `Renter in ${urbanTier} — capped at KSh ${maxRent.toLocaleString()}/mo`;
+    postBaseDeductions.push({
+      name: 'Rent-Adjusted Cost of Living',
+      amount: colDeduction,
+      category: 'COST_OF_LIVING',
+      reason: colReason,
+      explanation: colReason
+    });
   } else {
     colDeduction = baseCol * 12;
-    deductions.push({ name: 'Cost of Living Allowance', amount: colDeduction, reason: `Basic survival threshold for ${urbanTier}` });
+    colReason = `Basic survival threshold for ${urbanTier}`;
+    postBaseDeductions.push({
+      name: 'Cost of Living Allowance',
+      amount: colDeduction,
+      category: 'COST_OF_LIVING',
+      reason: colReason,
+      explanation: colReason
+    });
   }
-  agi -= colDeduction;
+  preFloorAdjustedGrossIncome -= colDeduction;
 
-  // Flaw 14: Non-linear Dependency Scaling
+  // 2. Dependency Allowance
+  let depDeduction = 0;
   if (d.householdSize > 1) {
     let dependencyRatio = (d.householdSize - 1) * 0.08; // 8% deduction per dependent
-    // Cap dependency deduction: ASAL counties get higher cap (pro-marginalized, Art.56)
     const cap = ASAL_COUNTIES[d.county] ? 0.40 : 0.35;
     dependencyRatio = Math.min(dependencyRatio, cap);
-    let depDeduction = agi * dependencyRatio;
-    deductions.push({ name: 'Dependency Allowance', amount: depDeduction, reason: `Dynamic per-capita scaling (capped at ${Math.round(cap*100)}%)` });
-    agi -= depDeduction;
+    depDeduction = Math.round(Math.max(0, preFloorAdjustedGrossIncome) * dependencyRatio);
+    const depReason = `Dynamic per-capita scaling for ${d.householdSize} members (${Math.round(dependencyRatio * 100)}% of remaining income)`;
+    postBaseDeductions.push({
+      name: 'Dependency Allowance',
+      amount: depDeduction,
+      category: 'DEPENDENCY',
+      reason: depReason,
+      explanation: depReason
+    });
+    preFloorAdjustedGrossIncome -= depDeduction;
   }
 
-  // Flaw 22: Catastrophic Health Expenditure
+  // 3. Catastrophic Health Expenditure (CHE) / Chronic Illness Adjustment
+  let cheDeduction = 0;
   if (d.hasChronicIllness) {
-    let cheDeduction = agi * 0.4; // 40% deduction for net disposable capacity
-    deductions.push({ name: 'CHE Exemption', amount: cheDeduction, reason: 'Chronic Illness Burden' });
-    agi -= cheDeduction;
-    factors.push({ name: 'CHE Exemption', impact: 'High', direction: 'down', description: 'Disposable income protected', isFlaw: false });
+    cheDeduction = Math.round(Math.max(0, preFloorAdjustedGrossIncome) * 0.4);
+    const cheReason = 'Chronic Illness Burden (40% adjustment: illustrative prototype policy assumption — requires SHA validation)';
+    postBaseDeductions.push({
+      name: 'Chronic Illness Adjustment (CHE)',
+      amount: cheDeduction,
+      category: 'HEALTH',
+      reason: cheReason,
+      explanation: cheReason
+    });
+    preFloorAdjustedGrossIncome -= cheDeduction;
+    factors.push({ name: 'Chronic Illness Adjustment (CHE)', impact: 'High', direction: 'down', description: 'Chronic illness disposable income protection (40% adjustment: illustrative prototype policy assumption — requires SHA validation)', isFlaw: false });
   }
 
-  // PWD Exemption
+  // 4. Registered Disability Adjustment (Illustrative Assumption)
+  let disabilityDeduction = 0;
   if (d.hasRegisteredDisability) {
-    let disabilityDeduction = agi * 0.3; // 30% deduction for reduced earning capacity
-    deductions.push({ name: 'Disability Exemption (Art. 54)', amount: disabilityDeduction, reason: 'Registered Person with Disability' });
-    agi -= disabilityDeduction;
-    factors.push({ name: 'PWD Override', impact: 'High', direction: 'down', description: 'Art. 54 constitutional protection — reduced earning capacity adjustment', isFlaw: false });
+    disabilityDeduction = Math.round(Math.max(0, preFloorAdjustedGrossIncome) * 0.3);
+    const disReason = 'Registered Person with Disability (30% adjustment: illustrative prototype policy assumption — requires SHA validation)';
+    postBaseDeductions.push({
+      name: 'Disability Adjustment (Illustrative Assumption)',
+      amount: disabilityDeduction,
+      category: 'DISABILITY',
+      reason: disReason,
+      explanation: disReason
+    });
+    preFloorAdjustedGrossIncome -= disabilityDeduction;
+    factors.push({ name: 'Disability Adjustment', impact: 'High', direction: 'down', description: 'Reduced earning capacity adjustment (30%: illustrative prototype policy assumption — requires SHA validation)', isFlaw: false });
   }
 
-  agi = Math.max(0, agi);
+  const annualBaseSum = annualBaseItems.reduce((sum, item) => sum + item.amount, 0);
+  const baseReconciliationDifference = annualBaseTotal - annualBaseSum;
 
-  // OVERRIDES (Flaw 19 & 24)
+  const totalPostBaseDeductions = postBaseDeductions.reduce((sum, item) => sum + item.amount, 0);
+  const expectedPreFloorAGI = annualBaseTotal - totalPostBaseDeductions;
+  const preFloorReconciliationDifference = preFloorAdjustedGrossIncome - expectedPreFloorAGI;
+
+  const expectedAGI = Math.max(0, expectedPreFloorAGI);
+  const zeroFloorAdjustment = expectedAGI - expectedPreFloorAGI;
+  const adjustedGrossIncome = Math.max(0, preFloorAdjustedGrossIncome);
+
+  const isReconciled = (baseReconciliationDifference === 0) &&
+                       (preFloorReconciliationDifference === 0) &&
+                       (adjustedGrossIncome === expectedAGI);
+
+  const reconciliation = {
+    annualBaseTotal,
+    annualBaseSum,
+    baseReconciliationDifference,
+    totalPostBaseDeductions,
+    expectedPreFloorAGI,
+    preFloorAdjustedGrossIncome,
+    preFloorReconciliationDifference,
+    zeroFloorAdjustment,
+    expectedAGI,
+    adjustedGrossIncome,
+    isReconciled,
+  };
+
+  const calculationBreakdown = {
+    annualBaseTotal,
+    annualBaseItems,
+    postBaseDeductions,
+    totalPostBaseDeductions,
+    preFloorAdjustedGrossIncome,
+    zeroFloorAdjustment,
+    adjustedGrossIncome,
+    reconciliation,
+    notes: [
+      "Calculation integrity: Capital assets, transaction velocity, and debt are treated as contextual verification signals and are not added directly to annual earned income.",
+      "Adjusted Gross Income is derived strictly from annualised net declared earned household income minus illustrative household adjustments.",
+      "A zero floor ensures that Adjusted Gross Income cannot be negative in the prototype model."
+    ]
+  };
+
+  // --- OVERRIDES & POLICY CONSTRAINTS ---
   let isIndigent = false;
   if (d.receivesAid || d.isRefugee) isIndigent = true;
-  if (d.headAge >= 65 && deriveVehicleList(d).length === 0 && effectiveBalance < 5000) {
-    isIndigent = true;
-    factors.push({ name: 'Age Override', impact: 'High', direction: 'down', description: 'Pensioner Trap bypass', isFlaw: false });
+  if (d.headAge >= 65) {
+    if (deriveVehicleList(d).length > 0) {
+      requiresChpVerification = true;
+      factors.push({
+        name: 'Elderly Vehicle Review',
+        impact: 'Medium',
+        direction: 'neutral',
+        description: 'Vehicle declared by elderly head; flagged for CHP verification without inflating earned income',
+        isFlaw: false
+      });
+    }
+    if (effectiveBalance < 5000) {
+      isIndigent = true;
+      factors.push({ name: 'Age Override', impact: 'High', direction: 'down', description: 'Pensioner Trap bypass', isFlaw: false });
+    }
   }
   if (d.headAge < 21 && d.householdSize > 1) {
     isIndigent = true;
     factors.push({ name: 'Child-Headed Household', impact: 'High', direction: 'down', description: 'Minor override', isFlaw: false });
   }
 
-  // Smooth Transition Constraint (Soft-Landing Smoothness)
-  // At exactly KSh 131,000, 2.75% of AGI yields KSh 300.20/month.
-  // This means the dreaded '131k hard cliff' mathematically vanishes when strictly applying
-  // 2.75% to an Adjusted Gross Income rather than a gross income proxy.
-  // As AGI crosses 131k, the contribution scales perfectly smoothly from 300 upwards,
-  // providing a natural soft-landing ramp for graduating citizens.
   const INDIGENT_THRESHOLD = 131000;
-  if (!isIndigent && agi <= INDIGENT_THRESHOLD) {
+  if (!isIndigent && adjustedGrossIncome <= INDIGENT_THRESHOLD) {
     isIndigent = true;
-    factors.push({ name: 'Pro-Poor Constraint', impact: 'Medium', direction: 'down', description: 'AGI below indigent threshold', isFlaw: false });
+    factors.push({ name: 'Pro-Poor Constraint', impact: 'Medium', direction: 'down', description: 'AGI below illustrative low-income threshold (KSh 131,000)', isFlaw: false });
   }
 
-  // Meta-Flaw 30: Legal 2.75% Mandate
-  // Apply flat 2.75% strictly to the heavily adjusted AGI
+  // Meta-Flaw 30: 2.75% Rate Assumption
   let monthlyContribution = 0;
   let tier = "LOW";
   
   if (isIndigent) {
-    monthlyContribution = 300; // Subsidized
+    monthlyContribution = 300; // Illustrative minimum contribution assumption (KSh 300 floor)
   } else {
-    monthlyContribution = Math.max(300, Math.round((agi * 0.0275) / 12));
-    if (agi > 450000) tier = "HIGH";
+    monthlyContribution = Math.max(300, Math.round((adjustedGrossIncome * 0.0275) / 12));
+    if (adjustedGrossIncome > 450000) tier = "HIGH";
     else tier = "MIDDLE";
   }
 
   // Fallback Protocol: Digital Ghost Detection
-  // If user operates purely in cash with zero digital footprint and zero physical assets
   let isDigitalGhost = false;
-  // requiresChpVerification is declared earlier in this function now (see FIX audit v2 note above) — this used to be a duplicate re-declaration
-  // FIX (audit v2): `d.assets` only ever holds items like CAR/MOTORCYCLE/TV
-  // — land and livestock are separate fields and were never checked here.
-  // A pastoralist with real land/livestock wealth but no phone-linked
-  // footprint could be mislabeled "digital ghost" even though their AGI
-  // above already correctly counted that wealth. Doesn't change what
-  // anyone owes, but it corrupted the isDigitalGhost statistic itself.
-  const hasNoPhysicalAssets = d.assets.length === 0 && !(d.landAcreage > 0) && !(d.livestockCount > 0);
+  const hasNoPhysicalAssets = (deriveVehicleList(d).length === 0) && (motoList.length === 0) && !(d.landAcreage > 0) && !(landParcelList.length > 0) && !(d.livestockCount > 0);
   if (!isOffline && (!d.kraPinType || d.kraPinType === 'NONE') && !d.isNtsaVerified && !d.hasSaccoAccount && (d.grossMpesaMonthly || 0) < 1000 && hasNoPhysicalAssets) {
     isDigitalGhost = true;
   }
   
   if (isDigitalGhost && isIndigent) {
     requiresChpVerification = true;
-    factors.push({ name: 'Digital Ghost / CHP Protocol', impact: 'High', direction: 'neutral', description: 'Zero digital footprint. Provisional subsidy granted pending physical CHP verification within 90 days.', isFlaw: false });
+    factors.push({ name: 'Digital Ghost / CHP Protocol', impact: 'High', direction: 'neutral', description: 'Zero digital footprint. Provisional low-income classification pending physical CHP verification within 90 days.', isFlaw: false });
   }
 
   // Consent Withheld Pathway (DPA 2019 compliance)
@@ -604,8 +608,8 @@ export function calculateProposedModel(d, adminParams = {}) {
   const confidenceBand = { HIGH: 0.10, MEDIUM: 0.20, LOW: 0.35 }[confidenceTier];
 
   return {
-    estimatedAnnualIncome: baseIncome,
-    adjustedGrossIncome: agi,
+    estimatedAnnualIncome: annualBaseTotal,
+    adjustedGrossIncome: adjustedGrossIncome,
     monthlyContribution: monthlyContribution,
     band: isIndigent ? 1 : 2,
     tier: tier,
@@ -614,19 +618,11 @@ export function calculateProposedModel(d, adminParams = {}) {
     requiresChpVerification: requiresChpVerification,
     factors: factors,
     modelName: 'SHA PMT v2.1 — proposed AGI rules engine',
-    deductions: deductions,
-    // FIX (audit v2): this was `fairnessPass: true` — a literal, unconditional
-    // hardcode returned on every single assessment, feeding a per-case
-    // "Equalized Odds Constraint Active" badge in the UI. Equalized odds is
-    // a population-level statistic (see testCurrentModelDisparityByCounty
-    // above) — no single household's result can honestly claim it. Field
-    // removed; the UI badge that read it has been removed too (see App.jsx).
-    // If you want a per-case trust signal, testCurrentModelDisparityByCounty's
-    // most recent population-level `passed` result is the honest source —
-    // wire that through instead of a per-case flag.
+    deductions: postBaseDeductions,
+    calculationBreakdown: calculationBreakdown,
     confidenceTier: confidenceTier,
-    agiRangeLow: Math.max(0, Math.round(agi * (1 - confidenceBand))),
-    agiRangeHigh: Math.round(agi * (1 + confidenceBand))
+    agiRangeLow: Math.max(0, Math.round(adjustedGrossIncome * (1 - confidenceBand))),
+    agiRangeHigh: Math.round(adjustedGrossIncome * (1 + confidenceBand))
   };
 }
 
@@ -635,9 +631,10 @@ export const PRESETS = [
     name: 'Mama Wanjiku — Chama Treasurer',
     description: 'Rural shopkeeper who manages her chama\'s M-Pesa. High turnover, zero profit.',
     icon: '👩‍🌾',
-    badge: 'Fiduciary Exemption',
+    badge: 'Group Fund Context',
     badgeColor: '#059669',
     inputs: {
+      monthlyNetEarnedIncome: 18000,
       county: 'Kakamega',
       householdSize: 5,
       headGender: 'FEMALE',
@@ -683,6 +680,7 @@ export const PRESETS = [
     badge: 'Ancestral Home',
     badgeColor: '#d97706',
     inputs: {
+      monthlyNetEarnedIncome: 5000,
       county: 'Meru',
       householdSize: 6,
       headGender: 'MALE',
@@ -728,6 +726,7 @@ export const PRESETS = [
     badge: 'Digital Debt Penalty',
     badgeColor: '#dc2626',
     inputs: {
+      monthlyNetEarnedIncome: 7000,
       county: 'Nairobi',
       householdSize: 4,
       headGender: 'FEMALE',
@@ -773,6 +772,7 @@ export const PRESETS = [
     badge: 'Revenue Target',
     badgeColor: '#0284c7',
     inputs: {
+      monthlyNetEarnedIncome: 120000,
       county: 'Nairobi',
       householdSize: 3,
       headGender: 'MALE',
@@ -818,6 +818,7 @@ export const PRESETS = [
     badge: 'Age Override',
     badgeColor: '#7c3aed',
     inputs: {
+      monthlyNetEarnedIncome: 0,
       county: 'Nyeri',
       householdSize: 2,
       headGender: 'MALE',
@@ -863,6 +864,7 @@ export const PRESETS = [
     badge: 'Rent Gap Protected',
     badgeColor: '#7c3aed',
     inputs: {
+      monthlyNetEarnedIncome: 35000,
       county: 'Kiambu',
       householdSize: 4,
       headGender: 'FEMALE',
@@ -908,6 +910,7 @@ export const PRESETS = [
     badge: 'New: Multi-Item',
     badgeColor: '#0369a1',
     inputs: {
+      monthlyNetEarnedIncome: 95000,
       county: 'Nakuru',
       householdSize: 3,
       headGender: 'MALE',
@@ -961,6 +964,7 @@ export const PRESETS = [
     badge: 'Tools of Trade',
     badgeColor: '#16a34a',
     inputs: {
+      monthlyNetEarnedIncome: 15000,
       county: 'Nakuru',
       householdSize: 3,
       headGender: 'MALE',
@@ -1011,7 +1015,7 @@ export const PRESETS = [
  * 2. Unregistered Vehicle Claim / Hidden High-Value Asset (NTSA cross-check)
  * 3. Income Under-Reporting (self-reported vs. KRA records)
  * 4. Fuliza Debt Accumulation (systematic borrowing to reduce AGI)
- * 5. Suspicious Chama Treasurer Profile (false fiduciary claim)
+ * 5. Suspicious Chama Treasurer Profile (false group fund claim)
  * 6. Age-Household Mismatch (biological implausibility)
  * 7. Asset-Liquidity Paradox (luxury assets with near-zero cashflow)
  * 8. Business Registration Without Income (KRA pin but no activity)
@@ -1260,14 +1264,14 @@ export function calculateFraudRisk(d, contextData = {}) {
   }
 
   // FLAG 14: Unverified Chama Treasurer Claim
-  // Claims fiduciary exemption but API shows no registered group
+  // Claims group fund discount but API shows no registered group
   if (d.isGroupTreasurer && contextData.safaricomChamaRegistered === false) {
     fraudFlags.push({
-      name: 'Unverified Fiduciary Claim',
-      reason: `Claims Chama treasurer role for 80% liquidity exemption, but Safaricom/SACCO API shows no registered group linked to this ID/Phone.`,
+      name: 'Unverified Group Fund Claim',
+      reason: `Claims Chama treasurer role for 80% group fund liquidity discount, but Safaricom/SACCO API shows no registered group linked to this ID/Phone.`,
       confidence: 0.95,
       severity: 'CRITICAL',
-      action: 'Deny fiduciary exemption until Chama registration certificate is provided'
+      action: 'Verify Chama registration certificate before applying group fund liquidity discount'
     });
     confidenceScores.push(0.95);
     overallRiskScore += 0.95;
@@ -1950,6 +1954,7 @@ export function generateSyntheticHousehold() {
     ...(randBool(0.7) ? ['FEATURE_PHONE'] : []),
   ];
   const grossMpesaMonthly = Math.round(Math.exp(6 + Math.random() * 4)); // roughly log-spread ~400 to ~90,000
+  const monthlyNetEarnedIncome = Math.max(0, Math.round(grossMpesaMonthly * (0.2 + Math.random() * 0.6)));
   const ownershipStatus = isUrban && randBool(0.5) ? 'RENTED' : 'OWNED';
 
   // NEW (system design, post-audit-v2): occasionally generate multi-item
@@ -2000,6 +2005,7 @@ export function generateSyntheticHousehold() {
     avgRetainedBalance: Math.round(grossMpesaMonthly * (0.02 + Math.random() * 0.15)),
     isSeasonalWorker: randBool(0.15),
     lowSeasonRetainedBalance: 0,
+    monthlyNetEarnedIncome,
     diasporaRemittances: randBool(0.04) ? randInt(5000, 40000) : 0,
     fulizaDefaults: randBool(0.05) ? randInt(1, 3) : 0,
     kraPinType: randBool(0.2) ? randChoice(['PAYE', 'BUSINESS']) : 'NONE',

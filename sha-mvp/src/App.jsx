@@ -4,9 +4,17 @@ import {
   Radio, Tv, Refrigerator, Laptop, Smartphone, Phone, 
   Bike, Car, ShieldCheck, Info, CheckCircle2, AlertTriangle, Fingerprint, ChevronDown, Settings
 } from "lucide-react";
-import { calculateCurrentModel, calculateCurrentModelContribution, calculateProposedModel, calculateFraudRisk, analyzeSector, calculateFairnessMetrics, PRESETS, createAuditRecord, generateRevenueStressTest, testCurrentModelDisparityByCounty, generateFraudStatistics, generateSyntheticPopulation, calculatePopulationErrorRates } from "./lib/AlgorithmSimulation.js";
+import { calculateCurrentModel, calculateCurrentModelContribution, calculateProposedModel, calculateFraudRisk, analyzeSector, calculateFairnessMetrics, PRESETS, createAuditRecord, generateRevenueStressTest, testCurrentModelDisparityByCounty, generateFraudStatistics, generateSyntheticPopulation, calculatePopulationErrorRates, validateAssessmentInputs } from "./lib/AlgorithmSimulation.js";
 import { logger } from "./lib/Logger.js";
 import AppealPreparationTab from "./AppealPreparationTab.jsx";
+import ContributionStatementTab from "./ContributionStatementTab.jsx";
+import OfficerReviewTab from "./OfficerReviewTab.jsx";
+import {
+  createInitialReviewRecord,
+  createReviewEvent,
+  createSyntheticMeetingDemonstration,
+  removeSyntheticMeetingDemonstration
+} from "./lib/review-workflow.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -15,6 +23,7 @@ import AppealPreparationTab from "./AppealPreparationTab.jsx";
 const COUNTIES = ["Baringo","Bomet","Bungoma","Busia","Elgeyo Marakwet","Embu","Garissa","Homa Bay","Isiolo","Kajiado","Kakamega","Kericho","Kiambu","Kilifi","Kirinyaga","Kisii","Kisumu","Kitui","Kwale","Laikipia","Lamu","Machakos","Makueni","Mandera","Marsabit","Meru","Migori","Mombasa","Murang'a","Nairobi","Nakuru","Nandi","Narok","Nyandarua","Nyamira","Nyeri","Samburu","Siaya","Taita Taveta","Tana River","Tharaka-Nithi","Trans Nzoia","Turkana","Uasin Gishu","Vihiga","Wajir","West Pokot"];
 
 const DEFAULTS = {
+  monthlyNetEarnedIncome: null,
   householdSize: 5, county: "Meru", headGender: "FEMALE", headAge: 45,
   dwellingType: "TRADITIONAL", wallMaterial: "STONE", roofMaterial: "IRON_SHEETS",
   floorMaterial: "CEMENT", rooms: 2, ownershipStatus: "OWNED", monthlyRent: 0, subletIncome: 0,
@@ -88,35 +97,52 @@ function FieldSelect({label,value,onChange,options}) {
   );
 }
 
-function FieldNumber({label,value,onChange,min=0,max,step=1,note}) {
+function FieldNumber({label,value,onChange,min=0,max,step=1,note,allowNull=false,error=null}) {
   const handleChange = (e) => {
     let raw = e.target.value;
     if (raw === "") {
-      onChange("");
+      onChange(allowNull ? null : "");
       return;
     }
     onChange(parseFloat(raw));
   };
   
   const handleBlur = (e) => {
-    let v = parseFloat(e.target.value);
-    if (isNaN(v)) v = min;
-    if (max !== undefined) v = Math.min(max, v);
-    v = Math.max(min, v);
-    onChange(v);
-    e.target.style.borderColor=S.borderUp;
-    e.target.style.boxShadow="0 1px 2px rgba(0,0,0,0.02)";
+    let raw = e.target.value;
+    if (raw === "" || raw === null || isNaN(parseFloat(raw))) {
+      if (allowNull) {
+        onChange(null);
+        e.target.style.borderColor = error ? S.terra : S.borderUp;
+        e.target.style.boxShadow = "0 1px 2px rgba(0,0,0,0.02)";
+        return;
+      }
+      let v = min;
+      onChange(v);
+    } else {
+      let v = parseFloat(raw);
+      if (max !== undefined) v = Math.min(max, v);
+      v = Math.max(min, v);
+      onChange(v);
+    }
+    e.target.style.borderColor = error ? S.terra : S.borderUp;
+    e.target.style.boxShadow = "0 1px 2px rgba(0,0,0,0.02)";
   };
+
+  const inputValue = value === null || value === undefined ? "" : value;
+  const borderColor = error ? S.terra : S.borderUp;
 
   return (
     <div>
       <Label>{label}</Label>
-      <input type="number" aria-label={label} aria-required="true" value={value} min={min} max={max} step={step}
+      <input type="number" aria-label={label} aria-required="true" value={inputValue} min={min} max={max} step={step}
         onChange={handleChange}
-        style={{width:"100%",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"10px 14px",fontSize:13,fontWeight:500,fontFamily:"inherit",outline:"none",boxShadow:"0 1px 2px rgba(0,0,0,0.02)",transition:"border-color 0.2s, box-shadow 0.2s"}}
-        onFocus={e=>{e.target.style.borderColor=S.blue;e.target.style.boxShadow=`0 0 0 3px ${S.blueD}`;}}
+        style={{width:"100%",background:S.surface,border:`1px solid ${borderColor}`,borderRadius:6,color:S.text,padding:"10px 14px",fontSize:13,fontWeight:500,fontFamily:"inherit",outline:"none",boxShadow:"0 1px 2px rgba(0,0,0,0.02)",transition:"border-color 0.2s, box-shadow 0.2s"}}
+        onFocus={e=>{e.target.style.borderColor=error?S.terra:S.blue;e.target.style.boxShadow=`0 0 0 3px ${error?S.terraD:S.blueD}`;}}
         onBlur={handleBlur} />
-      {note&&<div style={{fontSize:11,color:S.terra,marginTop:5,display:"flex",alignItems:"flex-start",gap:4}}>
+      {error && <div style={{fontSize:11,color:S.terra,marginTop:5,display:"flex",alignItems:"flex-start",gap:4,fontWeight:600}}>
+        <AlertTriangle size={12} style={{marginTop:2,flexShrink:0}}/> <span>{error}</span>
+      </div>}
+      {note&&!error&&<div style={{fontSize:11,color:S.terra,marginTop:5,display:"flex",alignItems:"flex-start",gap:4}}>
         <AlertTriangle size={12} style={{marginTop:2,flexShrink:0}}/> <span>{note}</span>
       </div>}
     </div>
@@ -262,7 +288,7 @@ function AssetGrid({assets,toggle}) {
 
 const STEPS=["Demographics","Housing","Services","Assets","Livelihood","Triangulation"];
 
-function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAcknowledgedDemo,setHasAcknowledgedDemo,setInputs,setActiveScenario,addListItem,updListItem,removeListItem}) {
+function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAcknowledgedDemo,setHasAcknowledgedDemo,setInputs,setActiveScenario,addListItem,updListItem,removeListItem,formError}) {
   const go=(n)=>setStep(Math.max(0,Math.min(5,n)));
   return (
     <div style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:12,padding:24,boxShadow:"0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)"}}>
@@ -289,8 +315,8 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
         </div>
         <div style={{display:"grid",gap:10}}>
           <Toggle label="Receives social aid?" tip="Such as Inua Jamii or HSFP cash transfers" value={d.receivesAid} onChange={v=>upd("receivesAid",v)} hideSpacer/>
-          <Toggle label="Has Chronic Illness? (CHE)" tip="Triggers Catastrophic Health Expenditure (CHE) protection" value={d.hasChronicIllness} onChange={v=>upd("hasChronicIllness",v)} hideSpacer/>
-          <Toggle label="Registered Disability (NCPWD)?" tip="Exempts household from asset wealth tests" value={d.hasRegisteredDisability} onChange={v=>upd("hasRegisteredDisability",v)} hideSpacer/>
+          <Toggle label="Has Chronic Illness? (CHE)" tip="Applies illustrative chronic illness / CHE adjustment (40% adjustment: illustrative prototype policy assumption — requires SHA validation)" value={d.hasChronicIllness} onChange={v=>upd("hasChronicIllness",v)} hideSpacer/>
+          <Toggle label="Registered Disability (NCPWD)?" tip="Applies illustrative disability adjustment (30% adjustment: illustrative prototype policy assumption — requires SHA validation)" value={d.hasRegisteredDisability} onChange={v=>upd("hasRegisteredDisability",v)} hideSpacer/>
           <Toggle label="Refugee / IDP status?" tip="Automatically classifies as indigent/state-sponsored" value={d.isRefugee} onChange={v=>upd("isRefugee",v)} hideSpacer/>
         </div>
       </div>}
@@ -446,6 +472,19 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
 
       {/* Step 5: Triangulation Data */}
       {step===5&&<div style={{display:"grid",gap:16}}>
+        <div style={{background:S.blueD,padding:14,borderRadius:8,border:`1px solid ${formError?S.terraBd:S.blueBd}`}}>
+          <FieldNumber
+            label="Declared Monthly Net Earned Income (KSh) — Required Base"
+            value={d.monthlyNetEarnedIncome}
+            onChange={v=>upd("monthlyNetEarnedIncome",v)}
+            min={0}
+            step={500}
+            allowNull={true}
+            error={formError}
+            note="Authoritative net earned income base. All assets, M-Pesa balances, and debts are evaluated contextually."
+          />
+        </div>
+
         <div style={{fontSize:13,color:S.text,lineHeight:1.4,marginBottom:2,padding:10,background:S.blueD,borderRadius:8,border:`1px solid ${S.blueBd}`}}>
           <strong>The Potential data-source checks:</strong> The proposed algorithm cross-references self-reported data against KRA (Income), NTSA (Assets), and Telcos/M-Pesa (Liquidity) to catch hidden wealth and protect the poor.
         </div>
@@ -465,7 +504,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
           <FieldSelect label="KRA PIN Type" value={d.kraPinType} onChange={v=>upd("kraPinType",v)} options={[["NONE","None"],["PAYE","Active PAYE"],["BUSINESS","Active Business"]]}/>
           <Toggle label="NTSA Car Registration?" value={d.isNtsaVerified} onChange={v=>upd("isNtsaVerified",v)} hideSpacer/>
           <Toggle label="Simulate Hidden Wealth Discovered?" value={d.hiddenWealthDiscovered} onChange={v=>upd("hiddenWealthDiscovered",v)} hideSpacer/>
-          <Toggle label="Is Chama/Group Treasurer?" tip="Fiduciary Exemption: prevents taxing group funds as personal income" value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
+          <Toggle label="Is Chama/Group Treasurer?" tip="Group fund liquidity discount (80% discount on retained balance: illustrative prototype policy assumption — requires SHA validation)" value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
           <Toggle label="Has active SACCO account?" value={d.hasSaccoAccount} onChange={v=>upd("hasSaccoAccount",v)} hideSpacer/>
           {d.hasSaccoAccount && (
             <FieldNumber label="Declared SACCO Share Capital (KSh)" value={d.saccoShareCapital} onChange={v=>upd("saccoShareCapital",v)} min={0} step={1000}/>
@@ -480,6 +519,13 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
             <input type="checkbox" checked={hasAcknowledgedDemo} onChange={(e)=>setHasAcknowledgedDemo(e.target.checked)} style={{transform:"scale(1.1)"}} />
             I understand this is a browser-only demonstration. No KRA, NTSA, IPRS or MNO data is retrieved, and no information or appeal is submitted to SHA.
           </label>
+        </div>
+      )}
+
+      {formError && (
+        <div role="alert" style={{marginTop: 16, padding: "10px 14px", background: S.terraD, border: `1px solid ${S.terraBd}`, borderRadius: 6, fontSize: 13, color: S.terra, display: "flex", gap: 8, alignItems: "center"}}>
+          <AlertTriangle size={16} style={{flexShrink: 0}} />
+          <span>{formError}</span>
         </div>
       )}
 
@@ -566,7 +612,7 @@ function ComparisonTab({results, adminParams}) {
             <XAxis dataKey="name" tick={{fill:S.text,fontSize:12,fontWeight:500}} axisLine={false} tickLine={false}/>
             <YAxis tick={{fill:S.muted,fontSize:12}} axisLine={false} tickLine={false} tickFormatter={v=>`${v.toLocaleString()}`}/>
             <Tooltip cursor={{fill:S.faint}} formatter={(v)=>[`KSh ${v.toLocaleString()}`,"Monthly"]} contentStyle={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,color:S.text,fontSize:13,fontWeight:500,boxShadow:"0 4px 6px rgba(0,0,0,0.05)"}}/>
-            <ReferenceLine y={300} stroke={S.amber} strokeDasharray="4 3" label={{value:"KSh 300 Statutory Floor",fill:S.amber,fontSize:11,position:"insideTopRight",fontWeight:600}}/>
+            <ReferenceLine y={300} stroke={S.amber} strokeDasharray="4 3" label={{value:"KSh 300 Monthly Floor (Reg. 18 Reference)",fill:S.amber,fontSize:11,position:"insideTopRight",fontWeight:600}}/>
             <Bar dataKey="v" radius={[6,6,0,0]} maxBarSize={80}>{chartData.map((e,i)=><Cell key={i} fill={e.fill}/>)}</Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -591,7 +637,7 @@ function ComparisonTab({results, adminParams}) {
               {src:"NTSA vehicle records",status:(d.assets.includes("CAR") || d.isNtsaVerified) ? "USER-ENTERED INDICATOR" : "NO VEHICLE DECLARED",detail:"Displayed from the demonstration form only; no NTSA/TIMS query is made."},
               {src:"MNO / M-Pesa records",status:d.isGroupTreasurer ? "USER-ENTERED CHAMA CLAIM" : "USER-ENTERED VALUES",detail:"Transaction and retained-balance fields are entered manually for this demonstration."},
               {src:"KRA tax records",status:(d.kraPinType && d.kraPinType !== "NONE") ? "USER-ENTERED PIN TYPE" : "NO PIN TYPE ENTERED",detail:"No KRA iTax or eTIMS records are retrieved or verified."},
-            .map(sig=>(
+            ].map(sig=>(
               <div key={sig.src} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 16px",background:S.surface,borderRadius:8,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
                 <Info size={18} color={S.blue} style={{marginTop:2,flexShrink:0}}/>
                 <div>
@@ -743,7 +789,14 @@ function USSDTab({results}) {
           </div>
         </div>
 
-        {/* Navigation */}
+        {formError && (
+        <div role="alert" style={{marginTop: 16, padding: "10px 14px", background: S.terraD, border: `1px solid ${S.terraBd}`, borderRadius: 6, fontSize: 13, color: S.terra, display: "flex", gap: 8, alignItems: "center"}}>
+          <AlertTriangle size={16} style={{flexShrink: 0}} />
+          <span>{formError}</span>
+        </div>
+      )}
+
+      {/* Navigation */}
         <div style={{flex:1,display:"grid",gap:12}}>
           <Label>Navigate the USSD Session</Label>
           {screens.map((s,i)=>(
@@ -1298,6 +1351,10 @@ export default function SHADemo() {
   const [activeTab,setActiveTab]=useState("comparison");
   const [classifying,setClassifying]=useState(false);
   const [activeScenario,setActiveScenario]=useState("Mama Wanjiku");
+  const [demoPaymentEntries, setDemoPaymentEntries] = useState([]);
+  const [challengeDrafts, setChallengeDrafts] = useState([]);
+  const [reviewRecords, setReviewRecords] = useState({});
+  const [formError, setFormError] = useState(null);
   const [adminParams, setAdminParams] = useState({
     carValue: 350000,
     urbanCostOfLiving: 12000,
@@ -1309,24 +1366,34 @@ export default function SHADemo() {
 
   const upd=(k,v)=>{
     setInputs(p=>({...p,[k]:v}));
+    setFormError(null);
+    if(demoPaymentEntries.length > 0) setDemoPaymentEntries([]);
     if(activeScenario!=="Custom") setActiveScenario("Custom");
   };
   const toggleAsset=(a)=>{
     setInputs(p=>({...p,assets:p.assets.includes(a)?p.assets.filter(x=>x!==a):[...p.assets,a]}));
+    setFormError(null);
+    if(demoPaymentEntries.length > 0) setDemoPaymentEntries([]);
     if(activeScenario!=="Custom") setActiveScenario("Custom");
   };
   // Generic helpers for the new repeatable-list fields (vehicles, landParcels,
   // rentalProperties) — add/update/remove one item without touching the rest.
   const addListItem=(key,template)=>{
     setInputs(p=>({...p,[key]:[...(p[key]||[]),template]}));
+    setFormError(null);
+    if(demoPaymentEntries.length > 0) setDemoPaymentEntries([]);
     if(activeScenario!=="Custom") setActiveScenario("Custom");
   };
   const updListItem=(key,idx,field,value)=>{
     setInputs(p=>({...p,[key]:(p[key]||[]).map((item,i)=>i===idx?{...item,[field]:value}:item)}));
+    setFormError(null);
+    if(demoPaymentEntries.length > 0) setDemoPaymentEntries([]);
     if(activeScenario!=="Custom") setActiveScenario("Custom");
   };
   const removeListItem=(key,idx)=>{
     setInputs(p=>({...p,[key]:(p[key]||[]).filter((_,i)=>i!==idx)}));
+    setFormError(null);
+    if(demoPaymentEntries.length > 0) setDemoPaymentEntries([]);
     if(activeScenario!=="Custom") setActiveScenario("Custom");
   };
 
@@ -1334,10 +1401,96 @@ export default function SHADemo() {
     setActiveScenario(name);
     setInputs({...DEFAULTS, ...SCENARIOS[name].d});
     setHasAcknowledgedDemo(true);
+    setFormError(null);
+    setDemoPaymentEntries([]);
     setResults(null); setStep(0);
   };
 
+  const handleAddDemoPayment = (paymentData) => {
+    const now = new Date();
+    const suffix = typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID().slice(0, 6).toUpperCase()
+      : Math.random().toString(36).slice(2, 8).toUpperCase();
+    const receiptNumber = `DEMO-RCPT-${now.toISOString().slice(0, 10).replace(/-/g, "")}-${suffix}`;
+    const newEntry = {
+      receiptNumber,
+      amount: paymentData.amount,
+      channel: paymentData.channel,
+      notes: paymentData.notes || "",
+      timestamp: now.toISOString(),
+      status: "UNVERIFIED_DEMO_ENTRY"
+    };
+    setDemoPaymentEntries(prev => [newEntry, ...prev]);
+  };
+
+  const handleSaveChallengeDraft = (draft) => {
+    setChallengeDrafts(prev => {
+      const exists = prev.some(d => d.draftReference === draft.draftReference);
+      if (exists) {
+        return prev.map(d => d.draftReference === draft.draftReference ? draft : d);
+      }
+      return [draft, ...prev];
+    });
+  };
+
+  const handleReviewAction = (draftReference, actionData) => {
+    setReviewRecords(prev => {
+      const existingRecord = prev[draftReference] || createInitialReviewRecord(draftReference);
+      const newEvent = createReviewEvent({
+        draftReference,
+        action: actionData.action,
+        previousStatus: existingRecord.currentStatus,
+        data: actionData,
+        actorLabel: actionData.reviewerLabel || "Demonstration Reviewer"
+      });
+
+      const updatedRecord = {
+        ...existingRecord,
+        currentStatus: newEvent.newStatus,
+        updatedAt: newEvent.timestamp,
+        reviewerLabel: newEvent.actorLabel,
+        evidenceAnnotations: {
+          ...existingRecord.evidenceAnnotations,
+          ...(actionData.evidenceAnnotations || {})
+        },
+        events: [...existingRecord.events, newEvent]
+      };
+
+      logger.audit('OFFICER_REVIEW_ACTION', {
+        draftReference,
+        action: actionData.action,
+        previousStatus: existingRecord.currentStatus,
+        newStatus: newEvent.newStatus,
+        actorLabel: newEvent.actorLabel
+      });
+
+      return {
+        ...prev,
+        [draftReference]: updatedRecord
+      };
+    });
+  };
+
+  const handleLoadSyntheticDemo = () => {
+    const { draft, isNew } = createSyntheticMeetingDemonstration(challengeDrafts);
+    if (isNew) {
+      setChallengeDrafts(prev => [draft, ...prev]);
+    }
+  };
+
+  const handleRemoveSyntheticDemo = () => {
+    setChallengeDrafts(prev => removeSyntheticMeetingDemonstration(prev));
+  };
+
   const classify=()=>{
+    const validation = validateAssessmentInputs(inputs);
+    if (!validation.isValid) {
+      setFormError(validation.errors[0]);
+      setStep(5);
+      return;
+    }
+    setFormError(null);
+    setDemoPaymentEntries([]);
     setClassifying(true);
     setTimeout(()=>{
       const lassoAnnual = calculateCurrentModel(inputs);
@@ -1381,7 +1534,18 @@ export default function SHADemo() {
     },800);
   };
 
-  const TABS=[["comparison","Financial Comparison"],["challenge","Prepare Challenge"],["fairness","Fairness Analysis"],["fraud","Fraud Risk Assessment"],["bias","Bias & Compliance"],["shap","Calculation Breakdown"],["ussd","USSD Simulation"],["metrics","Evidence & Targets"]];
+  const TABS=[
+    ["comparison","Financial Comparison"],
+    ["statement","Contribution Statement"],
+    ["challenge","Prepare Challenge"],
+    ["officer","Officer Review (Demo)"],
+    ["fairness","Fairness Analysis"],
+    ["fraud","Fraud Risk Assessment"],
+    ["bias","Bias & Compliance"],
+    ["shap","Calculation Breakdown"],
+    ["ussd","USSD Simulation"],
+    ["metrics","Evidence & Targets"]
+  ];
 
   return (
     <>
@@ -1606,7 +1770,7 @@ export default function SHADemo() {
             </div>
 
             {/* Form */}
-            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasAcknowledgedDemo={hasAcknowledgedDemo} setHasAcknowledgedDemo={setHasAcknowledgedDemo} setInputs={setInputs} setActiveScenario={setActiveScenario} addListItem={addListItem} updListItem={updListItem} removeListItem={removeListItem}/>
+            <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasAcknowledgedDemo={hasAcknowledgedDemo} setHasAcknowledgedDemo={setHasAcknowledgedDemo} setInputs={setInputs} setActiveScenario={setActiveScenario} addListItem={addListItem} updListItem={updListItem} removeListItem={removeListItem} formError={formError}/>
 
           </div>
 
@@ -1647,7 +1811,16 @@ export default function SHADemo() {
 
 
                 {activeTab==="comparison"&&<ComparisonTab results={results} adminParams={adminParams}/>}
-                {activeTab==="challenge"&&<AppealPreparationTab results={results} />}
+                {activeTab==="statement"&&<ContributionStatementTab results={results} demoPaymentEntries={demoPaymentEntries} onAddDemoPayment={handleAddDemoPayment} />}
+                {activeTab==="challenge"&&<AppealPreparationTab results={results} challengeDrafts={challengeDrafts} onSaveChallengeDraft={handleSaveChallengeDraft} />}
+                {activeTab==="officer"&&<OfficerReviewTab
+                  challengeDrafts={challengeDrafts}
+                  reviewRecords={reviewRecords}
+                  onReviewAction={handleReviewAction}
+                  onLoadSyntheticDemo={handleLoadSyntheticDemo}
+                  onRemoveSyntheticDemo={handleRemoveSyntheticDemo}
+                  activeHousehold={inputs}
+                />}
                 {activeTab==="fairness"&&<FairnessTab results={results}/>}
                 {activeTab==="fraud"&&<FraudRiskTab results={results}/>}
                 {activeTab==="bias"&&<BiasComplianceTab/>}

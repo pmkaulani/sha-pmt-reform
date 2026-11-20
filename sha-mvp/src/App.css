@@ -511,3 +511,22 @@
   color: var(--text-secondary);
   margin-bottom: var(--space-sm);
 }
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .header,
+  .left-panel,
+  .tabs-container,
+  .no-print {
+    display: none !important;
+  }
+  .app-layout {
+    display: block !important;
+  }
+  .right-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
