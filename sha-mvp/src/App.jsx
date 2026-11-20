@@ -593,7 +593,7 @@ function ComparisonTab({results, adminParams}) {
               {src:"KRA tax records",status:(d.kraPinType && d.kraPinType !== "NONE") ? "USER-ENTERED PIN TYPE" : "NO PIN TYPE ENTERED",detail:"No KRA iTax or eTIMS records are retrieved or verified."},
             .map(sig=>(
               <div key={sig.src} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 16px",background:S.surface,borderRadius:8,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
-                <CheckCircle2 size={18} color={S.blue} style={{marginTop:2,flexShrink:0}}/>
+                <Info size={18} color={S.blue} style={{marginTop:2,flexShrink:0}}/>
                 <div>
                   <div style={{fontSize:13,fontWeight:600,color:S.text}}>{sig.src} <span style={{fontWeight:500,color:S.muted}}>· {sig.status}</span></div>
                   <div style={{fontSize:12,color:S.muted,marginTop:4,lineHeight:1.5}}>{sig.detail}</div>
@@ -870,7 +870,7 @@ function MetricsTab() {
         </div>
       </div>
 
-      {/* Revenue Sustainability Projection */}
+      {/* Illustrative revenue scenario */}
       <div style={{padding:"24px",background:S.surface,border:`2px solid ${S.sageBd}`,borderRadius:12,boxShadow:"0 4px 6px rgba(0,0,0,0.02)"}}>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
           <div style={{width:40,height:40,borderRadius:8,background:S.sageD,display:"flex",alignItems:"center",justifyContent:"center"}}><CheckCircle2 color={S.sage} size={24}/></div>
@@ -943,10 +943,10 @@ function FairnessTab({results}) {
           </div>
           <div style={{textAlign:"right"}}>
             <div style={{fontSize:13,fontWeight:600,color:f.overchargePercent > 50 ? S.terra : f.overchargePercent > 20 ? S.blue : S.sage}}>
-              {f.overchargePercent > 0 ? 'OVERCHARGED' : f.overchargePercent < -5 ? 'UNDERCHARGED' : 'FAIR'}
+              {f.overchargePercent > 0 ? 'BASELINE HIGHER' : f.overchargePercent < -5 ? 'PROPOSED HIGHER' : 'SIMILAR RESULTS'}
             </div>
             <div style={{fontSize:12,color:S.muted,marginTop:4}}>
-              {f.overchargePercent > 0 ? `+KSh ${Math.round(f.overchargeAmount)}` : f.overchargePercent < -5 ? `−KSh ${Math.round(Math.abs(f.overchargeAmount))}` : 'No bias detected'}
+              {f.overchargePercent > 0 ? `+KSh ${Math.round(f.overchargeAmount)}` : f.overchargePercent < -5 ? `−KSh ${Math.round(Math.abs(f.overchargeAmount))}` : 'No difference shown in this comparison'}
             </div>
           </div>
         </div>
@@ -958,14 +958,14 @@ function FairnessTab({results}) {
       {/* Equity Gap Analysis */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
         <div style={{padding:"20px",background:S.surface,border:`1px solid ${S.border}`,borderRadius:10}}>
-          <div style={{fontSize:12,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:12}}>Equity Gap</div>
+          <div style={{fontSize:12,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:12}}>Calculation difference</div>
           <div style={{fontSize:32,fontWeight:800,color:f.equityGap > 30 ? S.terra : f.equityGap > 10 ? S.blue : S.sage}}>{f.equityGap.toFixed(1)}%</div>
           <div style={{fontSize:11,color:S.muted,marginTop:8}}>Difference between the two prototype calculations</div>
         </div>
         <div style={{padding:"20px",background:S.surface,border:`1px solid ${S.border}`,borderRadius:10}}>
-          <div style={{fontSize:12,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:12}}>Compliance Likelihood</div>
-          <div style={{fontSize:32,fontWeight:800,color:S.blue}}>{Math.round(f.complianceLikelihood)}%</div>
-          <div style={{fontSize:11,color:S.muted,marginTop:8}}>Estimated voluntary payment probability</div>
+          <div style={{fontSize:12,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:12}}>Compliance estimate</div>
+          <div style={{fontSize:32,fontWeight:800,color:S.blue}}>Not calibrated</div>
+          <div style={{fontSize:11,color:S.muted,marginTop:8}}>No independently validated compliance model is connected.</div>
         </div>
       </div>
 
@@ -1186,9 +1186,9 @@ function FraudRiskTab({results}) {
       <div style={{padding:"20px",background:S.blueD,border:`1px solid ${S.blueBd}`,borderRadius:10}}>
         <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.blue,marginBottom:12}}>Escalation Protocol</div>
         <div style={{display:"grid",gap:8,fontSize:13,color:S.text,lineHeight:1.5}}>
-          <div><strong style={{color:S.blue}}>Risk {'>'} 70% (CRITICAL):</strong> Escalation to SHA Fraud Officer for manual review. Assessment held pending officer decision. Data Protection Officer notified. Citizen has 7 days to provide evidence and retains the right to explanation (DPA §35).</div>
-          <div><strong style={{color:S.blue}}>Risk 50-70% (HIGH):</strong> Manual review by county-level SHA officer. Additional documentation may be requested. Citizen can respond within 14 days.</div>
-          <div><strong style={{color:S.blue}}>Risk {'<'} 50% (MEDIUM):</strong> Standard processing with flagged note. Automatic fairness audit triggered to ensure no systematic bias in flag distribution.</div>
+          <div><strong style={{color:S.blue}}>Heuristic score above 70:</strong> Prototype suggestion is human review. No real assessment is held, no officer or DPO is notified, and no response deadline is started.</div>
+          <div><strong style={{color:S.blue}}>Heuristic score 50–70:</strong> Prototype suggestion is manual verification. No officer workflow or response deadline is implemented.</div>
+          <div><strong style={{color:S.blue}}>Heuristic score below 50:</strong> No configured high-risk threshold was reached. This is not an approval or a fraud-free determination.</div>
         </div>
       </div>
     </div>
@@ -1239,12 +1239,12 @@ function BiasComplianceTab() {
     <div style={{display:"grid",gap:24}}>
       <div>
         <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Bias & Compliance Dashboard</div>
-        <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>The population-level tests SHA's own P-39 and P-47 CAJ-blocker requirements actually depend on — run live, not asserted in a paragraph.</div>
+        <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>Synthetic sample diagnostics only. The dashboard demonstrates the shape of the calculations; it does not establish SHA compliance or real-world fairness.</div>
       </div>
 
       <div style={{padding:16,background:S.blueD,border:`1px solid ${S.blueBd}`,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
         <div style={{flex:1, minWidth:250, fontSize:13,color:S.text,lineHeight:1.5}}>
-          <strong style={{color:S.blue}}>HOW THIS DEMO WORKS:</strong> We don't have access to the real SHA citizen database yet. To prove these automated fairness and fraud tests actually work, this dashboard is currently analyzing a randomly generated "fake" population of {population.length} households. Click the button to generate a completely new batch of households and watch the algorithms re-calculate the metrics below in real-time. <strong>(Note: This only updates the statistics on this tab, it does not change the main citizen profile on the left).</strong>
+          <strong style={{color:S.blue}}>SYNTHETIC DEMONSTRATION:</strong> This dashboard analyses {population.length} randomly generated households. The sample is not representative of Kenya and cannot prove national fairness, fraud prevalence or model accuracy. Generating a new batch only refreshes this dashboard, not the main household profile.
         </div>
         <button onClick={()=>setPopulation(generateSyntheticPopulation(300))} style={{padding:"8px 16px",background:S.blue,color:"#fff",border:"none",borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Simulate New Data</button>
       </div>
@@ -1647,7 +1647,7 @@ export default function SHADemo() {
 
 
                 {activeTab==="comparison"&&<ComparisonTab results={results} adminParams={adminParams}/>}
-                {activeTab==="challenge"&&<AppealPreparationTab results={results}/ >}
+                {activeTab==="challenge"&&<AppealPreparationTab results={results} />}
                 {activeTab==="fairness"&&<FairnessTab results={results}/>}
                 {activeTab==="fraud"&&<FraudRiskTab results={results}/>}
                 {activeTab==="bias"&&<BiasComplianceTab/>}
