@@ -1,4 +1,4 @@
-// SHA Means-Testing Algorithm - v2.1 Optimization
+// SHA Means-Testing Algorithm - v2.1 prototype rules engine
 // This engine implements the Adjustable Gross Income (AGI) model to calculate SHA contributions.
 // It complies with the legally mandated 2.75% rate while fixing 28 systemic flaws by applying
 // mathematically rigorous deductions before the flat rate is calculated.
@@ -210,9 +210,11 @@ export function calculateProposedModel(d, adminParams = {}) {
   }
 
   if (d.hasSaccoAccount && d.saccoShareCapital && d.saccoShareCapital > 0) {
-    let saccoCapitalValue = d.saccoShareCapital * 0.5;
-    baseIncome += saccoCapitalValue;
-    deductions.push({ name: 'SACCO Capital Exemption', amount: saccoCapitalValue, reason: '50% of SACCO share capital exempted as illiquid savings' });
+    const totalSaccoCapital = Math.max(0, d.saccoShareCapital);
+    const exemptSaccoCapital = totalSaccoCapital * 0.5;
+    const assessableSaccoCapital = totalSaccoCapital - exemptSaccoCapital;
+    baseIncome += assessableSaccoCapital;
+    deductions.push({ name: 'SACCO Capital Exemption', amount: exemptSaccoCapital, reason: '50% of declared SACCO share capital excluded as illiquid savings; remaining 50% included in the illustrative base' });
   }
 
   // Informal Sub-landlord Income Addition
@@ -532,7 +534,7 @@ export function calculateProposedModel(d, adminParams = {}) {
   // OVERRIDES (Flaw 19 & 24)
   let isIndigent = false;
   if (d.receivesAid || d.isRefugee) isIndigent = true;
-  if (d.headAge >= 65 && !d.assets.includes('CAR') && effectiveBalance < 5000) {
+  if (d.headAge >= 65 && deriveVehicleList(d).length === 0 && effectiveBalance < 5000) {
     isIndigent = true;
     factors.push({ name: 'Age Override', impact: 'High', direction: 'down', description: 'Pensioner Trap bypass', isFlaw: false });
   }
@@ -610,7 +612,7 @@ export function calculateProposedModel(d, adminParams = {}) {
     isDigitalGhost: isDigitalGhost,
     requiresChpVerification: requiresChpVerification,
     factors: factors,
-    modelName: 'SHA PMT v2.1 Optimization',
+    modelName: 'SHA PMT v2.1 — proposed AGI rules engine',
     deductions: deductions,
     // FIX (audit v2): this was `fairnessPass: true` — a literal, unconditional
     // hardcode returned on every single assessment, feeding a per-case
@@ -1434,15 +1436,16 @@ export function calculateFraudRisk(d, contextData = {}) {
     fraudFlags: fraudFlags,
     householdConsolidationNote: householdConsolidationNote, // administrative, not a fraud signal — see Flag 18 fix
     overallRiskScore: overallRiskScore,
-    fraudRiskPercentile: fraudRiskPercentile,
+    heuristicRiskScore: fraudRiskPercentile,
+    fraudRiskPercentile: fraudRiskPercentile, // Legacy field name retained for existing callers; this is not a statistical percentile.
     flagCount: fraudFlags.length,
     requiresManualReview: fraudRiskPercentile > 50,
-    severityLevel: fraudRiskPercentile > 70 ? 'CRITICAL' : fraudRiskPercentile > 50 ? 'HIGH' : 'MEDIUM',
-    recommendation: fraudRiskPercentile > 70 
-      ? 'ESCALATE: Manual review by SHA Fraud Officer required (DPA §35 — no automated rejection)'
+    severityLevel: fraudRiskPercentile > 70 ? 'CRITICAL' : fraudRiskPercentile > 50 ? 'HIGH' : 'LOW',
+    recommendation: fraudRiskPercentile > 70
+      ? 'PROTOTYPE SUGGESTION: Refer for human review. No officer is notified and no assessment is automatically rejected.'
       : fraudRiskPercentile > 50
-        ? 'REVIEW: Manual verification by county SHA officer recommended'
-        : 'APPROVE: Proceed with standard assessment',
+        ? 'PROTOTYPE SUGGESTION: Arrange manual verification before relying on the assessment.'
+        : 'No high-risk rule threshold was reached. Continue normal verification; this is not a fraud clearance.',
     timestamp: new Date().toISOString()
   };
 }
