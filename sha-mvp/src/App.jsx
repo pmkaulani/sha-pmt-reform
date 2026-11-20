@@ -587,11 +587,11 @@ function ComparisonTab({results, adminParams}) {
         ) : (
           <div className="grid-2">
             {[
-              {src:"IPRS Registry",status:"VERIFIED",detail:"Identity confirmed against national register",ok:true},
-              {src:"NTSA Transport Database",status:(d.assets.includes("CAR") || d.isNtsaVerified)?"MATCH: Vehicle Found":"CLEAR: No Vehicles",detail:(d.assets.includes("CAR") || d.isNtsaVerified)?"Vehicle ownership verified via chassis registry":"No registered vehicles found in database",ok:true},
-              {src:"Financial Trace (MNOs)",status:d.isGroupTreasurer?"HIGH FLOW (CHAMA)":"LOW FLOW",detail:d.isGroupTreasurer?"Bulk transaction volume detected indicative of group fund management":"Standard 30-day transaction analysis (consolidated across all SIMs)",ok:true},
-              {src:"KRA eTIMS",status:(d.kraPinType && d.kraPinType !== 'NONE')?`MATCH: ${d.kraPinType}`:"CLEAR: No Active PIN",detail:(d.kraPinType && d.kraPinType !== 'NONE')?"Tax returns and eTIMS invoices successfully matched":"No formal tax records found in registry",ok:true},
-            ].map(sig=>(
+              {src:"IPRS identity records",status:"NOT CONNECTED",detail:"No identity lookup is performed in this prototype."},
+              {src:"NTSA vehicle records",status:(d.assets.includes("CAR") || d.isNtsaVerified) ? "USER-ENTERED INDICATOR" : "NO VEHICLE DECLARED",detail:"Displayed from the demonstration form only; no NTSA/TIMS query is made."},
+              {src:"MNO / M-Pesa records",status:d.isGroupTreasurer ? "USER-ENTERED CHAMA CLAIM" : "USER-ENTERED VALUES",detail:"Transaction and retained-balance fields are entered manually for this demonstration."},
+              {src:"KRA tax records",status:(d.kraPinType && d.kraPinType !== "NONE") ? "USER-ENTERED PIN TYPE" : "NO PIN TYPE ENTERED",detail:"No KRA iTax or eTIMS records are retrieved or verified."},
+            .map(sig=>(
               <div key={sig.src} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 16px",background:S.surface,borderRadius:8,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
                 <CheckCircle2 size={18} color={S.blue} style={{marginTop:2,flexShrink:0}}/>
                 <div>
