@@ -1852,7 +1852,7 @@ export function generateRevenueStressTest(totalPopulation = 15500000, avgContrib
  * @param {string} officerId - ID of the officer conducting the assessment (default: 'SYSTEM')
  * @returns {Object} Immutable audit record
  */
-export function createAuditRecord(inputs, currentResult, proposedResult, fraudRisk, officerId = 'SYSTEM', modelVersions = null) {
+export function createAuditRecord(inputs, currentResult, proposedResult, fraudRisk, officerId = 'SYSTEM', modelVersions = null, adminParams = {}) {
   const now = new Date();
   // FIX (audit v2): Math.random() is not appropriate for an "immutable audit
   // record" ID (not cryptographically secure, theoretically guessable).
@@ -1860,10 +1860,15 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
   const uid = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID().split('-')[0].toUpperCase()
     : Math.random().toString(36).substring(2, 10).toUpperCase(); // last-resort fallback only
-  const assessmentId = `SHA-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${uid}`;
+  const datePart = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const localAssessmentId = `LOCAL-ASSESSMENT-${datePart}-${uid}`;
+
+  // This browser-only prototype has not submitted or registered an SHA case.
+  const reproducibleInputSnapshot = JSON.parse(JSON.stringify(inputs || {}));
+  delete reproducibleInputSnapshot.msisdn;
 
   return {
-    assessmentId,
+    localAssessmentId,
     // FIX (audit v2): this used to be the literal string "SHA256(1234****)"
     // — the first 4 real digits of the phone number wrapped in a label that
     // implied hashing had occurred. It hadn't. This now runs a real,
@@ -1872,8 +1877,13 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
     citizenIdHash: hashMsisdn(inputs.msisdn),
     createdAt: now.toISOString(),
     algorithmVersion: modelVersions?.declaredIncome?.id || proposedResult?.modelVersion || 'declared-income-agi-v1',
-    status: 'SUBMITTED',
+    status: 'LOCAL_DEMONSTRATION',
+    isOfficialSubmission: false,
     appealStatus: null,
+    // Full calculation inputs (excluding direct phone identifier) and the
+    // administrative parameters used by both engines make this result reproducible.
+    assessmentInputSnapshot: reproducibleInputSnapshot,
+    modelParametersSnapshot: JSON.parse(JSON.stringify(adminParams || {})),
     inputs: {
       county: inputs.county,
       householdSize: inputs.householdSize,
