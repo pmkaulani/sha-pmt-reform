@@ -187,7 +187,7 @@ export default function OfficerReviewTab({
       reason: selectedAction === DEMO_REVIEW_ACTIONS.RECORD_RECOMMENDATION || selectedAction === DEMO_REVIEW_ACTIONS.REFER_MANUAL ? reason : "",
       additionalInformationRequested: selectedAction === DEMO_REVIEW_ACTIONS.REQUEST_INFORMATION ? additionalInfo : "",
       evidenceNotes,
-      evidenceAnnotations,
+      evidenceAnnotations: activeRecord?.evidenceAnnotations || {},
       reviewerLabel: reviewerLabel.trim() || "Demonstration Reviewer",
       simulatedImpactSummary: impactSim?.canSimulate ? {
         prototypeOriginalMonthlyKsh: impactSim.prototypeOriginalMonthlyKsh,
