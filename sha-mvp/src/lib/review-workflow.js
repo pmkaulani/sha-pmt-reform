@@ -9,7 +9,8 @@
  * All review statuses, actions, and history entries are strictly local demonstrations.
  */
 
-import { calculateProposedModel, validateAssessmentInputs } from "./AlgorithmSimulation.js";
+import { validateAssessmentInputs } from "./AlgorithmSimulation.js";
+import { calculateProposedModelVersions } from "./model-versioning.js";
 
 export const DEMO_REVIEW_STATUSES = {
   AWAITING: "DEMO_AWAITING_REVIEW",
@@ -176,7 +177,7 @@ export function createReviewEvent({
  * Never mutates the saved snapshot.
  * Displays member-reported SHA contribution completely separately.
  */
-export function getIllustrativeImpactSimulation(draft, activeHouseholdFallback = {}) {
+export function getIllustrativeImpactSimulation(draft) {
   if (!draft || !Array.isArray(draft.disputes) || draft.disputes.length === 0) {
     return {
       canSimulate: false,
@@ -185,18 +186,27 @@ export function getIllustrativeImpactSimulation(draft, activeHouseholdFallback =
     };
   }
 
-  // Use the preserved snapshot if present, else fallback
-  const rawBase = draft.assessmentInputSnapshot || {
-    assets: [],
-    vehicles: [],
-    landParcels: [],
-    rentalProperties: [],
-    householdSize: 1,
-    monthlyNetEarnedIncome: 0,
-    monthlyRent: 0,
-    county: "Nairobi",
-    ...activeHouseholdFallback
-  };
+  // Never borrow the active household's values for a saved challenge.
+  // Without the original snapshot, a reproducible comparison is impossible.
+  if (!draft.assessmentInputSnapshot || typeof draft.assessmentInputSnapshot !== "object") {
+    return {
+      canSimulate: false,
+      reason: "MANUAL ASSESSMENT REQUIRED — NO AUTOMATED IMPACT ESTIMATED.",
+      detail: "This draft has no preserved assessment input snapshot. The currently active household cannot be substituted."
+    };
+  }
+
+  // The impact demonstration deliberately supports one disputed field at a time.
+  // Multiple disputes require separate, independently reviewed scenarios.
+  if (draft.disputes.length !== 1) {
+    return {
+      canSimulate: false,
+      reason: "MANUAL ASSESSMENT REQUIRED — NO AUTOMATED IMPACT ESTIMATED.",
+      detail: "Automated impact simulation is limited to exactly one supported dispute per draft. Split or review multiple disputed items separately."
+    };
+  }
+
+  const rawBase = draft.assessmentInputSnapshot;
 
   // Safe clone to guarantee original snapshot is never mutated
   const originalSnapshot = JSON.parse(JSON.stringify(rawBase));
@@ -297,9 +307,24 @@ export function getIllustrativeImpactSimulation(draft, activeHouseholdFallback =
       };
     }
 
-    // Calculate original and corrected using the exact same function on distinct snapshots
-    const originalModelResult = calculateProposedModel(originalSnapshot);
-    const correctedModelResult = calculateProposedModel(correctedSnapshot);
+    // Re-run the exact model version and administrative parameters recorded
+    // with the challenge. A saved draft never silently changes algorithms.
+    const savedModelVersionId = draft.modelVersionId ||
+      draft.prototypeComparisonSnapshot?.modelVersionId ||
+      "declared-income-agi-v1";
+    const savedModelParameters = draft.modelParameterSnapshot ||
+      draft.prototypeComparisonSnapshot?.modelParameterSnapshot ||
+      {};
+
+    const calculateSavedModel = (snapshot) => {
+      const versions = calculateProposedModelVersions(snapshot, savedModelParameters);
+      if (savedModelVersionId === versions.originalAgi.id) return versions.originalAgi.result;
+      if (savedModelVersionId === versions.declaredIncome.id) return versions.declaredIncome.result;
+      throw new Error(`Saved model version is not available: ${savedModelVersionId}`);
+    };
+
+    const originalModelResult = calculateSavedModel(originalSnapshot);
+    const correctedModelResult = calculateSavedModel(correctedSnapshot);
 
     const prototypeOriginalMonthlyKsh = originalModelResult.monthlyContribution;
     const prototypeCorrectedMonthlyKsh = correctedModelResult.monthlyContribution;
@@ -308,6 +333,8 @@ export function getIllustrativeImpactSimulation(draft, activeHouseholdFallback =
     return {
       canSimulate: true,
       disclaimer: "ILLUSTRATIVE PROTOTYPE SCENARIO — NOT AN SHA REASSESSMENT.",
+      modelVersionId: savedModelVersionId,
+      modelParametersUsed: JSON.parse(JSON.stringify(savedModelParameters)),
       mappedCategory: mappableDispute.fieldKey,
       mappedFieldLabel,
       mappedFieldKey,
@@ -412,8 +439,10 @@ export function createSyntheticMeetingDemonstration(existingDrafts = []) {
       activeScenario: "Mama Wanjiku — Chama Treasurer"
     },
     assessmentInputSnapshot: syntheticSnapshot,
+    modelVersionId: "declared-income-agi-v1",
+    modelParameterSnapshot: { urbanCostOfLiving: 12000, fulizaPenalty: 5000, tier1RentCap: 35000, tier2RentCap: 20000, triangulationOffline: false },
     assessment: {
-      officialAssessmentReference: "SHA-2026-NBI-DEMO99",
+      officialAssessmentReference: "",
       receivedDate: "2026-11-15",
       assessmentPeriodStart: "2026-01-01",
       assessmentPeriodEnd: "2026-12-31",
@@ -445,11 +474,10 @@ export function createSyntheticMeetingDemonstration(existingDrafts = []) {
       }
     ],
     requestedResolution: "human_review",
-    generalExplanation: "The initial assessment failed to account for 3 school-age dependants and treated group chama balances as personal income.",
+    generalExplanation: "The illustrative case is designed to show how omitted school-age dependants can affect a household assessment. No claim is made that a chama balance was included in the member-reported SHA amount.",
     prototypeComparisonSnapshot: {
-      illustrativeBaselineMonthlyKsh: 3162,
-      proposedRulesEngineMonthlyKsh: 300,
-      proposedAdjustedGrossIncomeKsh: 114240
+      modelVersionId: "declared-income-agi-v1",
+      modelParameterSnapshot: { urbanCostOfLiving: 12000, fulizaPenalty: 5000, tier1RentCap: 35000, tier2RentCap: 20000, triangulationOffline: false }
     },
     disclaimer: "LOCAL DRAFT DEMONSTRATION ONLY — NOT SUBMITTED TO SHA. No case has been opened."
   };
