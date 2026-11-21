@@ -4,6 +4,7 @@ import {
   PRESETS,
   calculateProposedModel,
   calculateFraudRisk,
+  validateAssessmentInputs,
 } from "../src/lib/AlgorithmSimulation.js";
 
 test("SACCO capital declaration is treated as contextual wealth and does not inflate earned income base", () => {
@@ -119,4 +120,14 @@ test("subletting income already represented in declared net earnings is not coun
   // 4. Non-subletting household does not have the sublet factor
   const nonSubletFactor = resultWithoutSublet.factors.find(f => f.name.includes("Sublet"));
   assert.equal(nonSubletFactor, undefined);
+});
+
+test("declared monthly income rejects blank, non-finite and negative financial values", () => {
+  for (const value of ["   ", Infinity, -Infinity, NaN, "NaN", "Infinity", -1, "-250"]) {
+    const result = validateAssessmentInputs({ monthlyNetEarnedIncome: value });
+    assert.equal(result.isValid, false, `Expected ${String(value)} to be rejected`);
+  }
+
+  assert.equal(validateAssessmentInputs({ monthlyNetEarnedIncome: 0 }).isValid, true);
+  assert.equal(validateAssessmentInputs({ monthlyNetEarnedIncome: "12500" }).isValid, true);
 });
