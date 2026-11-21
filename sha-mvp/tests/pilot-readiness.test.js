@@ -461,9 +461,10 @@ test("Phase 6.1 Criterion 20: Continuous evaluation calculates WAPE and document
 
 test("Phase 6.1 Criterion 21: Original AGI v2.1 SHA-256 hash verified against recovered baseline", () => {
   const origPath = path.resolve(__dirname, "../src/lib/AlgorithmSimulation.original-agi-v2.1.js");
-  const fileBytes = fs.readFileSync(origPath);
-  const hash = crypto.createHash("sha256").update(fileBytes).digest("hex").toUpperCase();
-  assert.equal(hash, "4A2BE4D7583E57AB8D013784C30F96A0602BEDCB7A8E7E752D47C969B70D28D7");
+  const content = fs.readFileSync(origPath, "utf8").replace(/\r\n/g, "\n");
+  const canonicalLfHash = crypto.createHash("sha256").update(content).digest("hex").toUpperCase();
+  // Canonical Unix LF hash matching git blob 61537188d9727e9b01ef4a2c0fadc1c633abaa10
+  assert.equal(canonicalLfHash, "8D6FB8E4FABF10432D7094CC35E9C8BB509AF51F6D8B4C6427CF147057A683EC");
 });
 
 test("Phase 6.1 Criterion 22: Synthetic demo approval yields SYNTHETIC_DEMO_ONLY gate state", () => {

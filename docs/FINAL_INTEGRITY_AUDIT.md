@@ -153,7 +153,8 @@ The original asset-and-liquidity AGI v2.1 algorithm was recovered from historica
 **Cryptographic Verification:**
 * **File Path:** `sha-mvp/src/lib/AlgorithmSimulation.original-agi-v2.1.js`
 * **Git Blob Hash:** `61537188d9727e9b01ef4a2c0fadc1c633abaa10`
-* **SHA-256 Checksum:** `4A2BE4D7583E57AB8D013784C30F96A0602BEDCB7A8E7E752D47C969B70D28D7`
+* **Canonical Unix LF SHA-256:** `8D6FB8E4FABF10432D7094CC35E9C8BB509AF51F6D8B4C6427CF147057A683EC` (Normalized Git blob reference)
+* **Windows CRLF SHA-256:** `4A2BE4D7583E57AB8D013784C30F96A0602BEDCB7A8E7E752D47C969B70D28D7` (Local checkout with CRLF)
 * **Status:** **100% Byte-for-Byte Identical and Untouched.**
 
 ---
