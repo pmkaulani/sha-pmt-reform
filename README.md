@@ -51,6 +51,21 @@ The AGI model applies **7 evidence-based deductions** to the assessed consumptio
 | Tools of Trade | Productive income-generating assets depreciated rather than penalised as luxury wealth |
 | Fiduciary Exemption | Community group and chama savings excluded from personal income |
 
+### Model version lineage and recovery
+
+The repository now preserves two distinct proposed calculation models. They are alternative research designs, not sequential stages of one formula:
+
+| Version | Calculation base | Treatment of assets and liquidity |
+|---|---|---|
+| **Original asset- and liquidity-aware AGI v2.1** | Recovered from `master` commit `c1a5a09` and preserved in `src/lib/AlgorithmSimulation.original-agi-v2.1.js` | Retained balances, seasonal liquidity, chama/fiduciary treatment, SACCO capital, commercial assets, rental activity, land and livestock can feed the constructed assessment base, subject to the model's adjustments. |
+| **Declared-income AGI v1 experiment** | The later meeting-readiness implementation in `src/lib/AlgorithmSimulation.js` | Annualised declared net earned income is the base; assets, retained balances, transaction activity and debt are contextual verification signals. |
+
+`src/lib/model-versioning.js` runs both versions against the same household input snapshot. The **AGI Model Versions** screen presents their separate bases, adjusted gross incomes, contribution outputs, deductions and contextual signals.
+
+The existing financial comparison and member workflow continue to use the declared-income variant as their current primary demonstration output. Adding the recovered model does not silently switch contribution statements, member challenge drafts or officer-review records to a different formula. A later integration should explicitly decide how model versions are referenced in each immutable assessment snapshot.
+
+**Governance boundary:** both engines are research prototypes. Neither is SHA's production Regulation 21 means-testing instrument, neither can issue an official assessment, and differences between their outputs are not evidence that either one is empirically correct. The historical engine is preserved for traceability; future changes should create a new version rather than overwrite it.
+
 ### Revenue Modeling & Informal Sector Participation
 
 - **Demographic baseline:** Kenya has approximately 16.7 million eligible informal-sector workers (drawn from an estimated 12–14 million total households, with 12.2 million recorded in the 2019 KNBS Census).
