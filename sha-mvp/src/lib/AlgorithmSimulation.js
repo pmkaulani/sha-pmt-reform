@@ -36,12 +36,16 @@ export function deriveVehicleList(d) {
  */
 export function validateAssessmentInputs(d) {
   const errors = [];
-  if (d.monthlyNetEarnedIncome === null || d.monthlyNetEarnedIncome === undefined || d.monthlyNetEarnedIncome === "") {
+  if (
+    d.monthlyNetEarnedIncome === null ||
+    d.monthlyNetEarnedIncome === undefined ||
+    (typeof d.monthlyNetEarnedIncome === "string" && d.monthlyNetEarnedIncome.trim() === "")
+  ) {
     errors.push("Declared monthly net earned income is required.");
   } else {
     const income = Number(d.monthlyNetEarnedIncome);
-    if (isNaN(income)) {
-      errors.push("Declared monthly net earned income must be a valid number.");
+    if (!Number.isFinite(income)) {
+      errors.push("Declared monthly net earned income must be a finite valid number.");
     } else if (income < 0) {
       errors.push("Declared monthly net earned income cannot be negative.");
     }
