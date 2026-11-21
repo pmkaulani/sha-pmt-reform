@@ -129,9 +129,9 @@ export default function OfficerReviewTab({
   challengeDrafts = [],
   reviewRecords = {},
   onReviewAction,
+  onEvidenceAnnotation,
   onLoadSyntheticDemo,
   onRemoveSyntheticDemo,
-  activeHousehold = {}
 }) {
   const [selectedRef, setSelectedRef] = useState(
     challengeDrafts[0]?.draftReference || null
@@ -146,7 +146,6 @@ export default function OfficerReviewTab({
   const [evidenceNotes, setEvidenceNotes] = useState("");
   const [reviewerLabel, setReviewerLabel] = useState("Demonstration Reviewer");
   const [actionError, setActionError] = useState("");
-  const [evidenceAnnotations, setEvidenceAnnotations] = useState({});
 
   // Locate the currently selected draft
   const selectedDraft = challengeDrafts.find(d => d.draftReference === selectedRef) ||
@@ -160,7 +159,7 @@ export default function OfficerReviewTab({
 
   // Safeguarded calculation impact simulation
   const impactSim = selectedDraft
-    ? getIllustrativeImpactSimulation(selectedDraft, activeHousehold)
+    ? getIllustrativeImpactSimulation(selectedDraft)
     : null;
 
   const hasSyntheticDemo = challengeDrafts.some(d => d.isSyntheticDemoCase || d.draftReference === "LOCAL-DRAFT-20261121-MEETING-SAMPLE");
@@ -174,10 +173,8 @@ export default function OfficerReviewTab({
   };
 
   const handleUpdateEvidenceAnnotation = (attName, statusKey) => {
-    setEvidenceAnnotations(prev => ({
-      ...prev,
-      [attName]: statusKey
-    }));
+    if (!selectedDraft || !onEvidenceAnnotation) return;
+    onEvidenceAnnotation(selectedDraft.draftReference, attName, statusKey);
   };
 
   const handleSubmitAction = (e) => {
@@ -615,7 +612,7 @@ export default function OfficerReviewTab({
                     </thead>
                     <tbody>
                       {selectedDraft.attachmentMetadata.map((att) => {
-                        const currentAnno = evidenceAnnotations[att.name] || "DEMO_METADATA_NOTED";
+                        const currentAnno = activeRecord?.evidenceAnnotations?.[att.name] || "DEMO_METADATA_NOTED";
                         return (
                           <tr key={att.name} style={{ borderBottom: "1px solid #F1F5F9" }}>
                             <td style={{ padding: "8px 10px", fontWeight: 600, color: "#0F172A" }}>{att.name}</td>
