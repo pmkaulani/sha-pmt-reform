@@ -440,7 +440,7 @@ export function createSyntheticMeetingDemonstration(existingDrafts = []) {
     },
     assessmentInputSnapshot: syntheticSnapshot,
     modelVersionId: "declared-income-agi-v1",
-    modelParameterSnapshot: { urbanCostOfLiving: 12000, fulizaPenalty: 5000, tier1RentCap: 35000, tier2RentCap: 20000, triangulationOffline: false },
+    modelParameterSnapshot: { carValue: 350000, urbanCostOfLiving: 12000, fulizaPenalty: 5000, tier1RentCap: 35000, tier2RentCap: 20000, triangulationOffline: false },
     assessment: {
       officialAssessmentReference: "",
       receivedDate: "2026-11-15",
@@ -477,7 +477,7 @@ export function createSyntheticMeetingDemonstration(existingDrafts = []) {
     generalExplanation: "The illustrative case is designed to show how omitted school-age dependants can affect a household assessment. No claim is made that a chama balance was included in the member-reported SHA amount.",
     prototypeComparisonSnapshot: {
       modelVersionId: "declared-income-agi-v1",
-      modelParameterSnapshot: { urbanCostOfLiving: 12000, fulizaPenalty: 5000, tier1RentCap: 35000, tier2RentCap: 20000, triangulationOffline: false }
+      modelParameterSnapshot: { carValue: 350000, urbanCostOfLiving: 12000, fulizaPenalty: 5000, tier1RentCap: 35000, tier2RentCap: 20000, triangulationOffline: false }
     },
     disclaimer: "LOCAL DRAFT DEMONSTRATION ONLY — NOT SUBMITTED TO SHA. No case has been opened."
   };
