@@ -1510,6 +1510,7 @@ export default function SHADemo() {
       const nxtRaw = modelVersions.declaredIncome.result;
       const nxt = {
         ...nxtRaw,
+        modelVersion: modelVersions.declaredIncome.id,
         annualIncome: nxtRaw.estimatedAnnualIncome,
         monthly: nxtRaw.monthlyContribution
       };
@@ -1528,7 +1529,7 @@ export default function SHADemo() {
       const fairnessMetrics = calculateFairnessMetrics(cur, nxt, fraudRisk);
       
       // Create and log audit record (P-77/P-31)
-      const auditRecord = createAuditRecord(inputs, cur, nxt, fraudRisk);
+      const auditRecord = createAuditRecord(inputs, cur, nxt, fraudRisk, "SYSTEM", modelVersions);
       logger.audit('assessment_run', { auditRecord });
       
       setResults({current:cur, next:nxt, modelVersions, d:inputs, fraudRisk:fraudRisk, sectorAnalysis:sectorAnalysis, fairnessMetrics:fairnessMetrics, auditRecord});
