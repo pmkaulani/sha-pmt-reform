@@ -292,6 +292,46 @@ test("11. Member-reported values remain distinct from verified values", () => {
   assert.ok(simulation.disclaimer.includes("NOT AN SHA REASSESSMENT"));
 });
 
+test("11a. A missing snapshot never borrows the currently active household", () => {
+  const draft = getSampleDraft();
+  delete draft.assessmentInputSnapshot;
+
+  const simulation = getIllustrativeImpactSimulation(draft, {
+    householdSize: 4,
+    monthlyNetEarnedIncome: 25000,
+    county: "Nairobi"
+  });
+
+  assert.equal(simulation.canSimulate, false);
+  assert.match(simulation.detail, /currently active household cannot be substituted/i);
+});
+
+test("11b. Multiple disputes are not silently reduced to the first mappable dispute", () => {
+  const draft = getSampleDraft();
+  draft.disputes.push({
+    id: "disp-2",
+    fieldKey: "declared_earnings",
+    valueAsPresented: "15000",
+    correctedValue: "22000",
+    explanation: "Second independent disputed item."
+  });
+
+  const simulation = getIllustrativeImpactSimulation(draft);
+  assert.equal(simulation.canSimulate, false);
+  assert.match(simulation.detail, /exactly one supported dispute/i);
+});
+
+test("11c. Impact simulation uses the model version and parameters captured with the draft", () => {
+  const draft = getSampleDraft();
+  draft.modelVersionId = "declared-income-agi-v1";
+  draft.modelParameterSnapshot = { tier1CostOfLiving: 25000, triangulationOffline: true };
+
+  const simulation = getIllustrativeImpactSimulation(draft);
+  assert.equal(simulation.canSimulate, true);
+  assert.equal(simulation.modelVersionId, "declared-income-agi-v1");
+  assert.deepEqual(simulation.modelParametersUsed, draft.modelParameterSnapshot);
+});
+
 test("12. Review actions never generate official SHA submission states", () => {
   const statuses = Object.values(DEMO_REVIEW_STATUSES);
   statuses.forEach(st => {
@@ -442,6 +482,10 @@ test("21. Synthetic demonstration challenge creates an idempotent single sample 
   assert.equal(res1.draft.isSyntheticDemoCase, true);
   assert.equal(res1.draft.draftReference, "LOCAL-DRAFT-20261121-MEETING-SAMPLE");
   assert.ok(res1.draft.assessmentInputSnapshot);
+  assert.equal(res1.draft.assessment.officialAssessmentReference, "");
+  assert.doesNotMatch(res1.draft.generalExplanation, /chama balances as personal income/i);
+  assert.equal(res1.draft.modelVersionId, "declared-income-agi-v1");
+  assert.ok(res1.draft.modelParameterSnapshot);
 
   list.push(res1.draft);
 
