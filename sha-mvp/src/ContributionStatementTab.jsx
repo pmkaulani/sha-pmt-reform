@@ -173,7 +173,7 @@ export default function ContributionStatementTab({ results, demoPaymentEntries =
                 Taarifa ya Michango ya Mwanachama — Illustrative Member Contribution Statement
               </div>
               <div style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>
-                Proposed AGI Rules Engine Evaluation (v2.1 Research Prototype)
+                { `Proposed AGI Rules Engine Evaluation (${next.modelVersion || results.auditRecord?.algorithmVersion || "Research Prototype"})` }
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
