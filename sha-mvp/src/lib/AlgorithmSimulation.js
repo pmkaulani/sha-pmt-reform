@@ -1941,9 +1941,9 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
     createdBy: officerId,
     modifiedHistory: [],
     retentionPolicy: {
-      rawInputsPurgeDate: new Date(now.getTime() + 2 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      finalOutcomeRetainUntil: new Date(now.getTime() + 7 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      policy: 'Tiered Retention per DPA §39'
+      policy: 'No statutory retention policy is implemented. This record exists in browser memory only and is cleared when the session is reloaded unless manually exported.',
+      backendRetentionImplemented: false,
+      deletionEnforced: false
     }
   };
 }
