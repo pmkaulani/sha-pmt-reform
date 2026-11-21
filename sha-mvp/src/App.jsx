@@ -17,6 +17,24 @@ import {
   createSyntheticMeetingDemonstration,
   removeSyntheticMeetingDemonstration
 } from "./lib/review-workflow.js";
+import {
+  calculateHouseholdIncome,
+  INCOME_SOURCE_RULES,
+  OPERATING_EXPENSE_CATEGORIES,
+  calculateMonthsFromDates
+} from "./lib/household-income.js";
+import {
+  MEMBER_ASSESSMENT_STEPS,
+  OPTIONAL_HOUSEHOLD_SECTIONS,
+  SOURCE_KIND_BY_TYPE,
+  EXPENSE_ELIGIBLE_KINDS,
+  SEASONAL_INCOME_KINDS,
+  EARNED_SOURCE_TYPES,
+  OTHER_MONEY_SOURCE_TYPES,
+  getIncomeSourceUiRules,
+  getAssessmentVisibility,
+  buildAssessmentReview
+} from "./lib/assessment-flow.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -25,7 +43,10 @@ import {
 const COUNTIES = ["Baringo","Bomet","Bungoma","Busia","Elgeyo Marakwet","Embu","Garissa","Homa Bay","Isiolo","Kajiado","Kakamega","Kericho","Kiambu","Kilifi","Kirinyaga","Kisii","Kisumu","Kitui","Kwale","Laikipia","Lamu","Machakos","Makueni","Mandera","Marsabit","Meru","Migori","Mombasa","Murang'a","Nairobi","Nakuru","Nandi","Narok","Nyandarua","Nyamira","Nyeri","Samburu","Siaya","Taita Taveta","Tana River","Tharaka-Nithi","Trans Nzoia","Turkana","Uasin Gishu","Vihiga","Wajir","West Pokot"];
 
 const DEFAULTS = {
+  hasNoEarnedIncome: false,
   monthlyNetEarnedIncome: null,
+  incomeSources: [],
+  incomeAssessmentSnapshot: null,
   householdSize: 5, county: "Meru", headGender: "FEMALE", headAge: 45,
   dwellingType: "TRADITIONAL", wallMaterial: "STONE", roofMaterial: "IRON_SHEETS",
   floorMaterial: "CEMENT", rooms: 2, ownershipStatus: "OWNED", monthlyRent: 0, subletIncome: 0,
@@ -288,241 +309,1042 @@ function AssetGrid({assets,toggle}) {
   );
 }
 
-const STEPS=["Demographics","Housing","Services","Assets","Livelihood","Triangulation"];
+const STEPS = MEMBER_ASSESSMENT_STEPS.map(s => s.title);
 
 function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAcknowledgedDemo,setHasAcknowledgedDemo,setInputs,setActiveScenario,addListItem,updListItem,removeListItem,formError}) {
-  const go=(n)=>setStep(Math.max(0,Math.min(5,n)));
+  const [showAdditionalCircumstances, setShowAdditionalCircumstances] = useState(false);
+  const [showOptionalIndicators, setShowOptionalIndicators] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  const go = (n) => setStep(Math.max(0, Math.min(3, n)));
+
+  const allSources = Array.isArray(d.incomeSources) ? d.incomeSources : [];
+  const earnedEntries = allSources
+    .map((src, originalIndex) => ({ src, originalIndex }))
+    .filter(({ src }) => {
+      const rule = INCOME_SOURCE_RULES[src.sourceType] || INCOME_SOURCE_RULES.OTHER_EARNED;
+      return rule.bucket === "EARNED";
+    });
+
+  const otherMoneyEntries = allSources
+    .map((src, originalIndex) => ({ src, originalIndex }))
+    .filter(({ src }) => {
+      const rule = INCOME_SOURCE_RULES[src.sourceType] || INCOME_SOURCE_RULES.OTHER_EARNED;
+      return rule.bucket !== "EARNED";
+    });
+
   return (
     <div style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:12,padding:24,boxShadow:"0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)"}}>
       {/* Step header */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
-        <div style={{fontSize:14,fontWeight:600,color:S.text}}>{STEPS[step]}</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:S.blue,textTransform:"uppercase",letterSpacing:0.5}}>
+            Stage {step + 1} of 4 · {MEMBER_ASSESSMENT_STEPS[step]?.shortTitle || `Stage ${step+1}`}
+          </div>
+          <div style={{fontSize:17,fontWeight:700,color:S.text,marginTop:2}}>
+            {MEMBER_ASSESSMENT_STEPS[step]?.title}
+          </div>
+        </div>
         <div style={{display:"flex",gap:6}}>
-          {STEPS.map((_,i)=>(
-            <div key={i} onClick={()=>go(i)} style={{width:i===step?24:8,height:8,borderRadius:4,background:i===step?S.blue:i<step?S.blueBd:S.border,cursor:"pointer",transition:"all .2s"}}/>
+          {MEMBER_ASSESSMENT_STEPS.map((s,i)=>(
+            <button
+              key={s.id}
+              type="button"
+              onClick={()=>go(i)}
+              title={s.title}
+              aria-label={s.title}
+              style={{
+                width: i===step ? 28 : 10,
+                height: 8,
+                borderRadius: 4,
+                background: i===step ? S.blue : i<step ? S.blueBd : S.border,
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                transition: "all .2s"
+              }}
+            />
           ))}
         </div>
       </div>
+      <div style={{fontSize:12,color:S.muted,marginBottom:20,lineHeight:1.4}}>
+        {MEMBER_ASSESSMENT_STEPS[step]?.description}
+      </div>
 
-      {/* Step 0: Demographics */}
+      {/* ───────────────────────────────────────────────────────────────────── */}
+      {/* STAGE 0: YOUR HOUSEHOLD                                               */}
+      {/* ───────────────────────────────────────────────────────────────────── */}
       {step===0&&<div style={{display:"grid",gap:16}}>
-        <FieldSelect label="County" value={d.county} onChange={v=>upd("county",v)} options={COUNTIES.map(c=>[c,c])}/>
+        <FieldSelect label="County of residence" value={d.county} onChange={v=>upd("county",v)} options={COUNTIES.map(c=>[c,c])}/>
         <div className="grid-2">
-          <FieldNumber label="Household size" value={d.householdSize} onChange={v=>upd("householdSize",Math.max(1,Math.round(v)))} min={1} max={15}/>
-          <FieldNumber label="Age of Head" value={d.headAge} onChange={v=>upd("headAge",v)} min={15} max={110}/>
+          <FieldNumber label="Household size" value={d.householdSize} onChange={v=>upd("householdSize",Math.max(1,Math.round(v)))} min={1} max={15} note="All persons who normally live together and share meals."/>
+          <FieldNumber label="Age of household head" value={d.headAge} onChange={v=>upd("headAge",v)} min={15} max={110}/>
         </div>
         <div className="grid-2">
-          <FieldSelect label="Head gender" value={d.headGender} onChange={v=>upd("headGender",v)} options={[["MALE","Male"],["FEMALE","Female"]]}/>
-          <div /> {/* Keeps gender field half-width without squishing it */}
+          <FieldSelect label="Gender of household head" value={d.headGender} onChange={v=>upd("headGender",v)} options={[["MALE","Male"],["FEMALE","Female"]]}/>
+          <div />
         </div>
-        <div style={{display:"grid",gap:10}}>
-          <Toggle label="Receives social aid?" tip="Such as Inua Jamii or HSFP cash transfers" value={d.receivesAid} onChange={v=>upd("receivesAid",v)} hideSpacer/>
+        
+        <div style={{display:"grid",gap:10,background:S.surfaceUp,padding:14,borderRadius:8,border:`1px solid ${S.border}`}}>
+          <div style={{fontSize:11,fontWeight:700,color:S.muted,textTransform:"uppercase",letterSpacing:0.5}}>Household Circumstances & Vulnerabilities</div>
+          <Toggle label="Receives social assistance?" tip="Such as Inua Jamii, Hunger Safety Net Programme (HSFP), or cash transfers" value={d.receivesAid} onChange={v=>upd("receivesAid",v)} hideSpacer/>
           <Toggle label="Has Chronic Illness? (CHE)" tip="Applies illustrative chronic illness / CHE adjustment (40% adjustment: illustrative prototype policy assumption — requires SHA validation)" value={d.hasChronicIllness} onChange={v=>upd("hasChronicIllness",v)} hideSpacer/>
           <Toggle label="Registered Disability (NCPWD)?" tip="Applies illustrative disability adjustment (30% adjustment: illustrative prototype policy assumption — requires SHA validation)" value={d.hasRegisteredDisability} onChange={v=>upd("hasRegisteredDisability",v)} hideSpacer/>
-          <Toggle label="Refugee / IDP status?" tip="Triggers an illustrative low-income override inside this prototype only; it is not an official SHA or state-sponsorship decision." value={d.isRefugee} onChange={v=>upd("isRefugee",v)} hideSpacer/>
+          <Toggle label="Refugee / Displaced Person (IDP)?" tip="Triggers an illustrative low-income override inside this prototype only; it is not an official SHA or state-sponsorship decision." value={d.isRefugee} onChange={v=>upd("isRefugee",v)} hideSpacer/>
+        </div>
+
+        {/* Collapsible Additional Household Circumstances */}
+        <div style={{padding:16,background:S.surface,borderRadius:10,border:`1px solid ${S.border}`}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:S.text,textTransform:"uppercase",letterSpacing:0.5}}>
+                Additional household circumstances (Housing, Utilities, Assets)
+              </div>
+              <div style={{fontSize:11,color:S.muted,marginTop:2}}>
+                Optional characteristics retained for model comparison and historical AGI v2.1 testing.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={()=>setShowAdditionalCircumstances(prev=>!prev)}
+              style={{background:"transparent",border:"none",color:S.blue,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}
+            >
+              {showAdditionalCircumstances ? "Hide details ▲" : "Show details ▼"}
+            </button>
+          </div>
+
+          {showAdditionalCircumstances && (
+            <div style={{display:"grid",gap:16,marginTop:16,paddingTop:14,borderTop:`1px solid ${S.border}`}}>
+              {/* Housing */}
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:S.blue,textTransform:"uppercase",marginBottom:10}}>1. Housing circumstances</div>
+                <div className="grid-2">
+                  <FieldSelect label="Dwelling type" value={d.dwellingType} onChange={v=>upd("dwellingType",v)} options={[["BUNGALOW","Bungalow"],["APARTMENT","Apartment"],["TRADITIONAL","Traditional"],["SHANTY","Shanty/Informal"],["OTHER","Other"]]}/>
+                  <FieldSelect label="Ownership" value={d.ownershipStatus} onChange={v=>upd("ownershipStatus",v)} options={[["OWNED","Owned"],["RENTED","Rented"],["FAMILY","Family/Other"]]}/>
+                </div>
+                {d.ownershipStatus === 'RENTED' && (
+                  <div style={{marginTop:10}}>
+                    <FieldNumber label="Monthly Rent (KSh)" value={d.monthlyRent} onChange={v=>upd("monthlyRent",v)} min={0} />
+                  </div>
+                )}
+                {d.ownershipStatus !== 'RENTED' && (
+                  <div style={{marginTop:10}}>
+                    <FieldNumber label="Sublet Income (Monthly KSh)" value={d.subletIncome} onChange={v=>upd("subletIncome",v)} min={0} />
+                  </div>
+                )}
+                <div className="grid-2" style={{marginTop:10}}>
+                  <FieldSelect label="Wall material" value={d.wallMaterial} onChange={v=>upd("wallMaterial",v)} options={[["STONE","Stone"],["BRICK","Brick"],["IRON_SHEETS","Iron sheets"],["MUD","Mud"],["WOOD","Wood"],["OTHER","Other"]]}/>
+                  <FieldSelect label="Roof material" value={d.roofMaterial} onChange={v=>upd("roofMaterial",v)} options={[["IRON_SHEETS","Iron sheets"],["TILES","Tiles"],["CONCRETE","Concrete"],["GRASS","Grass/Thatch"],["OTHER","Other"]]}/>
+                </div>
+                <div className="grid-2" style={{marginTop:10}}>
+                  <FieldSelect label="Floor material" value={d.floorMaterial} onChange={v=>upd("floorMaterial",v)} options={[["TILES","Tiles"],["CEMENT","Cement"],["MUD","Mud"],["WOOD","Wood"],["OTHER","Other"]]}/>
+                  <FieldNumber label="Rooms" value={d.rooms} onChange={v=>upd("rooms",Math.max(1,Math.round(v)))} min={1} max={20}/>
+                </div>
+              </div>
+
+              {/* Utilities */}
+              <div style={{paddingTop:12,borderTop:`1px dashed ${S.border}`}}>
+                <div style={{fontSize:12,fontWeight:700,color:S.blue,textTransform:"uppercase",marginBottom:10}}>2. Basic services & utilities</div>
+                <div className="grid-2">
+                  <FieldSelect label="Water source" value={d.waterSource} onChange={v=>upd("waterSource",v)} options={[["PIPED_DWELLING","Piped into dwelling"],["PIPED_YARD","Piped into yard"],["PUBLIC_TAP","Public tap / kiosk"],["BOREHOLE","Borehole / pump"],["WELL","Protected well"],["RIVER","River / spring / rain"]]}/>
+                  <FieldSelect label="Sanitation" value={d.sanitationType} onChange={v=>upd("sanitationType",v)} options={[["FLUSH_TOILET","Flush toilet"],["VIP_LATRINE","VIP latrine"],["PIT_LATRINE","Pit latrine"],["NONE","None / open defecation"]]}/>
+                </div>
+                <div className="grid-2" style={{marginTop:10}}>
+                  <FieldSelect label="Cooking energy" value={d.cookingEnergy} onChange={v=>upd("cookingEnergy",v)} options={[["ELECTRICITY","Electricity"],["LPG","LPG / gas"],["KEROSENE","Kerosene"],["CHARCOAL","Charcoal"],["FIREWOOD","Firewood"]]}/>
+                  <FieldSelect label="Lighting energy" value={d.lightingEnergy} onChange={v=>upd("lightingEnergy",v)} options={[["ELECTRICITY","Electricity"],["SOLAR","Solar"],["KEROSENE","Kerosene"],["OTHER","Other"]]}/>
+                </div>
+              </div>
+
+              {/* Assets & Capital */}
+              <div style={{paddingTop:12,borderTop:`1px dashed ${S.border}`}}>
+                <div style={{fontSize:12,fontWeight:700,color:S.blue,textTransform:"uppercase",marginBottom:10}}>3. Household assets & capital</div>
+                <AssetGrid assets={d.assets} toggle={toggleAsset}/>
+                {d.assets.includes("MOTORCYCLE") && (
+                  <div style={{marginTop: 8, padding: 12, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
+                    <Toggle label="Is this motorcycle used commercially (Bodaboda)?" tip="Depreciates asset value by 85% as a Tool of Trade" value={d.motorcycleIsCommercial} onChange={v=>upd("motorcycleIsCommercial",v)} hideSpacer/>
+                  </div>
+                )}
+                {d.assets.includes("CAR") && (
+                  <div style={{marginTop: 8, padding: 12, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
+                    {(!d.vehicles || d.vehicles.length === 0) ? (
+                      <>
+                        <FieldSelect label="Vehicle Type & Age" value={d.vehicleType || "STANDARD_OLD"} onChange={v=>upd("vehicleType",v)} options={[["STANDARD_OLD","Standard Car (Older than 7 yrs)"], ["STANDARD_NEW","Standard Car (Newer than 7 yrs)"], ["LUXURY","Luxury / SUV"], ["COMMERCIAL","Commercial (Matatu / Pick-up)"]]}/>
+                        <button onClick={()=>{
+                            setInputs(p=>({...p, vehicles:[{type:p.vehicleType||"STANDARD_OLD"},{type:"STANDARD_OLD"}]}));
+                            if(activeScenario!=="Custom") setActiveScenario("Custom");
+                          }} style={{marginTop:10,padding:"6px 12px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>+ Own more than one car? Add another vehicle</button>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{fontSize:11,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:8}}>Vehicles ({d.vehicles.length})</div>
+                        <div style={{display:"grid",gap:8}}>
+                          {d.vehicles.map((v,idx)=>(
+                            <div key={idx} style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+                              <div style={{flex:1}}>
+                                <FieldSelect label={`Vehicle ${idx+1}`} value={v.type||"STANDARD_OLD"} onChange={val=>updListItem("vehicles",idx,"type",val)} options={[["STANDARD_OLD","Standard Car (Older than 7 yrs)"], ["STANDARD_NEW","Standard Car (Newer than 7 yrs)"], ["LUXURY","Luxury / SUV"], ["COMMERCIAL","Commercial (Matatu / Pick-up)"]]}/>
+                              </div>
+                              <button onClick={()=>removeListItem("vehicles",idx)} style={{padding:"8px 10px",background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                        <button onClick={()=>addListItem("vehicles",{type:"STANDARD_OLD"})} style={{marginTop:8,padding:"6px 12px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>+ Add another vehicle</button>
+                      </>
+                    )}
+                  </div>
+                )}
+                <div className="grid-2" style={{marginTop:10}}>
+                  <FieldNumber label="Land owned (acres)" value={d.landAcreage} onChange={v=>upd("landAcreage",v)} min={0} max={100} step={0.5} note="Original asset/liquidity AGI v2.1 applies an illustrative county-based ASAL land adjustment."/>
+                  <FieldNumber label="Livestock count (all types)" value={d.livestockCount} onChange={v=>upd("livestockCount",Math.max(0,Math.round(v)))} min={0} max={500} note="Livestock is contextual in the declared-income variant."/>
+                </div>
+                <div style={{marginTop:10,padding:12,background:S.faint,borderRadius:8,border:`1px solid ${S.border}`}}>
+                  <Toggle label="Do you own land in more than one county?" value={d.landParcels && d.landParcels.length>0} onChange={v=>{
+                      if (v) setInputs(p=>({...p, landParcels:[{acres:p.landAcreage||0, county:p.county||"Nairobi"},{acres:0, county:"Nairobi"}]}));
+                      else setInputs(p=>({...p, landParcels:[]}));
+                      if(activeScenario!=="Custom") setActiveScenario("Custom");
+                    }} hideSpacer/>
+                  {d.landParcels && d.landParcels.length>0 && (
+                    <div style={{marginTop:10,display:"grid",gap:8}}>
+                      {d.landParcels.map((parcel,idx)=>(
+                        <div key={idx} style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+                          <div style={{width:100}}>
+                            <FieldNumber label="Acres" value={parcel.acres} onChange={v=>updListItem("landParcels",idx,"acres",v)} min={0} max={200} step={0.5}/>
+                          </div>
+                          <div style={{flex:1}}>
+                            <FieldSelect label="County" value={parcel.county||"Nairobi"} onChange={v=>updListItem("landParcels",idx,"county",v)} options={COUNTIES.map(c=>[c,c])}/>
+                          </div>
+                          <button onClick={()=>removeListItem("landParcels",idx)} style={{padding:"8px 10px",background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>Remove</button>
+                        </div>
+                      ))}
+                      <button onClick={()=>addListItem("landParcels",{acres:0,county:"Nairobi"})} style={{padding:"6px 12px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer",justifySelf:"start"}}>+ Add another parcel</button>
+                    </div>
+                  )}
+                </div>
+                <div style={{marginTop:10,padding:12,background:S.faint,borderRadius:8,border:`1px solid ${S.border}`}}>
+                  <Toggle label="Do you own rental properties (as a landlord)?" value={d.rentalProperties && d.rentalProperties.length>0} onChange={v=>{
+                      if (v) setInputs(p=>({...p, rentalProperties:[{monthlyRentCharged:0, isOccupied:true}]}));
+                      else setInputs(p=>({...p, rentalProperties:[]}));
+                      if(activeScenario!=="Custom") setActiveScenario("Custom");
+                    }} hideSpacer/>
+                  {d.rentalProperties && d.rentalProperties.length>0 && (
+                    <div style={{marginTop:10,display:"grid",gap:8}}>
+                      {d.rentalProperties.map((prop,idx)=>(
+                        <div key={idx} style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 0"}}>
+                            <input type="checkbox" checked={!!prop.isOccupied} onChange={e=>updListItem("rentalProperties",idx,"isOccupied",e.target.checked)} style={{width:15,height:15}}/>
+                            <span style={{fontSize:12,color:S.text,fontWeight:500}}>Occupied</span>
+                          </div>
+                          {prop.isOccupied && (
+                            <div style={{width:160}}>
+                              <FieldNumber label="Monthly rent charged (KSh)" value={prop.monthlyRentCharged} onChange={v=>updListItem("rentalProperties",idx,"monthlyRentCharged",v)} min={0} step={500}/>
+                            </div>
+                          )}
+                          <button onClick={()=>removeListItem("rentalProperties",idx)} style={{padding:"8px 10px",background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>Remove</button>
+                        </div>
+                      ))}
+                      <button onClick={()=>addListItem("rentalProperties",{monthlyRentCharged:0,isOccupied:true})} style={{padding:"6px 12px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer",justifySelf:"start"}}>+ Add another rental property</button>
+                    </div>
+                  )}
+                </div>
+                <div style={{marginTop:10,display:"grid",gap:8,background:S.surface,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
+                  <Toggle label="Is the primary earner a Seasonal Worker?" tip="Uses low-season balances to measure true liquidity" value={d.isSeasonalWorker} onChange={v=>upd("isSeasonalWorker",v)} hideSpacer/>
+                  {d.isSeasonalWorker && (
+                    <FieldNumber label="Low Season Retained Balance (KSh)" value={d.lowSeasonRetainedBalance} onChange={v=>upd("lowSeasonRetainedBalance",v)} min={0} note="Adjusts for highly volatile seasonal income."/>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>}
 
-      {/* Step 1: Housing */}
+      {/* ───────────────────────────────────────────────────────────────────── */}
+      {/* STAGE 1: HOW YOUR HOUSEHOLD EARNS (EARNED INCOME)                     */}
+      {/* ───────────────────────────────────────────────────────────────────── */}
       {step===1&&<div style={{display:"grid",gap:16}}>
-        <div className="grid-2">
-          <FieldSelect label="Dwelling type" value={d.dwellingType} onChange={v=>upd("dwellingType",v)} options={[["BUNGALOW","Bungalow"],["APARTMENT","Apartment"],["TRADITIONAL","Traditional"],["SHANTY","Shanty/Informal"],["OTHER","Other"]]}/>
-          <FieldSelect label="Ownership" value={d.ownershipStatus} onChange={v=>upd("ownershipStatus",v)} options={[["OWNED","Owned"],["RENTED","Rented"],["FAMILY","Family/Other"]]}/>
+        {/* No Earned Income Pathway */}
+        <div style={{background: d.hasNoEarnedIncome ? S.sageD : S.faint, border: `1px solid ${d.hasNoEarnedIncome ? S.sageBd : S.border}`, borderRadius: 8, padding: "14px 16px"}}>
+          <label style={{display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer"}}>
+            <input
+              type="checkbox"
+              checked={!!d.hasNoEarnedIncome}
+              onChange={e => {
+                const checked = e.target.checked;
+                upd("hasNoEarnedIncome", checked);
+                if (checked) {
+                  upd("monthlyNetEarnedIncome", 0);
+                }
+              }}
+              style={{width: 17, height: 17, marginTop: 2, cursor: "pointer", accentColor: S.sage}}
+            />
+            <div>
+              <div style={{fontSize: 13, fontWeight: 700, color: S.text}}>
+                Our household currently has no earned income
+              </div>
+              <div style={{fontSize: 12, color: S.muted, marginTop: 2, lineHeight: 1.4}}>
+                Select this if household members do not currently earn wages, casual day labour, small business profits, farming harvests or rental income. You can still record social assistance, remittances, loans and group funds in Stage 3.
+              </div>
+            </div>
+          </label>
         </div>
-        {d.ownershipStatus === 'RENTED' && (
-          <FieldNumber label="Monthly Rent (KSh)" value={d.monthlyRent} onChange={v=>upd("monthlyRent",v)} min={0} />
-        )}
-        {d.ownershipStatus !== 'RENTED' && (
-          <FieldNumber label="Sublet Income (Monthly KSh)" value={d.subletIncome} onChange={v=>upd("subletIncome",v)} min={0} />
-        )}
-        <div className="grid-2">
-          <FieldSelect label="Wall material" value={d.wallMaterial} onChange={v=>upd("wallMaterial",v)} options={[["STONE","Stone"],["BRICK","Brick"],["IRON_SHEETS","Iron sheets"],["MUD","Mud"],["WOOD","Wood"],["OTHER","Other"]]}/>
-          <FieldSelect label="Roof material" value={d.roofMaterial} onChange={v=>upd("roofMaterial",v)} options={[["IRON_SHEETS","Iron sheets"],["TILES","Tiles"],["CONCRETE","Concrete"],["GRASS","Grass/Thatch"],["OTHER","Other"]]}/>
-        </div>
-        <div className="grid-2">
-          <FieldSelect label="Floor material" value={d.floorMaterial} onChange={v=>upd("floorMaterial",v)} options={[["TILES","Tiles"],["CEMENT","Cement"],["MUD","Mud"],["WOOD","Wood"],["OTHER","Other"]]}/>
-          <FieldNumber label="Rooms" value={d.rooms} onChange={v=>upd("rooms",Math.max(1,Math.round(v)))} min={1} max={20}/>
-        </div>
-        <div style={{fontSize:12,padding:"12px 14px",background:S.terraD,borderRadius:6,border:`1px solid ${S.terraBd}`,color:S.terra,lineHeight:1.5,display:"flex",gap:8,alignItems:"flex-start"}}>
-          <Info size={16} style={{flexShrink:0,marginTop:2}}/>
-          <span><strong>Error By Design:</strong> The current algorithm penalizes households with stone walls or concrete floors, ignoring that in rural areas these are often illiquid ancestral family homes. The AGI Model v2.1 completely removes these biased proxy variables.</span>
-        </div>
-      </div>}
 
-      {/* Step 2: Services */}
-      {step===2&&<div style={{display:"grid",gap:16}}>
-        <FieldSelect label="Water source" value={d.waterSource} onChange={v=>upd("waterSource",v)} options={[["PIPED_DWELLING","Piped into dwelling"],["PIPED_YARD","Piped into yard"],["PUBLIC_TAP","Public tap / kiosk"],["BOREHOLE","Borehole / pump"],["WELL","Protected well"],["RIVER","River / spring / rain"]]}/>
-        <FieldSelect label="Sanitation" value={d.sanitationType} onChange={v=>upd("sanitationType",v)} options={[["FLUSH_TOILET","Flush toilet"],["VIP_LATRINE","VIP latrine"],["PIT_LATRINE","Pit latrine"],["NONE","None / open defecation"]]}/>
-        <div className="grid-2">
-          <FieldSelect label="Cooking energy" value={d.cookingEnergy} onChange={v=>upd("cookingEnergy",v)} options={[["ELECTRICITY","Electricity"],["LPG","LPG / gas"],["KEROSENE","Kerosene"],["CHARCOAL","Charcoal"],["FIREWOOD","Firewood"]]}/>
-          <FieldSelect label="Lighting energy" value={d.lightingEnergy} onChange={v=>upd("lightingEnergy",v)} options={[["ELECTRICITY","Electricity"],["SOLAR","Solar"],["KEROSENE","Kerosene"],["OTHER","Other"]]}/>
-        </div>
-        <div style={{fontSize:12,padding:"12px 14px",background:S.terraD,borderRadius:6,border:`1px solid ${S.terraBd}`,color:S.terra,lineHeight:1.5,display:"flex",gap:8,alignItems:"flex-start"}}>
-          <Info size={16} style={{flexShrink:0,marginTop:2}}/>
-          <span>Rural electrification programmes mean even poor households now have electricity. The current linear PMT algorithm incorrectly weights this as a strong wealth signal, causing systematic overcharging.</span>
-        </div>
-      </div>}
+        {d.hasNoEarnedIncome ? (
+          <div style={{padding: 16, background: S.sageD, border: `1px solid ${S.sageBd}`, borderRadius: 8, color: S.sage}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,fontWeight:700,fontSize:14}}>
+              <CheckCircle2 size={18}/>
+              <span>Zero earned income declared for this household</span>
+            </div>
+            <div style={{fontSize:12,color:S.text,marginTop:6,lineHeight:1.5}}>
+              The prototype's earned income base is set to <strong>KSh 0/month</strong>. You do not need to invent earnings. Click <strong>Continue to Other Money →</strong> below to record any cash transfers, family remittances, loans, or chama funds.
+            </div>
+          </div>
+        ) : (
+          <div style={{display:"grid",gap:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+              <div>
+                <div style={{fontSize:14,fontWeight:700,color:S.text}}>
+                  Active Earned Income Sources ({earnedEntries.length})
+                </div>
+                <div style={{fontSize:12,color:S.muted,marginTop:2}}>
+                  Employment, casual labour, business, farming or rental earnings.
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={()=>{
+                  addListItem("incomeSources", {
+                    id: `src-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+                    sourceType: earnedEntries.length === 0 ? "SELF_EMPLOYMENT" : "CASUAL_LABOUR",
+                    monthsObserved: 12,
+                    amountReceivedKsh: 60000,
+                    directCostsKsh: 20000,
+                    includedInSourceId: null,
+                    alreadyIncludedElsewhere: false,
+                    isSeasonal: false,
+                    expenses: [{
+                      category: "STOCK_PURCHASES",
+                      amountKsh: 20000,
+                      description: "Reported direct operating cost"
+                    }]
+                  });
+                }}
+                style={{padding:"8px 14px",background:S.blue,color:"#FFF",border:"none",borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 4px rgba(2,132,199,0.2)"}}
+              >
+                + Add earned income source
+              </button>
+            </div>
 
-      {/* Step 3: Assets */}
-      {step===3&&<div style={{display:"grid",gap:12}}>
-        <div style={{fontSize:13,color:S.muted,fontWeight:500}}>Select all assets the household owns</div>
-        <AssetGrid assets={d.assets} toggle={toggleAsset}/>
-        <div style={{fontSize:12,padding:"12px 14px",background:S.terraD,borderRadius:6,border:`1px solid ${S.terraBd}`,color:S.terra,lineHeight:1.5,display:"flex",gap:8,alignItems:"flex-start"}}>
-          <Info size={16} style={{flexShrink:0,marginTop:2}}/>
-          <span><strong>Proxy Bias Alert:</strong> The current system aggressively punishes ownership of basic items like bicycles and radios, driving up exclusion errors. Our proposed model strictly targets high-value, digitally-verifiable assets.</span>
-        </div>
-        {d.assets.includes("MOTORCYCLE") && (
-          <div style={{marginTop: 8, padding: 16, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
-            <Toggle label="Is this motorcycle used commercially (Bodaboda)?" tip="Depreciates asset value by 85% as a Tool of Trade" value={d.motorcycleIsCommercial} onChange={v=>upd("motorcycleIsCommercial",v)} hideSpacer/>
+            {earnedEntries.length > 0 ? (
+              <div style={{display:"grid",gap:12}}>
+                {earnedEntries.map(({ src, originalIndex }, entryIdx)=>{
+                  const rule = INCOME_SOURCE_RULES[src.sourceType] || INCOME_SOURCE_RULES.OTHER_EARNED;
+                  const received = Number(src.amountReceivedKsh || 0);
+                  const costs = rule.costsAllowed ? Number(src.directCostsKsh || 0) : 0;
+                  const net = received - costs;
+                  const months = Number(src.monthsObserved || 12);
+                  const monthlyAvgNet = months > 0 ? Math.round(net / months) : 0;
+                  const uiRules = getIncomeSourceUiRules(src);
+
+                  return (
+                    <div key={src.id || originalIndex} style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,padding:14,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontSize:13,fontWeight:700,color:S.text}}>
+                            Source {entryIdx+1}: {rule.label}
+                          </span>
+                          <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:4,background:"#ECFDF5",color:"#065F46"}}>
+                            EARNED INCOME
+                          </span>
+                        </div>
+                        {confirmDeleteId === src.id ? (
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <span style={{fontSize:11,color:S.terra,fontWeight:600}}>Remove this source?</span>
+                            <button
+                              type="button"
+                              onClick={()=>{
+                                removeListItem("incomeSources", originalIndex);
+                                setConfirmDeleteId(null);
+                              }}
+                              style={{background:S.terra,color:"#FFF",border:"none",borderRadius:4,padding:"3px 8px",fontSize:11,fontWeight:600,cursor:"pointer"}}
+                            >
+                              Yes, remove
+                            </button>
+                            <button
+                              type="button"
+                              onClick={()=>setConfirmDeleteId(null)}
+                              style={{background:"transparent",color:S.muted,border:`1px solid ${S.border}`,borderRadius:4,padding:"3px 8px",fontSize:11,fontWeight:500,cursor:"pointer"}}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={()=>setConfirmDeleteId(src.id)}
+                            style={{background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:4,padding:"4px 8px",fontSize:11,fontWeight:600,cursor:"pointer"}}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid-2" style={{gap:10}}>
+                        <FieldSelect
+                          label="Type of earned income"
+                          value={src.sourceType}
+                          onChange={v=>{
+                            updListItem("incomeSources", originalIndex, "sourceType", v);
+                            const nextRule = INCOME_SOURCE_RULES[v];
+                            if (!nextRule?.costsAllowed) {
+                              updListItem("incomeSources", originalIndex, "directCostsKsh", 0);
+                              updListItem("incomeSources", originalIndex, "expenses", []);
+                            }
+                          }}
+                          options={EARNED_SOURCE_TYPES.map(k=>[k, INCOME_SOURCE_RULES[k]?.label || k])}
+                        />
+                        <FieldSelect
+                          label="Already included in another declared source?"
+                          value={src.includedInSourceId || ""}
+                          onChange={v=>{
+                            updListItem("incomeSources", originalIndex, "includedInSourceId", v || null);
+                            updListItem("incomeSources", originalIndex, "alreadyIncludedElsewhere", !!v);
+                          }}
+                          options={[
+                            ["", "No — Independent earnings"],
+                            ...allSources.filter((_, sIdx) => sIdx !== originalIndex).map(s => [
+                              s.id,
+                              `Included in Source ${s.id} (${INCOME_SOURCE_RULES[s.sourceType]?.label || s.sourceType})`
+                            ])
+                          ]}
+                        />
+                      </div>
+
+                      {/* Observation Period */}
+                      <div className="grid-3" style={{gap:10, marginTop:10}}>
+                        <div>
+                          <Label>Observation Start Date</Label>
+                          <input
+                            type="date"
+                            value={src.observationStartDate || ""}
+                            onChange={e=>{
+                              const val = e.target.value;
+                              updListItem("incomeSources", originalIndex, "observationStartDate", val);
+                              if (val && src.observationEndDate) {
+                                const m = calculateMonthsFromDates(val, src.observationEndDate);
+                                if (m) updListItem("incomeSources", originalIndex, "monthsObserved", m);
+                              }
+                            }}
+                            style={{width:"100%",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"9px 12px",fontSize:13,fontFamily:"inherit"}}
+                          />
+                        </div>
+                        <div>
+                          <Label>Observation End Date</Label>
+                          <input
+                            type="date"
+                            value={src.observationEndDate || ""}
+                            onChange={e=>{
+                              const val = e.target.value;
+                              updListItem("incomeSources", originalIndex, "observationEndDate", val);
+                              if (src.observationStartDate && val) {
+                                const m = calculateMonthsFromDates(src.observationStartDate, val);
+                                if (m) updListItem("incomeSources", originalIndex, "monthsObserved", m);
+                              }
+                            }}
+                            style={{width:"100%",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"9px 12px",fontSize:13,fontFamily:"inherit"}}
+                          />
+                        </div>
+                        <FieldNumber
+                          label="Observed Duration (Months)"
+                          value={src.monthsObserved || 12}
+                          onChange={v=>updListItem("incomeSources", originalIndex, "monthsObserved", Math.max(1, Math.min(12, Math.round(v))))}
+                          min={1}
+                          max={12}
+                          step={1}
+                        />
+                      </div>
+
+                      {/* Gross and Operating Expenses */}
+                      <div className="grid-2" style={{gap:10, marginTop:10}}>
+                        <FieldNumber
+                          label="Gross amount received over period (KSh)"
+                          value={src.amountReceivedKsh}
+                          onChange={v=>updListItem("incomeSources", originalIndex, "amountReceivedKsh", v)}
+                          min={0}
+                          step={500}
+                        />
+                        {uiRules.showOperatingExpenses ? (
+                          <div style={{display:"grid",gap:6}}>
+                            <FieldNumber
+                              label="Reported operating costs (KSh)"
+                              value={src.directCostsKsh}
+                              onChange={v=>{
+                                const amt = Number(v || 0);
+                                updListItem("incomeSources", originalIndex, "directCostsKsh", amt);
+                                updListItem("incomeSources", originalIndex, "expenses", [{
+                                  category: src.expenseCategory || "STOCK_PURCHASES",
+                                  amountKsh: amt,
+                                  description: "Reported direct operating cost"
+                                }]);
+                              }}
+                              min={0}
+                              step={500}
+                              note="Allowable direct expenses: stock, raw materials, stall fees."
+                            />
+                          </div>
+                        ) : (
+                          <div style={{display:"flex",flexDirection:"column",justifyContent:"center",padding:"10px 14px",background:S.faint,borderRadius:6,border:`1px dashed ${S.borderUp}`}}>
+                            <div style={{fontSize:11,fontWeight:600,color:S.muted,textTransform:"uppercase"}}>Operating costs</div>
+                            <div style={{fontSize:12,color:S.muted,marginTop:2}}>
+                              {src.sourceType === "EMPLOYMENT_WAGES"
+                                ? "Not allowable for employment / regular wages."
+                                : "Not accepted for this category under prototype rules."}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Seasonal Questions */}
+                      {uiRules.showSeasonalDetails && (
+                        <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:10}}>
+                          <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:S.text,cursor:"pointer"}}>
+                            <input
+                              type="checkbox"
+                              checked={!!src.isSeasonal}
+                              onChange={e=>updListItem("incomeSources", originalIndex, "isSeasonal", e.target.checked)}
+                              style={{width:14,height:14}}
+                            />
+                            <span>Seasonal activity (requires 12-month observation window to prevent harvest bias)</span>
+                          </label>
+                        </div>
+                      )}
+
+                      {/* Net calculation preview */}
+                      <div style={{marginTop:10,paddingTop:8,borderTop:`1px solid ${S.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,fontSize:12}}>
+                        <span style={{color:S.muted}}>
+                          Reported net: <strong style={{color:S.text}}>KSh {net.toLocaleString()}</strong> over {months} mo
+                        </span>
+                        <span style={{color:S.blue,fontWeight:600}}>
+                          Average monthly net: KSh {monthlyAvgNet.toLocaleString()}/mo
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{padding:16,background:S.faint,borderRadius:8,border:`1px dashed ${S.borderUp}`}}>
+                <div style={{fontSize:13,fontWeight:600,color:S.text,marginBottom:4}}>No itemised earned income sources added yet</div>
+                <div style={{fontSize:12,color:S.muted,lineHeight:1.5,marginBottom:12}}>
+                  You can enter a direct monthly net earned income baseline below (standard for demonstration presets), or click "+ Add earned income source" above.
+                </div>
+                <div style={{background:S.surface,padding:12,borderRadius:6,border:`1px solid ${formError?S.terraBd:S.border}`}}>
+                  <FieldNumber
+                    label="Declared Monthly Net Earned Income (KSh) — Direct / Preset Base"
+                    value={d.monthlyNetEarnedIncome}
+                    onChange={v=>upd("monthlyNetEarnedIncome",v)}
+                    min={0}
+                    step={500}
+                    allowNull={true}
+                    error={formError}
+                    note="Direct entry baseline. Adding structured sources above will supersede this field."
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
-        {d.assets.includes("CAR") && (
-          <div style={{marginTop: 8, padding: 16, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
-            {(!d.vehicles || d.vehicles.length === 0) ? (
-              <>
-                <FieldSelect label="Vehicle Type & Age" value={d.vehicleType || "STANDARD_OLD"} onChange={v=>upd("vehicleType",v)} options={[["STANDARD_OLD","Standard Car (Older than 7 yrs)"], ["STANDARD_NEW","Standard Car (Newer than 7 yrs)"], ["LUXURY","Luxury / SUV"], ["COMMERCIAL","Commercial (Matatu / Pick-up)"]]}/>
-                <button onClick={()=>{
-                    setInputs(p=>({...p, vehicles:[{type:p.vehicleType||"STANDARD_OLD"},{type:"STANDARD_OLD"}]}));
-                    if(activeScenario!=="Custom") setActiveScenario("Custom");
-                  }} style={{marginTop:10,padding:"8px 14px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Own more than one car? Add another vehicle</button>
-              </>
-            ) : (
-              <>
-                <div style={{fontSize:12,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:10}}>Vehicles ({d.vehicles.length})</div>
-                <div style={{display:"grid",gap:10}}>
-                  {d.vehicles.map((v,idx)=>(
-                    <div key={idx} style={{display:"flex",gap:8,alignItems:"flex-end"}}>
-                      <div style={{flex:1}}>
-                        <FieldSelect label={`Vehicle ${idx+1}`} value={v.type||"STANDARD_OLD"} onChange={val=>updListItem("vehicles",idx,"type",val)} options={[["STANDARD_OLD","Standard Car (Older than 7 yrs)"], ["STANDARD_NEW","Standard Car (Newer than 7 yrs)"], ["LUXURY","Luxury / SUV"], ["COMMERCIAL","Commercial (Matatu / Pick-up)"]]}/>
+      </div>}
+
+      {/* ───────────────────────────────────────────────────────────────────── */}
+      {/* STAGE 2: OTHER MONEY COMING IN                                        */}
+      {/* ───────────────────────────────────────────────────────────────────── */}
+      {step===2&&<div style={{display:"grid",gap:16}}>
+        <div style={{background:S.surfaceUp,padding:14,borderRadius:8,border:`1px solid ${S.border}`}}>
+          <div style={{fontSize:13,fontWeight:700,color:S.text}}>
+            Separation of other financial flows from earned income
+          </div>
+          <div style={{fontSize:12,color:S.muted,marginTop:4,lineHeight:1.5}}>
+            Financial support from family, social protection cash transfers (Inua Jamii), loan disbursements, and chama group funds are <strong>not active earned income</strong>. In this research prototype, they are recorded separately for policy review and are not automatically counted in your earned-income means-testing base.
+          </div>
+        </div>
+
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+          <div>
+            <div style={{fontSize:14,fontWeight:700,color:S.text}}>
+              Other Incoming Funds ({otherMoneyEntries.length})
+            </div>
+            <div style={{fontSize:12,color:S.muted,marginTop:2}}>
+              Remittances, cash transfers, loan disbursements, reimbursements or chama funds.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={()=>{
+              addListItem("incomeSources", {
+                id: `src-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+                sourceType: "REMITTANCES",
+                monthsObserved: 12,
+                amountReceivedKsh: 24000,
+                directCostsKsh: 0,
+                includedInSourceId: null,
+                alreadyIncludedElsewhere: false,
+                isSeasonal: false,
+              });
+            }}
+            style={{padding:"8px 14px",background:S.blue,color:"#FFF",border:"none",borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 4px rgba(2,132,199,0.2)"}}
+          >
+            + Add other incoming money
+          </button>
+        </div>
+
+        {otherMoneyEntries.length > 0 ? (
+          <div style={{display:"grid",gap:12}}>
+            {otherMoneyEntries.map(({ src, originalIndex }, entryIdx)=>{
+              const rule = INCOME_SOURCE_RULES[src.sourceType] || INCOME_SOURCE_RULES.OTHER_EARNED;
+              const received = Number(src.amountReceivedKsh || 0);
+              const months = Number(src.monthsObserved || 12);
+              const monthlyAvg = months > 0 ? Math.round(received / months) : 0;
+              const bucketConfig = {
+                POLICY_REVIEW: { bg: "#FEF3C7", text: "#92400E", label: "Policy Review (Transfers/Support)" },
+                NON_EARNED_FLOW: { bg: "#F1F5F9", text: "#475569", label: "Non-Earned Financial Flow" },
+                FIDUCIARY_FLOW: { bg: "#EEF2FF", text: "#3730A3", label: "Fiduciary / Group Funds" }
+              }[rule.bucket] || { bg: "#F1F5F9", text: "#475569", label: rule.bucket };
+
+              return (
+                <div key={src.id || originalIndex} style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,padding:14,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{fontSize:13,fontWeight:700,color:S.text}}>
+                        Flow {entryIdx+1}: {rule.label}
+                      </span>
+                      <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:4,background:bucketConfig.bg,color:bucketConfig.text}}>
+                        {bucketConfig.label}
+                      </span>
+                    </div>
+                    {confirmDeleteId === src.id ? (
+                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                        <span style={{fontSize:11,color:S.terra,fontWeight:600}}>Remove this flow?</span>
+                        <button
+                          type="button"
+                          onClick={()=>{
+                            removeListItem("incomeSources", originalIndex);
+                            setConfirmDeleteId(null);
+                          }}
+                          style={{background:S.terra,color:"#FFF",border:"none",borderRadius:4,padding:"3px 8px",fontSize:11,fontWeight:600,cursor:"pointer"}}
+                        >
+                          Yes, remove
+                        </button>
+                        <button
+                          type="button"
+                          onClick={()=>setConfirmDeleteId(null)}
+                          style={{background:"transparent",color:S.muted,border:`1px solid ${S.border}`,borderRadius:4,padding:"3px 8px",fontSize:11,fontWeight:500,cursor:"pointer"}}
+                        >
+                          Cancel
+                        </button>
                       </div>
-                      <button onClick={()=>removeListItem("vehicles",idx)} style={{padding:"10px 12px",background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer"}}>Remove</button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={()=>setConfirmDeleteId(src.id)}
+                        style={{background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:4,padding:"4px 8px",fontSize:11,fontWeight:600,cursor:"pointer"}}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid-2" style={{gap:10}}>
+                    <FieldSelect
+                      label="Category of incoming money"
+                      value={src.sourceType}
+                      onChange={v=>{
+                        updListItem("incomeSources", originalIndex, "sourceType", v);
+                        updListItem("incomeSources", originalIndex, "directCostsKsh", 0);
+                        updListItem("incomeSources", originalIndex, "expenses", []);
+                      }}
+                      options={OTHER_MONEY_SOURCE_TYPES.map(k=>[k, INCOME_SOURCE_RULES[k]?.label || k])}
+                    />
+                    <FieldSelect
+                      label="Already included in another declared source?"
+                      value={src.includedInSourceId || ""}
+                      onChange={v=>{
+                        updListItem("incomeSources", originalIndex, "includedInSourceId", v || null);
+                        updListItem("incomeSources", originalIndex, "alreadyIncludedElsewhere", !!v);
+                      }}
+                      options={[
+                        ["", "No — Independent financial flow"],
+                        ...allSources.filter((_, sIdx) => sIdx !== originalIndex).map(s => [
+                          s.id,
+                          `Included in Source ${s.id} (${INCOME_SOURCE_RULES[s.sourceType]?.label || s.sourceType})`
+                        ])
+                      ]}
+                    />
+                  </div>
+
+                  {/* Observation Period */}
+                  <div className="grid-3" style={{gap:10, marginTop:10}}>
+                    <div>
+                      <Label>Observation Start Date</Label>
+                      <input
+                        type="date"
+                        value={src.observationStartDate || ""}
+                        onChange={e=>{
+                          const val = e.target.value;
+                          updListItem("incomeSources", originalIndex, "observationStartDate", val);
+                          if (val && src.observationEndDate) {
+                            const m = calculateMonthsFromDates(val, src.observationEndDate);
+                            if (m) updListItem("incomeSources", originalIndex, "monthsObserved", m);
+                          }
+                        }}
+                        style={{width:"100%",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"9px 12px",fontSize:13,fontFamily:"inherit"}}
+                      />
+                    </div>
+                    <div>
+                      <Label>Observation End Date</Label>
+                      <input
+                        type="date"
+                        value={src.observationEndDate || ""}
+                        onChange={e=>{
+                          const val = e.target.value;
+                          updListItem("incomeSources", originalIndex, "observationEndDate", val);
+                          if (src.observationStartDate && val) {
+                            const m = calculateMonthsFromDates(src.observationStartDate, val);
+                            if (m) updListItem("incomeSources", originalIndex, "monthsObserved", m);
+                          }
+                        }}
+                        style={{width:"100%",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"9px 12px",fontSize:13,fontFamily:"inherit"}}
+                      />
+                    </div>
+                    <FieldNumber
+                      label="Observed Duration (Months)"
+                      value={src.monthsObserved || 12}
+                      onChange={v=>updListItem("incomeSources", originalIndex, "monthsObserved", Math.max(1, Math.min(12, Math.round(v))))}
+                      min={1}
+                      max={12}
+                      step={1}
+                    />
+                  </div>
+
+                  <div style={{marginTop:10}}>
+                    <FieldNumber
+                      label="Total amount received over observed period (KSh)"
+                      value={src.amountReceivedKsh}
+                      onChange={v=>updListItem("incomeSources", originalIndex, "amountReceivedKsh", v)}
+                      min={0}
+                      step={500}
+                    />
+                  </div>
+
+                  {/* Guidance Note based on category */}
+                  <div style={{marginTop:10,padding:"8px 12px",background:S.faint,borderRadius:6,fontSize:11,color:S.muted,lineHeight:1.4}}>
+                    {src.sourceType === "REMITTANCES" && "Remittances: Support from relatives living in Kenya or abroad. Recorded for policy review regarding household support."}
+                    {src.sourceType === "SOCIAL_ASSISTANCE" && "Social Assistance: Government cash transfers (Inua Jamii, food aid). Flagged for SHA policy determination on statutory subsidy eligibility."}
+                    {src.sourceType === "LOAN_PROCEEDS" && "Loan Proceeds: Borrowed capital (bank loans, Fuliza, digital credit). Debt creates an obligation to repay and is not disposable income."}
+                    {src.sourceType === "REIMBURSEMENT" && "Reimbursements: Expense offsets. Note: ensure reimbursed costs were not already deducted from business earnings."}
+                    {src.sourceType === "GROUP_FUNDS" && "Chama / Group Funds: Table banking and merry-go-round savings held in fiduciary trust are not personal household income."}
+                  </div>
+
+                  <div style={{marginTop:10,paddingTop:8,borderTop:`1px solid ${S.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12}}>
+                    <span style={{color:S.muted}}>
+                      Reported total: <strong style={{color:S.text}}>KSh {received.toLocaleString()}</strong> over {months} mo
+                    </span>
+                    <span style={{color:S.blue,fontWeight:600}}>
+                      Average monthly flow: KSh {monthlyAvg.toLocaleString()}/mo
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{padding:16,background:S.faint,borderRadius:8,border:`1px dashed ${S.borderUp}`}}>
+            <div style={{fontSize:13,fontWeight:600,color:S.text,marginBottom:4}}>No other incoming funds recorded</div>
+            <div style={{fontSize:12,color:S.muted,lineHeight:1.5}}>
+              If your household receives remittances from relatives, government cash transfers (Inua Jamii), loans or holds chama savings, click "+ Add other incoming money" above. Otherwise, you can proceed directly to review.
+            </div>
+          </div>
+        )}
+
+        {/* Collapsible Optional Financial Indicators */}
+        <div style={{padding:16,background:S.surface,borderRadius:10,border:`1px solid ${S.border}`}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:S.text,textTransform:"uppercase",letterSpacing:0.5}}>
+                Additional financial indicators for review (Optional)
+              </div>
+              <div style={{fontSize:11,color:S.muted,marginTop:2}}>
+                Contextual banking, mobile money and administrative indicators for triangulation testing.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={()=>setShowOptionalIndicators(prev=>!prev)}
+              style={{background:"transparent",border:"none",color:S.blue,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}
+            >
+              {showOptionalIndicators ? "Hide optional indicators ▲" : "Show optional indicators ▼"}
+            </button>
+          </div>
+
+          {showOptionalIndicators && (
+            <div style={{display:"grid",gap:14,marginTop:14,paddingTop:14,borderTop:`1px solid ${S.border}`}}>
+              <div style={{fontSize:12,color:S.muted,lineHeight:1.4}}>
+                <strong>Potential future data-source checks:</strong> A production design could compare member-declared information with lawfully accessible KRA, NTSA and MNO/M-Pesa data. None of these services is connected here; all values below are manually entered demonstration inputs.
+              </div>
+              <div className="grid-3">
+                <FieldNumber label="Gross M-Pesa (Monthly)" value={d.grossMpesaMonthly} onChange={v=>upd("grossMpesaMonthly",v)} note="Illustrative comparator only."/>
+                <FieldNumber label="Avg Retained Balance (12-Mo)" value={d.avgRetainedBalance} onChange={v=>upd("avgRetainedBalance",v)} note="Contextual liquidity estimate."/>
+                <FieldNumber label="Diaspora Remittances (Monthly KSh)" value={d.diasporaRemittances} onChange={v=>upd("diasporaRemittances",v)} note="Excluded from AGI to encourage inward flows."/>
+              </div>
+              <div className="grid-2">
+                <FieldNumber label="M-Pesa Transaction Count" value={d.transactionCount} onChange={v=>upd("transactionCount",v)} min={0} note="Used to identify high-velocity subsistence workers."/>
+                <FieldNumber label="Number of Fuliza Defaults" value={d.fulizaDefaults} onChange={v=>upd("fulizaDefaults",v)} max={50} note="Count of defaults, NOT the Shilling amount owed."/>
+              </div>
+              <div style={{display:"grid",gap:10,background:S.faint,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
+                <div style={{fontSize:11,fontWeight:700,color:S.muted,textTransform:"uppercase",letterSpacing:0.5}}>Triangulation & Contextual Flags</div>
+                <FieldSelect label="KRA PIN Type" value={d.kraPinType} onChange={v=>upd("kraPinType",v)} options={[["NONE","None"],["PAYE","Active PAYE"],["BUSINESS","Active Business"]]}/>
+                <Toggle label="NTSA Car Registration?" value={d.isNtsaVerified} onChange={v=>upd("isNtsaVerified",v)} hideSpacer/>
+                <Toggle label="Simulate Hidden Wealth Discovered?" value={d.hiddenWealthDiscovered} onChange={v=>upd("hiddenWealthDiscovered",v)} hideSpacer/>
+                <Toggle label="Is Chama/Group Treasurer?" tip="Group fund liquidity discount (80% discount on retained balance: illustrative prototype policy assumption — requires SHA validation)" value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
+                <Toggle label="Has active SACCO account?" value={d.hasSaccoAccount} onChange={v=>upd("hasSaccoAccount",v)} hideSpacer/>
+                {d.hasSaccoAccount && (
+                  <FieldNumber label="Declared SACCO Share Capital (KSh)" value={d.saccoShareCapital} onChange={v=>upd("saccoShareCapital",v)} min={0} step={1000}/>
+                )}
+                <Toggle label="DPA Consent Withheld?" value={d.consentWithheld} onChange={v=>upd("consentWithheld",v)} hideSpacer/>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>}
+
+      {/* ───────────────────────────────────────────────────────────────────── */}
+      {/* STAGE 3: REVIEW AND ASSESSMENT                                        */}
+      {/* ───────────────────────────────────────────────────────────────────── */}
+      {step===3&&(()=>{
+        const liveIncomeSnapshot = calculateHouseholdIncome(d.incomeSources || []);
+        const reviewData = buildAssessmentReview({
+          inputs: d,
+          incomeAssessmentSnapshot: liveIncomeSnapshot,
+          incomeSources: d.incomeSources || []
+        });
+
+        return (
+          <div style={{display:"grid",gap:16}}>
+            {/* Status Banner */}
+            <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:8,padding:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:11,fontWeight:800,letterSpacing:0.5,padding:"3px 8px",borderRadius:4,background:"#166534",color:"#FFF"}}>
+                    {reviewData.status}
+                  </span>
+                  <span style={{fontSize:13,fontWeight:700,color:"#166534"}}>
+                    Member-Reported Household Declaration
+                  </span>
+                </div>
+                <div style={{fontSize:11,color:S.muted}}>
+                  Engine: <strong>{reviewData.calculationVersion}</strong>
+                </div>
+              </div>
+              <div style={{fontSize:12,color:S.muted,marginTop:6,lineHeight:1.4}}>
+                {reviewData.disclaimer}
+              </div>
+            </div>
+
+            {/* Review Section 1: Household Composition */}
+            <div style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,padding:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={{fontSize:13,fontWeight:700,color:S.text}}>
+                  1. Household Composition
+                </div>
+                <button
+                  type="button"
+                  onClick={()=>go(0)}
+                  style={{background:"transparent",border:"none",color:S.blue,fontSize:12,fontWeight:600,cursor:"pointer"}}
+                >
+                  Edit household ↗
+                </button>
+              </div>
+              <div className="grid-4" style={{fontSize:12,gap:8}}>
+                <div><span style={{color:S.muted}}>County:</span> <strong>{reviewData.household.county}</strong></div>
+                <div><span style={{color:S.muted}}>Size:</span> <strong>{reviewData.household.householdSize} members</strong></div>
+                <div><span style={{color:S.muted}}>Head Age:</span> <strong>{reviewData.household.headAge}</strong></div>
+                <div><span style={{color:S.muted}}>Head Gender:</span> <strong>{reviewData.household.headGender}</strong></div>
+              </div>
+              {reviewData.household.circumstances.length > 0 && (
+                <div style={{marginTop:8,display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {reviewData.household.circumstances.map((c, idx)=>(
+                    <span key={idx} style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:S.sageD,color:S.sage,border:`1px solid ${S.sageBd}`}}>
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Review Section 2: Earned Income */}
+            <div style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,padding:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={{fontSize:13,fontWeight:700,color:S.text}}>
+                  2. Earned Income ({d.hasNoEarnedIncome ? "Declared Zero" : `${reviewData.earnedSources.count} Source(s)`})
+                </div>
+                <button
+                  type="button"
+                  onClick={()=>go(1)}
+                  style={{background:"transparent",border:"none",color:S.blue,fontSize:12,fontWeight:600,cursor:"pointer"}}
+                >
+                  Edit earned income ↗
+                </button>
+              </div>
+
+              {d.hasNoEarnedIncome ? (
+                <div style={{fontSize:12,color:S.sage,padding:"8px 12px",background:S.sageD,borderRadius:6}}>
+                  Household has declared no current earned income. Earned base is KSh 0/month.
+                </div>
+              ) : reviewData.earnedSources.count > 0 ? (
+                <div style={{display:"grid",gap:8}}>
+                  {liveIncomeSnapshot.lines.filter(l => l.bucket === "EARNED").map((line, idx)=>(
+                    <div key={idx} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",background:S.surfaceUp,borderRadius:6,fontSize:12,flexWrap:"wrap",gap:6}}>
+                      <div>
+                        <strong>{line.label}</strong>
+                        {line.isDuplicate && <span style={{marginLeft:6,fontSize:10,color:S.amber,fontWeight:700}}>(Duplicate excluded)</span>}
+                        <div style={{fontSize:11,color:S.muted}}>
+                          Gross: KSh {line.totalReceivedKsh.toLocaleString()} · Costs: KSh {line.totalReportedCostsKsh.toLocaleString()} ({line.observationMonths} mo)
+                        </div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontWeight:700,color:line.isDuplicate?S.muted:S.text}}>
+                          {line.isDuplicate ? "Excluded from earned total" : `KSh ${line.averageMonthlyNetKsh.toLocaleString()}/mo`}
+                        </div>
+                        <div style={{fontSize:10,color:line.periodStatus==="FULL_YEAR"?S.sage:S.amber}}>
+                          {line.periodStatus}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{marginTop:4,paddingTop:8,borderTop:`1px solid ${S.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",fontWeight:700,fontSize:13}}>
+                    <span>Earned Net Subtotal:</span>
+                    <span style={{color:S.blue}}>
+                      {liveIncomeSnapshot.monthlyEarnedNetKsh !== null
+                        ? `KSh ${liveIncomeSnapshot.monthlyEarnedNetKsh.toLocaleString()}/mo (Annualised: KSh ${liveIncomeSnapshot.annualisedEarnedNetKsh.toLocaleString()})`
+                        : "Manual review required"}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div style={{fontSize:12,color:S.text}}>
+                  Direct baseline entry: <strong>KSh {(d.monthlyNetEarnedIncome || 0).toLocaleString()}/month</strong> (Annualised: KSh {((d.monthlyNetEarnedIncome || 0)*12).toLocaleString()})
+                </div>
+              )}
+            </div>
+
+            {/* Review Section 3: Other Financial Flows */}
+            <div style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,padding:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={{fontSize:13,fontWeight:700,color:S.text}}>
+                  3. Other Incoming Funds ({reviewData.otherFinancialFlows.count} Flow(s))
+                </div>
+                <button
+                  type="button"
+                  onClick={()=>go(2)}
+                  style={{background:"transparent",border:"none",color:S.blue,fontSize:12,fontWeight:600,cursor:"pointer"}}
+                >
+                  Edit other money ↗
+                </button>
+              </div>
+
+              {reviewData.otherFinancialFlows.count > 0 ? (
+                <div style={{display:"grid",gap:8}}>
+                  {liveIncomeSnapshot.lines.filter(l => l.bucket !== "EARNED").map((line, idx)=>(
+                    <div key={idx} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",background:S.surfaceUp,borderRadius:6,fontSize:12,flexWrap:"wrap",gap:6}}>
+                      <div>
+                        <strong>{line.label}</strong>
+                        <div style={{fontSize:11,color:S.muted}}>
+                          {line.bucket} · KSh {line.totalReceivedKsh.toLocaleString()} over {line.observationMonths} mo
+                        </div>
+                      </div>
+                      <div style={{fontWeight:700,color:S.text}}>
+                        KSh {line.averageMonthlyReceivedKsh.toLocaleString()}/mo
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{marginTop:4,paddingTop:8,borderTop:`1px solid ${S.border}`,fontSize:11,color:S.muted,display:"grid",gap:3}}>
+                    <div>Policy Review Resources: <strong>KSh {(liveIncomeSnapshot.monthlyPolicyReviewResourcesKsh || 0).toLocaleString()}/mo</strong></div>
+                    <div>Non-Earned Financial Flows: <strong>KSh {(liveIncomeSnapshot.monthlyNonEarnedFlowsKsh || 0).toLocaleString()}/mo</strong></div>
+                    <div>Fiduciary / Group Funds: <strong>KSh {(liveIncomeSnapshot.monthlyFiduciaryFlowsKsh || 0).toLocaleString()}/mo</strong></div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{fontSize:12,color:S.muted}}>No other financial flows reported.</div>
+              )}
+            </div>
+
+            {/* Review Section 4: Flags & Warnings */}
+            {(liveIncomeSnapshot.reviewFlags.length > 0 || liveIncomeSnapshot.duplicateRelationships.length > 0) && (
+              <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:14}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#92400E",marginBottom:6}}>
+                  Assessment Review Flags & Verification Safeguards
+                </div>
+                <div style={{display:"grid",gap:6}}>
+                  {liveIncomeSnapshot.duplicateRelationships.map((dup, idx)=>(
+                    <div key={`dup-${idx}`} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#92400E"}}>
+                      <Info size={13} style={{flexShrink:0}}/>
+                      <span><strong>[DUPLICATE_TRACKED]</strong> {dup.duplicateSourceLabel} is linked to {dup.parentSourceLabel}; excluded to prevent double-counting.</span>
+                    </div>
+                  ))}
+                  {liveIncomeSnapshot.reviewFlags.map((flag, idx)=>(
+                    <div key={`flag-${idx}`} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:flag.code==="DUPLICATE_SOURCE_NOT_COUNTED"?S.muted:flag.code==="TRANSFER_TREATMENT_REQUIRES_POLICY"?"#B45309":"#B91C1C"}}>
+                      <AlertTriangle size={13} style={{flexShrink:0}}/>
+                      <span><strong>[{flag.code}]</strong> {flag.message}</span>
                     </div>
                   ))}
                 </div>
-                <button onClick={()=>addListItem("vehicles",{type:"STANDARD_OLD"})} style={{marginTop:10,padding:"8px 14px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add another vehicle</button>
-              </>
+                {liveIncomeSnapshot.requiresManualReview && (
+                  <div style={{marginTop:8,padding:"6px 10px",background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:4,fontSize:11,color:"#B91C1C",fontWeight:600}}>
+                    ⚠️ Manual Review Required: One or more income sources require officer review before automated means-testing can proceed.
+                  </div>
+                )}
+              </div>
             )}
-            <div style={{fontSize:12, color: S.muted, marginTop: 10, lineHeight: 1.5}}>Each vehicle is represented separately in the prototype's asset assessment. No NTSA/TIMS query is made; an authenticated agency connection would require separate legal authority, consent and implementation.</div>
+
+            {/* Illustrative Calculation Preview */}
+            <div style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,padding:14}}>
+              <div style={{fontSize:11,fontWeight:700,color:S.muted,textTransform:"uppercase",letterSpacing:0.5}}>
+                Illustrative Calculation Preview
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginTop:6}}>
+                <div style={{fontSize:22,fontWeight:800,color:S.sage}}>
+                  {liveIncomeSnapshot.requiresManualReview
+                    ? "Manual review required"
+                    : (()=>{
+                        const earnedBase = liveIncomeSnapshot.annualisedEarnedNetKsh ?? ((d.monthlyNetEarnedIncome || 0) * 12);
+                        const est = calculateCurrentModelContribution(earnedBase);
+                        return `KSh ${est.monthly.toLocaleString()}/month`;
+                      })()}
+                </div>
+                <div style={{fontSize:11,color:S.muted}}>
+                  Indicative pre-adjustment base: KSh {(liveIncomeSnapshot.annualisedEarnedNetKsh ?? ((d.monthlyNetEarnedIncome || 0)*12)).toLocaleString()}
+                </div>
+              </div>
+              <div style={{fontSize:11,color:S.muted,marginTop:6,fontStyle:"italic",lineHeight:1.4}}>
+                Illustrative prototype calculation — not an official SHA assessment. Applies the statutory 2.75% rate and KSh 300 minimum floor.
+              </div>
+            </div>
+
+            {/* Demo Acknowledgment Checkbox */}
+            <div style={{padding: 14, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
+              <label style={{display:"flex", alignItems:"flex-start", gap:10, fontSize:13, fontWeight:500, color:S.text, cursor:"pointer"}}>
+                <input
+                  type="checkbox"
+                  checked={hasAcknowledgedDemo}
+                  onChange={(e)=>setHasAcknowledgedDemo(e.target.checked)}
+                  style={{marginTop:2, transform:"scale(1.1)", accentColor:S.blue}}
+                />
+                <span>
+                  I understand this is a browser-only demonstration. No KRA, NTSA, IPRS or MNO data is retrieved, and no information or appeal is submitted to SHA.
+                </span>
+              </label>
+            </div>
           </div>
-        )}
-      </div>}
-
-      {/* Step 4: Livelihood */}
-      {step===4&&<div style={{display:"grid",gap:16}}>
-        <div className="grid-2">
-          <FieldNumber label="Land owned (acres)" value={d.landAcreage} onChange={v=>upd("landAcreage",v)} min={0} max={100} step={0.5} note="Original asset/liquidity AGI v2.1 applies an illustrative county-based ASAL land adjustment. The current declared-income variant records land as contextual information only; no land registry or market valuation is queried."/>
-          <FieldNumber label="Livestock count (all types)" value={d.livestockCount} onChange={v=>upd("livestockCount",Math.max(0,Math.round(v)))} min={0} max={500} note="Livestock is contextual in the declared-income variant. Original AGI v2.1 applies an illustrative county-based valuation adjustment; neither model verifies livestock ownership or actual market value."/>
-        </div>
-        <div style={{padding:16,background:S.faint,borderRadius:8,border:`1px solid ${S.border}`}}>
-          <Toggle label="Do you own land in more than one county?" value={d.landParcels && d.landParcels.length>0} onChange={v=>{
-              if (v) setInputs(p=>({...p, landParcels:[{acres:p.landAcreage||0, county:p.county||"Nairobi"},{acres:0, county:"Nairobi"}]}));
-              else setInputs(p=>({...p, landParcels:[]}));
-              if(activeScenario!=="Custom") setActiveScenario("Custom");
-            }} hideSpacer/>
-          {d.landParcels && d.landParcels.length>0 && (
-            <div style={{marginTop:12,display:"grid",gap:10}}>
-              <div style={{fontSize:12,color:S.muted,lineHeight:1.5}}>Each parcel is valued using its own county's ASAL discount, instead of applying one county's rate to all your land.</div>
-              {d.landParcels.map((parcel,idx)=>(
-                <div key={idx} style={{display:"flex",gap:8,alignItems:"flex-end"}}>
-                  <div style={{width:110}}>
-                    <FieldNumber label="Acres" value={parcel.acres} onChange={v=>updListItem("landParcels",idx,"acres",v)} min={0} max={200} step={0.5}/>
-                  </div>
-                  <div style={{flex:1}}>
-                    <FieldSelect label="County" value={parcel.county||"Nairobi"} onChange={v=>updListItem("landParcels",idx,"county",v)} options={COUNTIES.map(c=>[c,c])}/>
-                  </div>
-                  <button onClick={()=>removeListItem("landParcels",idx)} style={{padding:"10px 12px",background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer"}}>Remove</button>
-                </div>
-              ))}
-              <button onClick={()=>addListItem("landParcels",{acres:0,county:"Nairobi"})} style={{padding:"8px 14px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer",justifySelf:"start"}}>+ Add another parcel</button>
-            </div>
-          )}
-        </div>
-        <div style={{padding:16,background:S.faint,borderRadius:8,border:`1px solid ${S.border}`}}>
-          <Toggle label="Do you own rental properties (as a landlord)?" value={d.rentalProperties && d.rentalProperties.length>0} onChange={v=>{
-              if (v) setInputs(p=>({...p, rentalProperties:[{monthlyRentCharged:0, isOccupied:true}]}));
-              else setInputs(p=>({...p, rentalProperties:[]}));
-              if(activeScenario!=="Custom") setActiveScenario("Custom");
-            }} hideSpacer/>
-          {d.rentalProperties && d.rentalProperties.length>0 && (
-            <div style={{marginTop:12,display:"grid",gap:10}}>
-              <div style={{fontSize:12,color:S.muted,lineHeight:1.5}}>Rental-property details are recorded for contextual review in the current declared-income variant. Original AGI v2.1 applies its own rental-income/asset treatment. No rental register or KRA record is queried or verified by this prototype.</div>
-              {d.rentalProperties.map((prop,idx)=>(
-                <div key={idx} style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0"}}>
-                    <input type="checkbox" checked={!!prop.isOccupied} onChange={e=>updListItem("rentalProperties",idx,"isOccupied",e.target.checked)} style={{width:16,height:16}}/>
-                    <span style={{fontSize:12,color:S.text,fontWeight:500}}>Occupied</span>
-                  </div>
-                  {prop.isOccupied && (
-                    <div style={{width:180}}>
-                      <FieldNumber label="Monthly rent charged (KSh)" value={prop.monthlyRentCharged} onChange={v=>updListItem("rentalProperties",idx,"monthlyRentCharged",v)} min={0} step={500}/>
-                    </div>
-                  )}
-                  <button onClick={()=>removeListItem("rentalProperties",idx)} style={{padding:"10px 12px",background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer"}}>Remove</button>
-                </div>
-              ))}
-              <button onClick={()=>addListItem("rentalProperties",{monthlyRentCharged:0,isOccupied:true})} style={{padding:"8px 14px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer",justifySelf:"start"}}>+ Add another rental property</button>
-            </div>
-          )}
-        </div>
-        <div style={{display:"grid",gap:10,background:S.surface,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
-          <Toggle label="Is the primary earner a Seasonal Worker?" tip="Uses low-season balances to measure true liquidity" value={d.isSeasonalWorker} onChange={v=>upd("isSeasonalWorker",v)} hideSpacer/>
-          {d.isSeasonalWorker && (
-            <FieldNumber label="Low Season Retained Balance (KSh)" value={d.lowSeasonRetainedBalance} onChange={v=>upd("lowSeasonRetainedBalance",v)} min={0} note="Adjusts for highly volatile seasonal income."/>
-          )}
-        </div>
-      </div>}
-
-      {/* Step 5: Triangulation Data */}
-      {step===5&&<div style={{display:"grid",gap:16}}>
-        <div style={{background:S.blueD,padding:14,borderRadius:8,border:`1px solid ${formError?S.terraBd:S.blueBd}`}}>
-          <FieldNumber
-            label="Declared Monthly Net Earned Income (KSh) — Required Base"
-            value={d.monthlyNetEarnedIncome}
-            onChange={v=>upd("monthlyNetEarnedIncome",v)}
-            min={0}
-            step={500}
-            allowNull={true}
-            error={formError}
-            note="Authoritative net earned income base. All assets, M-Pesa balances, and debts are evaluated contextually."
-          />
-        </div>
-
-        <div style={{fontSize:13,color:S.text,lineHeight:1.4,marginBottom:2,padding:10,background:S.blueD,borderRadius:8,border:`1px solid ${S.blueBd}`}}>
-          <strong>Potential future data-source checks:</strong> A production design could compare member-declared information with lawfully accessible KRA, NTSA and MNO/M-Pesa data. None of these services is connected here; all values below are manually entered demonstration inputs.
-        </div>
-        <div className="grid-3">
-          <FieldNumber label="Gross M-Pesa (Monthly)" value={d.grossMpesaMonthly} onChange={v=>upd("grossMpesaMonthly",v)} note="Illustrative comparator only: its hand-authored scoring adds weight to gross M-Pesa activity. This is not a reconstruction of SHA's production algorithm."/>
-          <FieldNumber label="Avg Retained Balance (12-Mo)" value={d.avgRetainedBalance} onChange={v=>upd("avgRetainedBalance",v)} note="The declared-income variant records this manually entered balance as contextual liquidity information; it does not retrieve account balances."/>
-          <FieldNumber label="Diaspora Remittances (Monthly KSh)" value={d.diasporaRemittances} onChange={v=>upd("diasporaRemittances",v)} note="Excluded from AGI to encourage inward flows."/>
-        </div>
-        
-        <div className="grid-2">
-          <FieldNumber label="M-Pesa Transaction Count" value={d.transactionCount} onChange={v=>upd("transactionCount",v)} min={0} note="Used to identify high-velocity subsistence workers."/>
-          <FieldNumber label="Number of Fuliza Defaults" value={d.fulizaDefaults} onChange={v=>upd("fulizaDefaults",v)} max={50} note="Count of defaults, NOT the Shilling amount owed."/>
-        </div>
-        
-        <div style={{display:"grid",gap:10,background:S.surface,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
-          <div style={{fontSize:12,fontWeight:600,color:S.muted,textTransform:"uppercase",letterSpacing:0.5}}>Triangulation Flags</div>
-          <FieldSelect label="KRA PIN Type" value={d.kraPinType} onChange={v=>upd("kraPinType",v)} options={[["NONE","None"],["PAYE","Active PAYE"],["BUSINESS","Active Business"]]}/>
-          <Toggle label="NTSA Car Registration?" value={d.isNtsaVerified} onChange={v=>upd("isNtsaVerified",v)} hideSpacer/>
-          <Toggle label="Simulate Hidden Wealth Discovered?" value={d.hiddenWealthDiscovered} onChange={v=>upd("hiddenWealthDiscovered",v)} hideSpacer/>
-          <Toggle label="Is Chama/Group Treasurer?" tip="Group fund liquidity discount (80% discount on retained balance: illustrative prototype policy assumption — requires SHA validation)" value={d.isGroupTreasurer} onChange={v=>upd("isGroupTreasurer",v)} hideSpacer/>
-          <Toggle label="Has active SACCO account?" value={d.hasSaccoAccount} onChange={v=>upd("hasSaccoAccount",v)} hideSpacer/>
-          {d.hasSaccoAccount && (
-            <FieldNumber label="Declared SACCO Share Capital (KSh)" value={d.saccoShareCapital} onChange={v=>upd("saccoShareCapital",v)} min={0} step={1000}/>
-          )}
-          <Toggle label="DPA Consent Withheld?" value={d.consentWithheld} onChange={v=>upd("consentWithheld",v)} hideSpacer/>
-        </div>
-      </div>}
-
-      {step===5 && (
-        <div style={{marginTop: 20, padding: 14, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
-          <label style={{display:"flex", alignItems:"center", gap:10, fontSize:13, fontWeight:500, color:S.text, cursor:"pointer"}}>
-            <input type="checkbox" checked={hasAcknowledgedDemo} onChange={(e)=>setHasAcknowledgedDemo(e.target.checked)} style={{transform:"scale(1.1)"}} />
-            I understand this is a browser-only demonstration. No KRA, NTSA, IPRS or MNO data is retrieved, and no information or appeal is submitted to SHA.
-          </label>
-        </div>
-      )}
+        );
+      })()}
 
       {formError && (
         <div role="alert" style={{marginTop: 16, padding: "10px 14px", background: S.terraD, border: `1px solid ${S.terraBd}`, borderRadius: 6, fontSize: 13, color: S.terra, display: "flex", gap: 8, alignItems: "center"}}>
@@ -532,14 +1354,34 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
       )}
 
       {/* Navigation */}
-      <div style={{display:"flex",justifyContent:"space-between",marginTop:28,paddingTop:20,borderTop:`1px solid ${S.border}`}}>
-        <button onClick={()=>go(step-1)} disabled={step===0} style={{padding:"10px 20px",borderRadius:6,border:`1px solid ${S.borderUp}`,background:S.surface,color:step===0?S.borderUp:S.text,fontSize:14,fontWeight:500,cursor:step===0?"default":"pointer",fontFamily:"inherit",transition:"all .2s",whiteSpace:"nowrap"}}>← Back</button>
-        {step<5
-          ?<button onClick={()=>go(step+1)} style={{padding:"10px 24px",borderRadius:6,border:"none",background:S.blue,color:"#FFF",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 4px rgba(2,132,199,0.2)",transition:"all .2s",whiteSpace:"nowrap"}}>Next →</button>
-          :<button onClick={onClassify} disabled={classifying || !hasAcknowledgedDemo} style={{padding:"10px 24px",borderRadius:6,border:"none",background:classifying||!hasAcknowledgedDemo?S.borderUp:S.sage,color:classifying||!hasAcknowledgedDemo?S.muted:"#FFF",fontSize:14,fontWeight:600,cursor:classifying||!hasAcknowledgedDemo?"default":"pointer",fontFamily:"inherit",boxShadow:classifying||!hasAcknowledgedDemo?"none":"0 2px 4px rgba(5,150,105,0.2)",transition:"all .2s",whiteSpace:"nowrap"}}>
-             {classifying?"Computing…":"Run Classification →"}
-           </button>
-        }
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:28,paddingTop:20,borderTop:`1px solid ${S.border}`,gap:12,flexWrap:"wrap"}}>
+        <button
+          type="button"
+          onClick={()=>go(step-1)}
+          disabled={step===0}
+          style={{padding:"10px 20px",borderRadius:6,border:`1px solid ${S.borderUp}`,background:S.surface,color:step===0?S.borderUp:S.text,fontSize:14,fontWeight:500,cursor:step===0?"default":"pointer",fontFamily:"inherit",transition:"all .2s",whiteSpace:"nowrap"}}
+        >
+          {step === 0 ? "← Back" : step === 1 ? "← Back to Household" : step === 2 ? "← Back to Earned Income" : "← Back to Other Money"}
+        </button>
+
+        {step < 3 ? (
+          <button
+            type="button"
+            onClick={()=>go(step+1)}
+            style={{padding:"10px 24px",borderRadius:6,border:"none",background:S.blue,color:"#FFF",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 4px rgba(2,132,199,0.2)",transition:"all .2s",whiteSpace:"nowrap"}}
+          >
+            {step === 0 ? "Continue to Earned Income →" : step === 1 ? "Continue to Other Money →" : "Continue to Review →"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onClassify}
+            disabled={classifying || !hasAcknowledgedDemo}
+            style={{padding:"10px 24px",borderRadius:6,border:"none",background:classifying||!hasAcknowledgedDemo?S.borderUp:S.sage,color:classifying||!hasAcknowledgedDemo?S.muted:"#FFF",fontSize:14,fontWeight:600,cursor:classifying||!hasAcknowledgedDemo?"default":"pointer",fontFamily:"inherit",boxShadow:classifying||!hasAcknowledgedDemo?"none":"0 2px 4px rgba(5,150,105,0.2)",transition:"all .2s",whiteSpace:"nowrap"}}
+          >
+            {classifying ? "Computing…" : "Run Classification →"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -552,7 +1394,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
 function ComparisonTab({results, adminParams}) {
   const {current:cur,next:nxt,d} = results;
   const diff = cur.monthly - nxt.monthly;
-  const overcharged = diff > 0;
+  const comparatorHigher = diff > 0;
   const chartData = [
     {name:"Illustrative Baseline",v:cur.monthly,fill:S.terra},
     {name:"Proposed AGI Rules Engine",v:nxt.monthly,fill:S.sage},
@@ -567,17 +1409,25 @@ function ComparisonTab({results, adminParams}) {
         ].map(box=>(
           <div key={box.label} style={{background:box.bgColor,border:`1px solid ${box.bdColor}`,borderRadius:12,padding:24,boxShadow:"0 1px 3px rgba(0,0,0,0.02)"}}>
             <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:box.color,marginBottom:16}}>{box.label}</div>
-            <div className="big-number-val" style={{fontFamily:"'Inter',sans-serif",fontSize:42,fontWeight:800,color:box.color,lineHeight:1,letterSpacing:"-1px"}}>
-              {box.indigent?"Gov't Subsidized":`KSh ${box.monthly.toLocaleString()}`}
+            <div className="big-number-val" style={{fontFamily:"'Inter',sans-serif",fontSize:box.indigent?22:42,fontWeight:800,color:box.color,lineHeight:1.15,letterSpacing:box.indigent?"0px":"-1px"}}>
+              {box.indigent
+                ? "KSh 300 minimum contribution rule"
+                : `KSh ${box.monthly.toLocaleString()}`
+              }
             </div>
             <div style={{fontSize:13,color:S.muted,marginTop:6,fontWeight:500}}>per month</div>
+            {box.indigent && (
+              <p style={{fontSize:12,color:S.muted,lineHeight:1.5,marginTop:8}}>
+                The minimum contribution result is generated by the prototype's illustrative rules. It is not an official SHA indigence determination or government subsidy approval.
+              </p>
+            )}
             <div style={{marginTop:20,paddingTop:16,borderTop:`1px solid ${box.bdColor}`}}>
               <div style={{fontSize:12,color:S.muted,fontWeight:500}}>Indicative pre-adjustment base</div>
               <div style={{fontSize:18,fontWeight:700,color:S.text,marginTop:2}}>KSh {box.income.toLocaleString()}</div>
             </div>
             <div style={{marginTop:16,display:"flex",gap:8,flexWrap:"wrap"}}>
               <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"4px 10px",borderRadius:4,background:S.surface,border:`1px solid ${box.bdColor}`,color:box.color}}>{box.tier} TIER</span>
-              {box.indigent&&<span style={{fontSize:10,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"4px 10px",borderRadius:4,background:S.sage,color:"#FFF"}}>PROPOSED INDIGENT TIER</span>}
+              {box.indigent&&<span style={{fontSize:10,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"4px 10px",borderRadius:4,background:S.sage,color:"#FFF"}}>PROTOTYPE MINIMUM CONTRIBUTION RULE</span>}
               {box.note&&<span style={{fontSize:10,fontWeight:600,letterSpacing:"0.5px",padding:"4px 10px",borderRadius:4,background:S.amber,color:"#FFF",display:"flex",alignItems:"center",gap:4}}><ShieldCheck size={12}/>{box.note}</span>}
             </div>
           </div>
@@ -586,22 +1436,22 @@ function ComparisonTab({results, adminParams}) {
 
       {/* Difference callout */}
       {Math.abs(diff)>0&&(
-        <div className="diff-callout" style={{background:overcharged?S.terraD:S.sageD,border:`1px solid ${overcharged?S.terraBd:S.sageBd}`}}>
+        <div className="diff-callout" style={{background:comparatorHigher?S.terraD:S.sageD,border:`1px solid ${comparatorHigher?S.terraBd:S.sageBd}`}}>
           <div>
-            <div style={{fontSize:13,fontWeight:700,textTransform:"uppercase",color:overcharged?S.terra:S.sage,marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
-              {overcharged?<AlertTriangle size={16}/>:<CheckCircle2 size={16}/>}
-              {overcharged?"Illustrative baseline is higher":"Proposed calculation is higher"}
+            <div style={{fontSize:13,fontWeight:700,textTransform:"uppercase",color:comparatorHigher?S.terra:S.sage,marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
+              {comparatorHigher?<AlertTriangle size={16}/>:<CheckCircle2 size={16}/>}
+              {comparatorHigher?"Illustrative comparator is higher.":"Proposed calculation is higher."}
             </div>
             <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>
               {diff === 0 
-                ? "Both prototype calculations currently produce the same indicative monthly amount. Agreement between simulations does not establish that either amount is correct."
-                : overcharged
-                  ? `The illustrative PMT-style baseline is KSh ${diff.toLocaleString()} higher per month than the proposed rules-engine result. This comparison does not establish that an actual SHA assessment is wrong.`
-                  : `The proposed rules-engine result is KSh ${Math.abs(diff).toLocaleString()} higher per month than the illustrative baseline. This is a model comparison, not a finding about an actual household assessment.`}
+                ? "Difference between the two prototype calculations: both produce the same indicative monthly amount. Agreement between simulations does not establish that either amount is correct."
+                : comparatorHigher
+                  ? `Difference between the two prototype calculations: the illustrative PMT-style baseline is KSh ${diff.toLocaleString()} higher per month than the proposed rules-engine result. This comparison does not establish that an actual SHA assessment is wrong.`
+                  : `Difference between the two prototype calculations: the proposed rules-engine result is KSh ${Math.abs(diff).toLocaleString()} higher per month than the illustrative baseline. This is a model comparison, not a finding about an actual household assessment.`}
             </div>
           </div>
-          <div className="diff-callout-amount" style={{color:overcharged?S.terra:S.sage}}>
-            {overcharged?"–":"+"}KSh {Math.abs(diff).toLocaleString()}
+          <div className="diff-callout-amount" style={{color:comparatorHigher?S.terra:S.sage}}>
+            {comparatorHigher?"–":"+"}KSh {Math.abs(diff).toLocaleString()}
           </div>
         </div>
       )}
@@ -732,7 +1582,7 @@ function USSDTab({results}) {
       {t:"SHA — My Account",y:true},{t:"—".repeat(22),y:false},
       {t:`County: ${results.d.county}`,y:false},
       {t:`Tier: ${nxt.tier}`,y:false},
-      {t:`Status: ${nxt.isIndigent?"GOV'T SUBSIDISED":"ACTIVE"}`,col:nxt.isIndigent?"#4ADE80":"#4ADE80"},
+      {t:`Status: ${nxt.isIndigent?"MINIMUM RULE (KSh 300)":"ACTIVE"}`,col:nxt.isIndigent?"#4ADE80":"#4ADE80"},
       {t:`Monthly: KSh ${nxt.monthly}`,col:"#4ADE80"},{t:"",y:false},
       {t:"1. Why this amount?",y:false},{t:"2. Pay now",y:false},{t:"0. Back",y:false},
     ]},
@@ -1097,8 +1947,8 @@ function FairnessTab({results}) {
       <div style={{padding:"20px",background:S.surfaceUp,border:`1px solid ${S.border}`,borderRadius:10}}>
         <div style={{fontSize:12,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:12}}>Assessment Impact</div>
         <div style={{display:"grid",gap:8,fontSize:13,color:S.text}}>
-          <div><strong>Monthly Fairness Gain:</strong> KSh {Math.max(0, Math.round(f.overchargeAmount))}</div>
-          <div><strong>Annual Fairness Gain:</strong> KSh {Math.max(0, Math.round(f.overchargeAmount * 12))}</div>
+          <div><strong>Monthly Model Difference:</strong> KSh {Math.round(Math.abs(f.overchargeAmount || 0))} ({f.overchargeAmount > 0 ? "Illustrative comparator is higher" : f.overchargeAmount < 0 ? "Proposed calculation is higher" : "Calculations match"})</div>
+          <div><strong>Annual Model Difference:</strong> KSh {Math.round(Math.abs((f.overchargeAmount || 0) * 12))}</div>
           <div><strong>Sector Context:</strong> {s.recommendation}</div>
         </div>
       </div>
@@ -1511,17 +2361,72 @@ export default function SHADemo() {
   };
 
   const classify=()=>{
-    const validation = validateAssessmentInputs(inputs);
+    let assessmentInputs = { ...inputs };
+    let incomeAssessment = null;
+
+    if (inputs.hasNoEarnedIncome) {
+      assessmentInputs.monthlyNetEarnedIncome = 0;
+    }
+
+    // New structured income path for custom assessments.
+    if (
+      Array.isArray(inputs.incomeSources) &&
+      inputs.incomeSources.length > 0
+    ) {
+      incomeAssessment = calculateHouseholdIncome(
+        inputs.incomeSources
+      );
+
+      if (!incomeAssessment.isValid) {
+        setFormError(incomeAssessment.errors[0]);
+        setStep(3);
+        return;
+      }
+
+      if (!incomeAssessment.canPopulatePrototypeEarnedIncomeBase) {
+        const firstFlag = incomeAssessment.reviewFlags[0];
+
+        setFormError(
+          firstFlag?.message ||
+          "This income profile requires manual review."
+        );
+
+        setStep(3);
+        return;
+      }
+
+      assessmentInputs = {
+        ...assessmentInputs,
+
+        monthlyNetEarnedIncome:
+          incomeAssessment.monthlyEarnedNetKsh,
+
+        incomeAssessmentSnapshot: incomeAssessment,
+      };
+    } else if (inputs.hasNoEarnedIncome) {
+      assessmentInputs = {
+        ...assessmentInputs,
+        monthlyNetEarnedIncome: 0,
+        incomeAssessmentSnapshot: calculateHouseholdIncome([]),
+      };
+    }
+
+    // Preserve compatibility with existing synthetic presets.
+    const validation = validateAssessmentInputs(
+      assessmentInputs
+    );
+
     if (!validation.isValid) {
       setFormError(validation.errors[0]);
-      setStep(5);
+      setStep(3);
       return;
     }
+
     setFormError(null);
     setDemoPaymentEntries([]);
     setClassifying(true);
     setTimeout(()=>{
-      const lassoAnnual = calculateCurrentModel(inputs);
+      const lassoAnnual = calculateCurrentModel(assessmentInputs);
       // FIX (audit v2): was duplicated inline here (with a `< 131000` vs the
       // proposed model's `<= 131000`, an off-by-one). Now calls the single
       // shared function in AlgorithmSimulation.js so there's one source of
@@ -1532,7 +2437,7 @@ export default function SHADemo() {
         tier: curRaw.isIndigent ? "LOW" : lassoAnnual <= 450000 ? "MIDDLE" : "HIGH" // display label kept as-is; BANDS.tier used internally
       };
       
-      const modelVersions = calculateProposedModelVersions(inputs, adminParams);
+      const modelVersions = calculateProposedModelVersions(assessmentInputs, adminParams);
       const nxtRaw = modelVersions.declaredIncome.result;
       const nxt = {
         ...nxtRaw,
@@ -1542,23 +2447,23 @@ export default function SHADemo() {
       };
       
       // Calculate fraud risk with this assessment
-      const fraudRisk = calculateFraudRisk(inputs, {
-        ntsaCarExists: inputs.assets.includes('CAR') || inputs.isNtsaVerified || inputs.hiddenWealthDiscovered,
-        vehicleValue: inputs.hiddenWealthDiscovered ? 1500000 : undefined,
+      const fraudRisk = calculateFraudRisk(assessmentInputs, {
+        ntsaCarExists: assessmentInputs.assets.includes('CAR') || assessmentInputs.isNtsaVerified || assessmentInputs.hiddenWealthDiscovered,
+        vehicleValue: assessmentInputs.hiddenWealthDiscovered ? 1500000 : undefined,
         kraIncomeLevel: undefined,
       });
       
       // Calculate sector analysis
-      const sectorAnalysis = analyzeSector(inputs);
+      const sectorAnalysis = analyzeSector(assessmentInputs);
       
       // Calculate fairness metrics
       const fairnessMetrics = calculateFairnessMetrics(cur, nxt, fraudRisk);
       
       // Create and log audit record (P-77/P-31)
-      const auditRecord = createAuditRecord(inputs, cur, nxt, fraudRisk, "SYSTEM", modelVersions, adminParams);
+      const auditRecord = createAuditRecord(assessmentInputs, cur, nxt, fraudRisk, "SYSTEM", modelVersions, adminParams);
       logger.audit('assessment_run', { auditRecord });
       
-      setResults({current:cur, next:nxt, modelVersions, adminParamsSnapshot: JSON.parse(JSON.stringify(adminParams)), d: JSON.parse(JSON.stringify(inputs)), fraudRisk:fraudRisk, sectorAnalysis:sectorAnalysis, fairnessMetrics:fairnessMetrics, auditRecord});
+      setResults({current:cur, next:nxt, modelVersions, adminParamsSnapshot: JSON.parse(JSON.stringify(adminParams)), d: JSON.parse(JSON.stringify(assessmentInputs)), fraudRisk:fraudRisk, sectorAnalysis:sectorAnalysis, fairnessMetrics:fairnessMetrics, auditRecord});
       setClassifying(false);
       setActiveTab("comparison");
     },800);

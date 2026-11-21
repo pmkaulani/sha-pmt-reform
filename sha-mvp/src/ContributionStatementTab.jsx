@@ -247,6 +247,43 @@ export default function ContributionStatementTab({ results, demoPaymentEntries =
           <div style={{ fontSize: 11, color: "#64748B", marginTop: 4, fontStyle: "italic" }}>
             * Calculation integrity principle: Capital assets (vehicles, land, livestock), transaction velocity, and debt are treated as contextual verification signals and are NOT added to the earned income base.
           </div>
+          {d.incomeAssessmentSnapshot && Array.isArray(d.incomeAssessmentSnapshot.lines) && d.incomeAssessmentSnapshot.lines.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 6 }}>
+                Itemised Reported Income & Financial Flows ({d.incomeAssessmentSnapshot.lines.length} sources)
+              </div>
+              <table className="table-custom">
+                <thead>
+                  <tr>
+                    <th>Source Type</th>
+                    <th>Classification</th>
+                    <th>Observed Period</th>
+                    <th style={{ textAlign: "right" }}>Reported Gross (KSh)</th>
+                    <th style={{ textAlign: "right" }}>Operating Costs (KSh)</th>
+                    <th style={{ textAlign: "right" }}>Reported Net (KSh)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {d.incomeAssessmentSnapshot.lines.map((ln, lIdx) => (
+                    <tr key={lIdx}>
+                      <td style={{ fontWeight: 600 }}>{ln.label}</td>
+                      <td>
+                        <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: ln.bucket === "EARNED" ? "#ECFDF5" : "#FEF3C7", color: ln.bucket === "EARNED" ? "#065F46" : "#92400E" }}>
+                          {ln.bucket === "EARNED" ? (ln.countedInEarnedIncome ? "Counted in Earned Base" : "Excluded (Duplicate)") : ln.bucket}
+                        </span>
+                      </td>
+                      <td style={{ color: "#64748B", fontSize: 12 }}>{ln.observationMonths} months {ln.isSeasonal ? "(Seasonal)" : ""}</td>
+                      <td style={{ textAlign: "right" }}>{money(ln.totalReceivedKsh)}</td>
+                      <td style={{ textAlign: "right", color: ln.totalReportedCostsKsh > 0 ? "#DC2626" : "#64748B" }}>
+                        {ln.totalReportedCostsKsh > 0 ? `- ${money(ln.totalReportedCostsKsh)}` : "—"}
+                      </td>
+                      <td style={{ textAlign: "right", fontWeight: 700 }}>{money(ln.reportedNetKsh)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Section 2: Illustrative Household Adjustments */}
@@ -343,7 +380,7 @@ export default function ContributionStatementTab({ results, demoPaymentEntries =
           </div>
           <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.6, background: "#F1F5F9", padding: 12, borderRadius: 6 }}>
             <div>• <strong>Verification Routing:</strong> {next.requiresChpVerification ? "Flagged for manual Community Health Promoter (CHP) field review." : "No manual review trigger fired by prototype heuristics."}</div>
-            <div>• <strong>Confidence Tier (Model Variance Estimate):</strong> {next.confidenceTier} (Estimated variance band: KSh {money(next.agiRangeLow)} - KSh {money(next.agiRangeHigh)})</div>
+            <div>• <strong>Evidence Status:</strong> Member-reported (The prototype has no live agency verification or calibrated statistical confidence interval).</div>
             <div>• <strong>Household Earner Context:</strong> {d.isSeasonalWorker ? "Seasonal worker baseline applied to avoid peak harvest extrapolation." : "Non-seasonal declaration."}</div>
           </div>
         </div>

@@ -55,7 +55,12 @@ function ModelPanel({ model, original }) {
         <Stat label="Monthly contribution" value={money(result.monthlyContribution)} accent={original ? COLORS.green : COLORS.blue} />
         <Stat label="Adjusted gross income" value={money(result.adjustedGrossIncome)} />
         <Stat label={original ? "Constructed annual base" : "Annualised declared earnings"} value={money(result.estimatedAnnualIncome)} />
-        <Stat label="Classification" value={result.isIndigent ? "Low-income band" : "Standard / upper"} note={result.confidenceTier ? `Confidence indicator: ${result.confidenceTier}` : "Illustrative classification"} />
+        <Stat label="Classification" value={result.isIndigent ? "Low-income band" : "Standard / upper"} note="Illustrative classification" />
+        <Stat
+          label="Evidence status"
+          value="User-reported"
+          note="The prototype has no live agency verification or calibrated statistical confidence interval."
+        />
       </div>
 
       <div style={{ marginTop: 16 }}>

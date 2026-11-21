@@ -603,13 +603,28 @@ export function calculateProposedModel(d, adminParams = {}) {
     factors.push({ name: 'Consent Withheld — Manual Review', impact: 'High', direction: 'neutral', description: 'Citizen exercised DPA §32 right to withhold data consent. Routed to CHP manual verification. No algorithmic penalty applied.', isFlaw: false });
   }
 
-  const verifiedSources = [
-    (d.kraPinType && d.kraPinType !== 'NONE'),
-    d.isNtsaVerified,
-    (!isOffline && !isDigitalGhost)
-  ].filter(Boolean).length;
-  const confidenceTier = verifiedSources >= 2 ? "HIGH" : verifiedSources === 1 ? "MEDIUM" : "LOW";
-  const confidenceBand = { HIGH: 0.10, MEDIUM: 0.20, LOW: 0.35 }[confidenceTier];
+  const evidenceCoverage = {
+    householdIncome:
+      "MEMBER_REPORTED",
+
+    liquidityInformation:
+      isOffline
+        ? "NOT_AVAILABLE"
+        : "MEMBER_REPORTED_NOT_VERIFIED",
+
+    kraInformation:
+      d.kraPinType && d.kraPinType !== "NONE"
+        ? "MEMBER_REPORTED_NOT_VERIFIED"
+        : "NOT_PROVIDED",
+
+    vehicleInformation:
+      d.isNtsaVerified
+        ? "MEMBER_REPORTED_NOT_VERIFIED"
+        : "NOT_PROVIDED",
+
+    externalVerification:
+      "NOT_CONNECTED",
+  };
 
   return {
     estimatedAnnualIncome: annualBaseTotal,
@@ -624,9 +639,11 @@ export function calculateProposedModel(d, adminParams = {}) {
     modelName: 'SHA PMT v2.1 — proposed AGI rules engine',
     deductions: postBaseDeductions,
     calculationBreakdown: calculationBreakdown,
-    confidenceTier: confidenceTier,
-    agiRangeLow: Math.max(0, Math.round(adjustedGrossIncome * (1 - confidenceBand))),
-    agiRangeHigh: Math.round(adjustedGrossIncome * (1 + confidenceBand))
+    evidenceCoverage,
+    // No calibrated statistical confidence interval is available.
+    confidenceTier: null,
+    agiRangeLow: null,
+    agiRangeHigh: null
   };
 }
 
@@ -1887,8 +1904,11 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
     // Full calculation inputs (excluding direct phone identifier) and the
     // administrative parameters used by both engines make this result reproducible.
     assessmentInputSnapshot: reproducibleInputSnapshot,
+    incomeAssessmentSnapshot: inputs.incomeAssessmentSnapshot ? JSON.parse(JSON.stringify(inputs.incomeAssessmentSnapshot)) : null,
     modelParametersSnapshot: JSON.parse(JSON.stringify(adminParams || {})),
     inputs: {
+      monthlyNetEarnedIncome: inputs.monthlyNetEarnedIncome,
+      incomeSources: Array.isArray(inputs.incomeSources) ? JSON.parse(JSON.stringify(inputs.incomeSources)) : [],
       county: inputs.county,
       householdSize: inputs.householdSize,
       headAge: inputs.headAge,

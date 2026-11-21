@@ -599,13 +599,28 @@ export function calculateProposedModel(d, adminParams = {}) {
     factors.push({ name: 'Consent Withheld — Manual Review', impact: 'High', direction: 'neutral', description: 'Citizen exercised DPA §32 right to withhold data consent. Routed to CHP manual verification. No algorithmic penalty applied.', isFlaw: false });
   }
 
-  const verifiedSources = [
-    (d.kraPinType && d.kraPinType !== 'NONE'),
-    d.isNtsaVerified,
-    (!isOffline && !isDigitalGhost)
-  ].filter(Boolean).length;
-  const confidenceTier = verifiedSources >= 2 ? "HIGH" : verifiedSources === 1 ? "MEDIUM" : "LOW";
-  const confidenceBand = { HIGH: 0.10, MEDIUM: 0.20, LOW: 0.35 }[confidenceTier];
+  const evidenceCoverage = {
+    householdIncome:
+      "MEMBER_REPORTED",
+
+    liquidityInformation:
+      isOffline
+        ? "NOT_AVAILABLE"
+        : "MEMBER_REPORTED_NOT_VERIFIED",
+
+    kraInformation:
+      d.kraPinType && d.kraPinType !== "NONE"
+        ? "MEMBER_REPORTED_NOT_VERIFIED"
+        : "NOT_PROVIDED",
+
+    vehicleInformation:
+      d.isNtsaVerified
+        ? "MEMBER_REPORTED_NOT_VERIFIED"
+        : "NOT_PROVIDED",
+
+    externalVerification:
+      "NOT_CONNECTED",
+  };
 
   return {
     estimatedAnnualIncome: baseIncome,
@@ -628,9 +643,11 @@ export function calculateProposedModel(d, adminParams = {}) {
     // If you want a per-case trust signal, testCurrentModelDisparityByCounty's
     // most recent population-level `passed` result is the honest source —
     // wire that through instead of a per-case flag.
-    confidenceTier: confidenceTier,
-    agiRangeLow: Math.max(0, Math.round(agi * (1 - confidenceBand))),
-    agiRangeHigh: Math.round(agi * (1 + confidenceBand))
+    evidenceCoverage,
+    // No calibrated statistical confidence interval is available.
+    confidenceTier: null,
+    agiRangeLow: null,
+    agiRangeHigh: null
   };
 }
 
