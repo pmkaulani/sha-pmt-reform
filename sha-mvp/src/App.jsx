@@ -1481,7 +1481,32 @@ export default function SHADemo() {
   };
 
   const handleRemoveSyntheticDemo = () => {
+    const syntheticReferences = challengeDrafts
+      .filter(d => d.isSyntheticDemoCase || d.draftReference === "LOCAL-DRAFT-20261121-MEETING-SAMPLE")
+      .map(d => d.draftReference);
+
     setChallengeDrafts(prev => removeSyntheticMeetingDemonstration(prev));
+    setReviewRecords(prev => {
+      const next = { ...prev };
+      syntheticReferences.forEach(ref => { delete next[ref]; });
+      return next;
+    });
+  };
+
+  const handleEvidenceAnnotation = (draftReference, attachmentName, statusKey) => {
+    setReviewRecords(prev => {
+      const existing = prev[draftReference] || createInitialReviewRecord(draftReference);
+      return {
+        ...prev,
+        [draftReference]: {
+          ...existing,
+          evidenceAnnotations: {
+            ...existing.evidenceAnnotations,
+            [attachmentName]: statusKey
+          }
+        }
+      };
+    });
   };
 
   const classify=()=>{
@@ -1529,10 +1554,10 @@ export default function SHADemo() {
       const fairnessMetrics = calculateFairnessMetrics(cur, nxt, fraudRisk);
       
       // Create and log audit record (P-77/P-31)
-      const auditRecord = createAuditRecord(inputs, cur, nxt, fraudRisk, "SYSTEM", modelVersions);
+      const auditRecord = createAuditRecord(inputs, cur, nxt, fraudRisk, "SYSTEM", modelVersions, adminParams);
       logger.audit('assessment_run', { auditRecord });
       
-      setResults({current:cur, next:nxt, modelVersions, d:inputs, fraudRisk:fraudRisk, sectorAnalysis:sectorAnalysis, fairnessMetrics:fairnessMetrics, auditRecord});
+      setResults({current:cur, next:nxt, modelVersions, adminParamsSnapshot: JSON.parse(JSON.stringify(adminParams)), d: JSON.parse(JSON.stringify(inputs)), fraudRisk:fraudRisk, sectorAnalysis:sectorAnalysis, fairnessMetrics:fairnessMetrics, auditRecord});
       setClassifying(false);
       setActiveTab("comparison");
     },800);
@@ -1823,9 +1848,9 @@ export default function SHADemo() {
                   challengeDrafts={challengeDrafts}
                   reviewRecords={reviewRecords}
                   onReviewAction={handleReviewAction}
+                  onEvidenceAnnotation={handleEvidenceAnnotation}
                   onLoadSyntheticDemo={handleLoadSyntheticDemo}
                   onRemoveSyntheticDemo={handleRemoveSyntheticDemo}
-                  activeHousehold={inputs}
                 />}
                 {activeTab==="fairness"&&<FairnessTab results={results}/>}
                 {activeTab==="fraud"&&<FraudRiskTab results={results}/>}
