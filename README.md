@@ -39,7 +39,7 @@ The model's inequities were documented before rollout:
 
 ## The Solution — AGI Model (v2.1)
 
-The AGI model applies **7 evidence-based deductions** to the assessed consumption base prior to calculating the statutory 2.75% contribution rate, adjusting the assessment base rather than the rate:
+The AGI model proposes **7 research-informed deduction rules** to the assessed consumption base prior to calculating the statutory 2.75% contribution rate, adjusting the assessment base rather than the rate:
 
 | Deduction | Description |
 |---|---|
@@ -71,7 +71,7 @@ The existing financial comparison and member workflow continue to use the declar
 - **Demographic baseline:** Kenya has approximately 16.7 million eligible informal-sector workers (drawn from an estimated 12–14 million total households, with 12.2 million recorded in the 2019 KNBS Census).
 - **Current revenue imbalance:** Formal-sector PAYE employees (~3.3 million contributors) contribute roughly KSh 73 billion annually against SHA's KSh 102 billion target, while informal compliance has lagged severely (early administrative data reported fewer than 200,000 paying informal members contributing ~KSh 780 million).
 - **Beyond nominal premium tiers:** In May 2026, SHA stated that 92% of assessed informal households are assigned premiums of KSh 850 or less (45% between KSh 300–500 and 47% between KSh 501–850). However, compliance is dictated not merely by the sticker price, but by citizen trust in the fairness of the assessment and how contributions are structured.
-- **AGI revenue projection:** Modeled at a realistic 60% compliance benchmark among informal workers (drawing on regional community-based health financing experiences, such as Rwanda's CBHI tiering and community mobilization), an average monthly assessment of **KSh 520** yields an estimated **~KSh 58 billion annually** in predictable informal contributions, providing the revenue stability required to support universal health coverage.
+- **AGI revenue projection (Uncalibrated Illustrative Scenario):** If modeled under an illustrative benchmark of 60% informal-worker compliance (drawing on regional community-based health financing hypotheses), an average monthly assessment of **KSh 520** would mathematically yield an indicative **~KSh 58 billion annually**. *Essential Caveat:* This figure is an unverified, illustrative simulation and NOT an actuarial revenue projection or an empirically validated yield. Actual collections depend on empirical income distributions, collection costs, digital payment friction, and formal SHA administrative policy.
 
 ---
 
@@ -267,7 +267,7 @@ The baseline comparator in `src/lib/AlgorithmSimulation.js` is a simplified, ill
 
 ### 6. Official SHA Baseline Parameters and KNBS Microdata Are Required
 Comparative empirical evaluation of means-testing reform is strictly **BLOCKED** until two external dependencies are formally provided:
-1. **Official SHA Model Disclosure:** Full regression coefficients, dummy encodings, regional intercepts, and statutory lookup tables under Regulation 21 and the Fifth Schedule.
+1. **Official SHA Model Disclosure:** Full regression coefficients, dummy encodings, regional intercepts, and statutory lookup tables under Section 27 and Regulations 17 and 21. *(Note: The Fifth Schedule of the Regulations is titled 'Zones' under Regulation 62(3) and does NOT contain the PMT regression formula; official operational parameters remain undisclosed by SHA).*
 2. **Approved Survey Microdata:** Lawfully accessible, anonymised national household budget microdata (e.g. KNBS KIHBS) with verified sampling weights, cluster identifiers, and strata.
 
 ### 7. What Can and Cannot Be Concluded from Synthetic Demonstrations

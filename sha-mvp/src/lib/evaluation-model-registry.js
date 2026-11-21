@@ -41,10 +41,9 @@ export const REGISTERED_EVALUATION_MODELS = Object.freeze({
         reason: "Construct mismatch: AGI base includes liquidity and asset depreciation adjustments not directly comparable to consumption expenditure without an empirical conversion adapter."
       },
       INDEPENDENT_POVERTY_STATUS: {
-        isEligible: true,
-        status: MODEL_EVALUATION_STATUSES.ELIGIBLE_FOR_DEMO,
-        adapterFunction: "adaptAgiToPovertyClassification",
-        reason: "Can evaluate whether model's minimum contribution floor (KSh 300) corresponds to statistical poverty status."
+        isEligible: false,
+        status: MODEL_EVALUATION_STATUSES.NOT_EVALUABLE_INCOMPATIBLE,
+        reason: "Construct mismatch: Minimum contribution floor (KSh 300/mo) is an administrative statutory rule under Regulation 17(2), not an independent statistical poverty classification threshold."
       }
     }
   },
@@ -71,10 +70,9 @@ export const REGISTERED_EVALUATION_MODELS = Object.freeze({
         reason: "Construct mismatch: Declared net earned income does not measure total household consumption (e.g. food, gifts, public transfers)."
       },
       INDEPENDENT_POVERTY_STATUS: {
-        isEligible: true,
-        status: MODEL_EVALUATION_STATUSES.ELIGIBLE_FOR_DEMO,
-        adapterFunction: "adaptDeclaredIncomeToPovertyClassification",
-        reason: "Can evaluate classification error when low earned income is used as a proxy for poverty."
+        isEligible: false,
+        status: MODEL_EVALUATION_STATUSES.NOT_EVALUABLE_INCOMPATIBLE,
+        reason: "Construct mismatch: Declared net earned income measures active livelihood earnings, not total household welfare or consumption poverty."
       }
     }
   },
@@ -112,22 +110,22 @@ export const REGISTERED_EVALUATION_MODELS = Object.freeze({
   OFFICIAL_SHA_REG21_BASELINE: {
     id: "OFFICIAL_SHA_REG21_BASELINE",
     version: "UNKNOWN_PENDING_DISCLOSURE",
-    name: "Official SHA Regulation 21 / Fifth Schedule Production Baseline",
-    shortName: "Official SHA Deployed Baseline",
+    name: "Official SHA Means-Testing Instrument — Implementation Details Pending Verification",
+    shortName: "Official SHA Deployed Baseline (Pending Verification)",
     calculationType: "DEPLOYED_MEANS_TESTING_REGRESSION",
     sourceFile: "None (Proprietary SHA Government System)",
-    sourceProvenance: "Social Health Insurance Act (General) Regulations, 2024, Regulation 21 & Fifth Schedule",
+    sourceProvenance: "Social Health Insurance Act, 2023 (Section 27); Social Health Insurance (General) Regulations, 2024 (Regulations 17 and 21)",
     primaryOutputUnit: "KSh/year (Official Evaluated Income)",
     contributionOutputUnit: "KSh/month (Gazetted Contribution)",
     outputMeaning: "Official government means-testing scores and statutory premium determinations.",
-    policyAssumptions: "Statutory parameters determined by Ministry of Health and SHA.",
-    knownLimitations: "SHA has not disclosed the full regression model, variable definitions, weights, preprocessing transformations, or calibration tables.",
+    policyAssumptions: "Statutory parameters determined by Ministry of Health and SHA under Section 27 and Regulations 17 and 21.",
+    knownLimitations: "SHA has not officially disclosed the production regression model, variable definitions, weights, preprocessing transformations, or calibration tables. Note: The Fifth Schedule of the Regulations is titled 'Zones' under Regulation 62(3) and does NOT contain the PMT formula.",
     researchStatus: "OFFICIAL_GOVERNMENT_SYSTEM",
     isOfficialShaBaseline: true,
     status: MODEL_EVALUATION_STATUSES.NOT_CONFIGURED_MISSING_OFFICIAL_PARAMS,
     statusReason: "Official SHA implementation and parameters required before comparative evaluation can be executed.",
     missingDependencies: [
-      "Official 43-variable regression specifications and coefficients",
+      "Official 43-variable regression specifications and coefficients (provisional external disclosures)",
       "Preprocessing and dummy-encoding algorithms for categorical responses",
       "Regional intercept adjustments and calibration offsets",
       "Statutory lookup tables mapping evaluated scores to monthly premium obligations"

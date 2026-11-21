@@ -18,6 +18,7 @@ export const PROTOCOL_STATUSES = Object.freeze({
   DRAFT: "DRAFT",
   REGISTERED: "REGISTERED",
   FROZEN: "FROZEN",
+  DEMO_PROTOCOL_TEMPLATE: "DEMO_PROTOCOL_TEMPLATE",
   SUPERSEDED: "SUPERSEDED",
   REVOKED: "REVOKED"
 });
@@ -76,6 +77,9 @@ export function validateEvaluationProtocol({
   }
   if (!protocol?.primaryMetric) {
     blockers.push("Primary evaluation metric is not specified.");
+  }
+  if (protocol?.approvalStatus === PROTOCOL_STATUSES.DEMO_PROTOCOL_TEMPLATE) {
+    warnings.push("Demo protocol template: must be finalized and frozen with approvalStatus === 'FROZEN' before conducting formal empirical evaluation.");
   }
 
   // 4. Candidate model eligibility
@@ -248,24 +252,24 @@ export const STANDARD_REGISTERED_PROTOCOLS = Object.freeze({
   "PROTO-KNBS-KIHBS-PREDICTIVE-V1": createEvaluationProtocol({
     protocolId: "PROTO-KNBS-KIHBS-PREDICTIVE-V1",
     version: "1.0",
-    title: "Predictive Accuracy of Means-Testing Estimators vs KNBS KIHBS Consumption",
-    author: "Independent Health Policy Research Working Group",
+    title: "Predictive Accuracy of Means-Testing Estimators vs KNBS KIHBS Consumption (Demo Template)",
+    author: "Independent Research Working Group (Illustrative Template)",
     researchQuestion: "Does the proposed means-testing proxy specification predict total annual household consumption expenditure with lower absolute error and variance than the baseline model?",
     comparisonMode: EVALUATION_MODES.PREDICTIVE,
     datasetId: "KNBS_KIHBS_SPEC",
     referenceOutcomeId: "INDEPENDENT_ANNUAL_CONSUMPTION",
     candidateModelIds: ["official-sha-reg21-pmt", "illustrative-pmt-comparator"],
-    officialShaBaselineVersion: "SHA-REG21-MTI-2024-OFFICIAL",
+    officialShaBaselineVersion: "SHA-REG21-MTI-PROVISIONAL",
     primaryMetric: "MAE",
     secondaryMetrics: ["RMSE", "MEAN_SIGNED_ERROR", "RESIDUAL_IQR"],
-    approvalStatus: PROTOCOL_STATUSES.REGISTERED,
+    approvalStatus: PROTOCOL_STATUSES.DEMO_PROTOCOL_TEMPLATE,
     preRegisteredAt: "2026-11-20T00:00:00Z"
   }),
   "PROTO-SHA-AFFORDABILITY-V1": createEvaluationProtocol({
     protocolId: "PROTO-SHA-AFFORDABILITY-V1",
     version: "1.0",
-    title: "Household Contribution Burden & Catastrophic Payment Distribution",
-    author: "Health Financing & Equity Assessment Team",
+    title: "Household Contribution Burden & Catastrophic Payment Distribution (Demo Template)",
+    author: "Health Financing & Equity Assessment Team (Illustrative Template)",
     researchQuestion: "What proportion of independently measured disposable household income does each candidate contribution schedule require across resource deciles?",
     comparisonMode: EVALUATION_MODES.AFFORDABILITY,
     datasetId: "KNBS_KIHBS_SPEC",
@@ -273,7 +277,7 @@ export const STANDARD_REGISTERED_PROTOCOLS = Object.freeze({
     candidateModelIds: ["asset-liquidity-agi-v2.1", "declared-income-agi-v1", "official-sha-reg21-pmt"],
     primaryMetric: "MEDIAN_BURDEN_PERCENT",
     secondaryMetrics: ["PERCENT_EXCEEDING_5PCT", "PERCENT_EXCEEDING_10PCT", "CATASTROPHIC_BURDEN_15PCT"],
-    approvalStatus: PROTOCOL_STATUSES.REGISTERED,
+    approvalStatus: PROTOCOL_STATUSES.DEMO_PROTOCOL_TEMPLATE,
     preRegisteredAt: "2026-11-20T00:00:00Z"
   })
 });

@@ -33,7 +33,7 @@ Instead, we propose a **controlled, 5-stage collaborative pilot pathway**:
 ### What We Request from SHA Leadership
 The actual request to the SHA Board and Executive is focused, constructive, and low-risk:
 1. **Permission for Technical Dialogue:** Authorize a technical review between SHA's ICT/Actuarial teams and the reform research working group.
-2. **Parameter Disclosure for Baseline Reconstruction:** Release the official Regulation 21 regression weights, regional constants, and Fifth Schedule tariff cutoff bands so the baseline can be independently tested.
+2. **Parameter Disclosure for Baseline Reconstruction:** Disclose the official regression weights, regional constants, preprocessing transforms, and tariff cutoff bands deployed under Regulation 21 so the baseline can be independently tested. *(Note: The Fifth Schedule of the Regulations is titled 'Zones' under Regulation 62(3) and does not contain the PMT formula; operational parameters remain undisclosed by SHA).*
 3. **Lawful Data Sharing Protocol:** Establish a Data Sharing Agreement (DSA) under Kenya DPA Section 30 (Lawful Processing) and Section 53 (Research Provisions) in accordance with the ODPC 2025 Research Guidance Notes for a de-identified historical benchmark sample. Sample size and sampling frames must be determined via rigorous statistical power calculations rather than arbitrary estimates.
 4. **Designation of Institutional Counterparts:** Appoint a Policy Owner, Technical System Owner, and DPO representative to oversee pilot governance.
 5. **Consideration of a Supervised Shadow Pilot:** Authorize Stage 3 shadow testing to observe empirical distribution stability without touching live member contributions.

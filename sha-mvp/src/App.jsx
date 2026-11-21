@@ -22,6 +22,7 @@ import {
 } from "./lib/review-workflow.js";
 import {
   calculateHouseholdIncome,
+  createZeroEarnedIncomeAssessment,
   INCOME_SOURCE_RULES,
   OPERATING_EXPENSE_CATEGORIES,
   calculateMonthsFromDates,
@@ -1258,7 +1259,27 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
       {/* ───────────────────────────────────────────────────────────────────── */}
       {step===3&&(()=>{
         const effectiveSources = resolveEffectiveIncomeSources(d.incomeSources || [], d.hasNoEarnedIncome);
-        const liveIncomeSnapshot = calculateHouseholdIncome(effectiveSources);
+        const hasStructuredSources = Array.isArray(effectiveSources) && effectiveSources.length > 0;
+        const liveIncomeSnapshot = hasStructuredSources
+          ? calculateHouseholdIncome(effectiveSources)
+          : (d.hasNoEarnedIncome
+              ? createZeroEarnedIncomeAssessment()
+              : {
+                  isValid: true,
+                  calculationStatus: "CALCULATED_STANDARD",
+                  canPopulatePrototypeEarnedIncomeBase: true,
+                  monthlyEarnedNetKsh: Number(d.monthlyNetEarnedIncome || 0),
+                  annualisedEarnedNetKsh: Number(d.monthlyNetEarnedIncome || 0) * 12,
+                  lines: [],
+                  reviewFlags: [],
+                  duplicateRelationships: [],
+                  monthlyPolicyReviewResourcesKsh: 0,
+                  monthlyNonEarnedFlowsKsh: 0,
+                  monthlyFiduciaryFlowsKsh: 0,
+                  requiresManualReview: false,
+                  requiresPolicyDecision: false,
+                  calculationVersion: "direct-entry-baseline-v1.1"
+                });
         const reviewData = buildAssessmentReview({
           inputs: d,
           incomeAssessmentSnapshot: liveIncomeSnapshot,
@@ -1342,7 +1363,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                 </div>
               ) : reviewData.earnedSources.count > 0 ? (
                 <div style={{display:"grid",gap:8}}>
-                  {liveIncomeSnapshot.lines.filter(l => l.bucket === "EARNED").map((line, idx)=>(
+                  {(liveIncomeSnapshot?.lines || []).filter(l => l.bucket === "EARNED").map((line, idx)=>(
                     <div key={idx} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",background:S.surfaceUp,borderRadius:6,fontSize:12,flexWrap:"wrap",gap:6}}>
                       <div>
                         <strong>{line.label}</strong>
@@ -1394,7 +1415,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
 
               {reviewData.otherFinancialFlows.count > 0 ? (
                 <div style={{display:"grid",gap:8}}>
-                  {liveIncomeSnapshot.lines.filter(l => l.bucket !== "EARNED").map((line, idx)=>(
+                  {(liveIncomeSnapshot?.lines || []).filter(l => l.bucket !== "EARNED").map((line, idx)=>(
                     <div key={idx} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",background:S.surfaceUp,borderRadius:6,fontSize:12,flexWrap:"wrap",gap:6}}>
                       <div>
                         <strong>{line.label}</strong>
@@ -1408,9 +1429,9 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                     </div>
                   ))}
                   <div style={{marginTop:4,paddingTop:8,borderTop:`1px solid ${S.border}`,fontSize:11,color:S.muted,display:"grid",gap:3}}>
-                    <div>Policy Review Resources: <strong>KSh {(liveIncomeSnapshot.monthlyPolicyReviewResourcesKsh || 0).toLocaleString()}/mo</strong></div>
-                    <div>Non-Earned Financial Flows: <strong>KSh {(liveIncomeSnapshot.monthlyNonEarnedFlowsKsh || 0).toLocaleString()}/mo</strong></div>
-                    <div>Fiduciary / Group Funds: <strong>KSh {(liveIncomeSnapshot.monthlyFiduciaryFlowsKsh || 0).toLocaleString()}/mo</strong></div>
+                    <div>Policy Review Resources: <strong>KSh {((liveIncomeSnapshot?.monthlyPolicyReviewResourcesKsh) || 0).toLocaleString()}/mo</strong></div>
+                    <div>Non-Earned Financial Flows: <strong>KSh {((liveIncomeSnapshot?.monthlyNonEarnedFlowsKsh) || 0).toLocaleString()}/mo</strong></div>
+                    <div>Fiduciary / Group Funds: <strong>KSh {((liveIncomeSnapshot?.monthlyFiduciaryFlowsKsh) || 0).toLocaleString()}/mo</strong></div>
                   </div>
                 </div>
               ) : (
@@ -1419,19 +1440,19 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
             </div>
 
             {/* Review Section 4: Flags & Warnings */}
-            {(liveIncomeSnapshot.reviewFlags.length > 0 || liveIncomeSnapshot.duplicateRelationships.length > 0) && (
+            {(((liveIncomeSnapshot?.reviewFlags?.length) || 0) > 0 || ((liveIncomeSnapshot?.duplicateRelationships?.length) || 0) > 0) && (
               <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:14}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#92400E",marginBottom:6}}>
                   Assessment Review Flags & Verification Safeguards
                 </div>
                 <div style={{display:"grid",gap:6}}>
-                  {liveIncomeSnapshot.duplicateRelationships.map((dup, idx)=>(
+                  {(liveIncomeSnapshot?.duplicateRelationships || []).map((dup, idx)=>(
                     <div key={`dup-${idx}`} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#92400E"}}>
                       <Info size={13} style={{flexShrink:0}}/>
                       <span><strong>[DUPLICATE_TRACKED]</strong> {dup.duplicateSourceLabel} (ID: {dup.duplicateSourceId}) is linked to {dup.parentSourceLabel} (ID: {dup.parentSourceId}); excluded from earned income to prevent double-counting.</span>
                     </div>
                   ))}
-                  {liveIncomeSnapshot.reviewFlags.map((flag, idx)=>(
+                  {(liveIncomeSnapshot?.reviewFlags || []).map((flag, idx)=>(
                     <div key={`flag-${idx}`} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:flag.code==="DUPLICATE_SOURCE_NOT_COUNTED"?S.muted:flag.code==="TRANSFER_TREATMENT_REQUIRES_POLICY"?"#B45309":"#B91C1C"}}>
                       <AlertTriangle size={13} style={{flexShrink:0}}/>
                       <span><strong>[{flag.code}]</strong> {flag.message}</span>
@@ -1591,6 +1612,16 @@ function ComparisonTab({results, adminParams}) {
         </div>
       )}
 
+      {/* Provisional Short Window Extrapolation Callout */}
+      {nxt.incomeAssessmentSnapshot?.hasProvisionalShortWindowSources && (
+        <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",borderRadius:8,padding:14,display:"flex",gap:10,alignItems:"flex-start"}}>
+          <span style={{fontSize:10,fontWeight:800,letterSpacing:0.5,padding:"3px 8px",borderRadius:4,background:"#DC2626",color:"#FFF",flexShrink:0}}>PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION</span>
+          <div style={{fontSize:12,color:"#991B1B",lineHeight:1.5}}>
+            <strong>Short Observation Window Warning:</strong> Household reported income sources observed over fewer than 12 months (3–11 months). Extrapolation to an annual figure is provisional and does not represent an established 12-month earning pattern. Under prototype governance, this assessment is non-binding and cannot be treated as an official SHA determination without approved annualisation rules or verification.
+          </div>
+        </div>
+      )}
+
       {/* Difference callout */}
       {Math.abs(diff)>0&&(
         <div className="diff-callout" style={{background:comparatorHigher?S.terraD:S.sageD,border:`1px solid ${comparatorHigher?S.terraBd:S.sageBd}`}}>
@@ -1621,7 +1652,7 @@ function ComparisonTab({results, adminParams}) {
             <XAxis dataKey="name" tick={{fill:S.text,fontSize:12,fontWeight:500}} axisLine={false} tickLine={false}/>
             <YAxis tick={{fill:S.muted,fontSize:12}} axisLine={false} tickLine={false} tickFormatter={v=>`${v.toLocaleString()}`}/>
             <Tooltip cursor={{fill:S.faint}} formatter={(v)=>[`KSh ${v.toLocaleString()}`,"Monthly"]} contentStyle={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,color:S.text,fontSize:13,fontWeight:500,boxShadow:"0 4px 6px rgba(0,0,0,0.05)"}}/>
-            <ReferenceLine y={300} stroke={S.amber} strokeDasharray="4 3" label={{value:"KSh 300 Monthly Floor (Reg. 18 Reference)",fill:S.amber,fontSize:11,position:"insideTopRight",fontWeight:600}}/>
+            <ReferenceLine y={300} stroke={S.amber} strokeDasharray="4 3" label={{value:"KSh 300 Monthly Floor (Reg. 17(2) Reference)",fill:S.amber,fontSize:11,position:"insideTopRight",fontWeight:600}}/>
             <Bar dataKey="v" radius={[6,6,0,0]} maxBarSize={80}>{chartData.map((e,i)=><Cell key={i} fill={e.fill}/>)}</Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -1798,12 +1829,6 @@ function USSDTab({results}) {
           </div>
         </div>
 
-        {formError && (
-        <div role="alert" style={{marginTop: 16, padding: "10px 14px", background: S.terraD, border: `1px solid ${S.terraBd}`, borderRadius: 6, fontSize: 13, color: S.terra, display: "flex", gap: 8, alignItems: "center"}}>
-          <AlertTriangle size={16} style={{flexShrink: 0}} />
-          <span>{formError}</span>
-        </div>
-      )}
 
       {/* Navigation */}
         <div style={{flex:1,display:"grid",gap:12}}>
@@ -2566,7 +2591,7 @@ export default function SHADemo() {
       assessmentInputs = {
         ...assessmentInputs,
         monthlyNetEarnedIncome: 0,
-        incomeAssessmentSnapshot: calculateHouseholdIncome([]),
+        incomeAssessmentSnapshot: createZeroEarnedIncomeAssessment(),
       };
     }
 

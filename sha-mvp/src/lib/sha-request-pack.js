@@ -5,8 +5,8 @@
  * and Ministry of Health (MoH) for an evidence-based, collaborative means-testing review.
  *
  * Statutory and Research Context:
- * Aligned with the Kenya Data Protection Act, 2019 (Sec 3 and Sec 29) research exemptions,
- * and the Social Health Insurance (General) Regulations, 2024 (Regulation 21).
+ * Aligned with the Kenya Data Protection Act, 2019 (Sections 30 and 53) research provisions,
+ * and the Social Health Insurance (General) Regulations, 2024 (Regulations 17 and 21).
  *
  * Boundary Note:
  * This document states what is technically required to perform an independent empirical evaluation.
@@ -25,7 +25,7 @@ export const SHA_REQUEST_ITEMS = [
     itemNumber: 2,
     title: "Complete Variable Dictionary & Operational Survey Codebook",
     category: "DATA_DICTIONARY",
-    description: "The full operational codebook for the 43 proxy variables referenced in the Fifth Schedule, including exact question wording, category codes, skip logic, and interviewer instructions.",
+    description: "The full operational codebook for the 43 proxy variables identified in external disclosures and deployed under Regulation 21, including exact question wording, category codes, skip logic, and interviewer instructions.",
     rationale: "Eliminates ambiguity in variable definitions, preventing false classification when comparing household inputs."
   },
   {
@@ -60,7 +60,7 @@ export const SHA_REQUEST_ITEMS = [
     itemNumber: 7,
     title: "Score-to-Contribution Tariff Band Cutoffs & Subsidy Rules",
     category: "TARIFF_MAPPING",
-    description: "The numerical score cutoffs determining which households qualify for full premium subsidies (indigents) versus progressive contribution brackets under the Fifth Schedule.",
+    description: "The numerical score cutoffs determining which households qualify for full premium subsidies (indigents) versus progressive contribution brackets under Regulation 17(1) and Regulation 21.",
     rationale: "Allows evaluation of whether the means-testing instrument produces progressive and affordable premium assignments."
   },
   {
@@ -110,8 +110,9 @@ export function buildShaRequestPackJson() {
     generatedAt: new Date().toISOString(),
     recipient: "Social Health Authority (SHA) / Ministry of Health, Kenya",
     statutoryBasis: [
-      "Kenya Data Protection Act, 2019 (Sections 3, 29, 35)",
-      "Social Health Insurance (General) Regulations, 2024 (Regulation 21 and Fifth Schedule)",
+      "Kenya Data Protection Act, 2019 (Sections 25, 30(1)(b)(viii), 30(1)(e), 35, 53)",
+      "Data Protection (General) Regulations, 2021 (Regulation 22)",
+      "Social Health Insurance (General) Regulations, 2024 (Regulations 17 and 21; Note: Fifth Schedule is titled 'Zones' under Regulation 62(3))",
       "ODPC Guidance Notes on Processing for Research Purposes (2025)"
     ],
     researchObjective: "Facilitate an independent, reproducible empirical comparison between the existing proxy means testing instrument (Regulation 21) and candidate cash-flow / liquidity assessment models (Adjusted Gross Income frameworks).",
@@ -138,7 +139,8 @@ export function generateShaRequestPackMarkdown() {
 This technical inquiry schedule outlines the specific econometric parameters, operational codebooks, and verification data required to conduct an independent, evidence-based assessment of the Social Health Authority's (SHA) Means Testing Instrument (MTI) established under **Regulation 21 of the Social Health Insurance (General) Regulations, 2024**.
 
 All inquiries are formulated in accordance with:
-- **Kenya Data Protection Act, 2019** (Section 3 and Section 29 regarding research processing and lawful disclosure);
+- **Kenya Data Protection Act, 2019** (Sections 25, 30(1)(b)(viii), 30(1)(e), 35, and 53 regarding research processing, automated decision safeguards, and lawful disclosure);
+- **Data Protection (General) Regulations, 2021** (Regulation 22 regarding substantive human intervention in automated decision-making);
 - **Office of the Data Protection Commissioner (ODPC) Guidance Notes on Processing for Research Purposes (2025)**;
 - **Article 35 of the Constitution of Kenya** (Access to Public Information).
 

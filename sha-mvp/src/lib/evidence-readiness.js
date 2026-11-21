@@ -80,12 +80,12 @@ export function evaluateEvidenceReadinessGate({
     });
     blockers.push("At least one verified variable mapping dictionary is required.");
   } else {
-    const unreviewedCount = variableMappings.filter(m => m.reviewerStatus === "DRAFT").length;
+    const unreviewedCount = variableMappings.filter(m => m.reviewerStatus === "DRAFT" || m.reviewerStatus === "DEMO_ONLY" || m.reviewerStatus === "UNVERIFIED").length;
     if (unreviewedCount > 0) {
       gateChecks.push({
         checkpoint: "DATA_DICTIONARY_MAPPING",
         status: "WARNING",
-        detail: `${unreviewedCount} variable mapping(s) are in DRAFT status and pending expert verification.`
+        detail: `${unreviewedCount} variable mapping(s) are in DRAFT/DEMO_ONLY status and pending official verification.`
       });
       warnings.push("Unverified variable mappings may introduce misclassification bias.");
     } else {

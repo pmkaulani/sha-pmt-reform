@@ -7,7 +7,7 @@
 ### Formal Technical Information Inquiries
 To reconstruct an authoritative baseline model and conduct valid empirical benchmarking, SHA is requested to disclose:
 1. **Deployed MTI Build Version:** Exact production release identifier operating in the member registration portal.
-2. **43-Variable Operational Codebook:** Full question wordings, coding manuals, and skip patterns for Fifth Schedule indicators.
+2. **43-Variable Operational Codebook:** Full question wordings, coding manuals, and skip patterns for the proxy indicators deployed under Regulation 21.
 3. **Urban and Rural Regression Weights:** Complete numerical coefficients, constants, and regional fixed effects.
 4. **Preprocessing & Categorical Transformations:** Dummy-variable encodings and base reference categories.
 5. **Score-to-Contribution Cutoff Bands:** Numerical score thresholds assigning households to specific monthly premium brackets and indigent subsidies.

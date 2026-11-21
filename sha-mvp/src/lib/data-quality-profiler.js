@@ -22,8 +22,9 @@ export const QUALITY_CHECK_SEVERITY = Object.freeze({
  * Standard survey plausibility rules documented from KNBS and national survey guidelines.
  */
 export const DOCUMENTED_PLAUSIBILITY_RULES = Object.freeze({
-  HOUSEHOLD_SIZE: { min: 1, max: 35, doc: "KNBS KIHBS 2015/16 Roster Guidelines (max observed standard household)" },
-  HH_SIZE: { min: 1, max: 35, doc: "KNBS KIHBS 2015/16 Roster Guidelines (max observed standard household)" },
+  HOUSEHOLD_SIZE: { min: 1, max: 35, doc: "KNBS KIHBS 2015/16 Roster Guidelines (values >35 flagged for plausibility review without automatic exclusion; extended households occur in pastoralist settings)" },
+  HH_SIZE: { min: 1, max: 35, doc: "KNBS KIHBS 2015/16 Roster Guidelines (values >35 flagged for plausibility review without automatic exclusion)" },
+  HHSIZE: { min: 1, max: 35, doc: "KNBS KIHBS 2015/16 Roster Guidelines (values >35 flagged for plausibility review without automatic exclusion)" },
   MONTHLY_CONSUMPTION: { min: 500, max: 20000000, doc: "KNBS National Poverty Lines / Extreme Consumption Bound" },
   ANNUAL_CONSUMPTION: { min: 6000, max: 240000000, doc: "KNBS National Poverty Lines / Extreme Annual Bound" },
   TOTCONS_ANNUAL: { min: 6000, max: 240000000, doc: "KNBS National Poverty Lines / Extreme Annual Bound" },
@@ -211,7 +212,7 @@ export function profileDatasetQuality(records = [], {
         // Date sanity check if field indicates date
         if (typeof val === "string" && key.toLowerCase().includes("date")) {
           const parsed = Date.parse(val);
-          if (isNaN(parsed)) {
+          if (!Number.isFinite(parsed)) {
             report.invalidValueCounts.invalidDates++;
             report.findingsBySeverity[QUALITY_CHECK_SEVERITY.WARNING].push({
               code: "INVALID_DATE_FORMAT",

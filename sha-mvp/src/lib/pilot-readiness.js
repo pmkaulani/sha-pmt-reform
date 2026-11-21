@@ -16,10 +16,25 @@
 export const PILOT_STAGES = Object.freeze([
   "TECHNICAL_REVIEW",
   "OFFLINE_REPLAY",
+  "OFFLINE_HISTORICAL_REPLAY",
   "SHADOW_OPERATION",
   "ASSISTED_HUMAN_REVIEW",
   "INDEPENDENT_EVALUATION"
 ]);
+
+export const STAGE_NORMALIZATION_MAP = Object.freeze({
+  STAGE_1_TECHNICAL_REVIEW: "TECHNICAL_REVIEW",
+  STAGE_2_OFFLINE_HISTORICAL_REPLAY: "OFFLINE_REPLAY",
+  STAGE_3_SHADOW_OPERATION: "SHADOW_OPERATION",
+  STAGE_4_ASSISTED_HUMAN_REVIEW: "ASSISTED_HUMAN_REVIEW",
+  STAGE_5_INDEPENDENT_EVALUATION: "INDEPENDENT_EVALUATION",
+  TECHNICAL_REVIEW: "TECHNICAL_REVIEW",
+  OFFLINE_HISTORICAL_REPLAY: "OFFLINE_REPLAY",
+  OFFLINE_REPLAY: "OFFLINE_REPLAY",
+  SHADOW_OPERATION: "SHADOW_OPERATION",
+  ASSISTED_HUMAN_REVIEW: "ASSISTED_HUMAN_REVIEW",
+  INDEPENDENT_EVALUATION: "INDEPENDENT_EVALUATION"
+});
 
 export const PILOT_APPROVAL_STATUS = Object.freeze({
   NOT_ASSIGNED: "NOT_ASSIGNED",
@@ -49,6 +64,15 @@ export const REQUIRED_EVIDENCE = Object.freeze({
   ],
 
   OFFLINE_REPLAY: [
+    "evaluationProtocolApproved",
+    "datasetUseAuthorised",
+    "dataGovernanceApproved",
+    "secureEnvironmentApproved",
+    "evaluationBaselineVerified",
+    "rollbackProcedureDocumented"
+  ],
+
+  OFFLINE_HISTORICAL_REPLAY: [
     "evaluationProtocolApproved",
     "datasetUseAuthorised",
     "dataGovernanceApproved",
@@ -99,8 +123,11 @@ export function assessPilotReadiness({
   blockers = [],
   institutionalApproval = null
 } = {}) {
-  // Normalize stage string if passed with prefix (e.g. STAGE_1_TECHNICAL_REVIEW -> TECHNICAL_REVIEW)
-  const normStage = String(targetStage).replace(/^STAGE_\d+_/, "");
+  // Normalize stage string if passed with prefix or exact name
+  const rawStage = String(targetStage).trim();
+  const normStage = STAGE_NORMALIZATION_MAP[rawStage] ||
+    STAGE_NORMALIZATION_MAP[rawStage.replace(/^STAGE_\d+_/, "")] ||
+    rawStage.replace(/^STAGE_\d+_/, "");
 
   if (!PILOT_STAGES.includes(normStage)) {
     throw new Error(`Unsupported pilot stage '${targetStage}'. Must be one of: ${PILOT_STAGES.join(", ")}`);
@@ -175,7 +202,7 @@ export function recordInstitutionalApproval({
   reviewDate,
   supportingDocumentReference,
   conditions = [],
-  status = PILOT_APPROVAL_STATUS.APPROVED_WITH_VERIFIED_REFERENCE,
+  status = PILOT_APPROVAL_STATUS.NOT_REQUESTED,
   isSyntheticDemo = false
 } = {}) {
   const errors = [];

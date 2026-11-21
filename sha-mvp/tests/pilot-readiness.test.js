@@ -251,7 +251,7 @@ test("Phase 6 Criterion 9: Emergency suspension requires authorized action and r
   assert.equal(suspended.currentState, PILOT_CONTROL_STATES.SUSPENDED);
   assert.equal(suspended.activeSuspensionCondition, PILOT_STOP_CONDITIONS.PRIVACY_INCIDENT);
   assert.ok(suspended.rollbackExecution);
-  assert.equal(suspended.rollbackExecution.operationalRelianceStatus, "VERIFIED_100_PERCENT_OFFICIAL_SHA");
+  assert.equal(suspended.rollbackExecution.operationalRelianceStatus, "SIMULATION_ASSUMES_OFFICIAL_PROCESS_UNCHANGED");
 });
 
 test("Phase 6 Criterion 10: Standardized rollback execution records 8 discrete fail-safe steps", () => {

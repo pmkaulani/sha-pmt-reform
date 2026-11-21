@@ -11,6 +11,9 @@
  * 3. Status strictly enforced: Remains NOT_CONFIGURED or PARTIALLY_DOCUMENTED until official
  *    government documentation is released, independently reviewed, and verified against reference tests.
  * 4. Transparent gaps: Every missing parameter, transformation, and bracket is explicitly cataloged.
+ * 5. STATUTORY ACCURACY: Regulation 17(1) & (2) establish non-salaried household contribution rates (2.75% annual
+ *    of income determined via Regulation 21, minimum KSh 300/mo). The Fifth Schedule is titled 'Zones' under
+ *    Regulation 62(3) and does NOT contain the means-testing formula.
  */
 
 export const SHA_BASELINE_STATUSES = Object.freeze({
@@ -22,72 +25,73 @@ export const SHA_BASELINE_STATUSES = Object.freeze({
 });
 
 /**
- * Catalog of the 43 Proxy Means Test variables referenced in Regulation 21 and the Fifth Schedule.
- * Grouped into institutional categories based on published statutory schedules.
+ * Catalog of the 43 Proxy Means Test variables identified through external disclosures
+ * and investigative reporting (provisional pending official SHA operational codebook release).
+ * Note: These variables are NOT statutorily enumerated in Regulation 21 or the Fifth Schedule.
  */
 export const SHA_REG21_PROXY_VARIABLES = Object.freeze([
   // Household Demographics (6 variables)
-  { id: "hh_size", label: "Household Size", category: "DEMOGRAPHICS", unit: "COUNT", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "dep_ratio", label: "Dependency Ratio", category: "DEMOGRAPHICS", unit: "RATIO", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "female_head", label: "Female Headed Household Indicator", category: "DEMOGRAPHICS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "head_age", label: "Age of Household Head", category: "DEMOGRAPHICS", unit: "YEARS", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "head_educ_level", label: "Education Level of Head", category: "DEMOGRAPHICS", unit: "CATEGORICAL", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "child_under5_count", label: "Number of Children Under 5", category: "DEMOGRAPHICS", unit: "COUNT", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
+  { id: "hh_size", label: "Household Size", category: "DEMOGRAPHICS", unit: "COUNT", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "dep_ratio", label: "Dependency Ratio", category: "DEMOGRAPHICS", unit: "RATIO", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "female_head", label: "Female Headed Household Indicator", category: "DEMOGRAPHICS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "head_age", label: "Age of Household Head", category: "DEMOGRAPHICS", unit: "YEARS", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "head_educ_level", label: "Education Level of Head", category: "DEMOGRAPHICS", unit: "CATEGORICAL", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "child_under5_count", label: "Number of Children Under 5", category: "DEMOGRAPHICS", unit: "COUNT", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
 
   // Housing Characteristics & Amenities (12 variables)
-  { id: "roof_material", label: "Roof Material", category: "HOUSING", unit: "CATEGORICAL", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "wall_material", label: "Wall Material", category: "HOUSING", unit: "CATEGORICAL", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "floor_material", label: "Floor Material", category: "HOUSING", unit: "CATEGORICAL", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "tenure_status", label: "Housing Tenure (Owner/Tenant)", category: "HOUSING", unit: "CATEGORICAL", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "rooms_count", label: "Habitable Rooms Count", category: "HOUSING", unit: "COUNT", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "water_source", label: "Primary Drinking Water Source", category: "HOUSING", unit: "CATEGORICAL", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "water_distance", label: "Distance to Water Source", category: "HOUSING", unit: "METERS_OR_MINUTES", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "toilet_type", label: "Toilet Facility Type", category: "HOUSING", unit: "CATEGORICAL", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "toilet_shared", label: "Shared Sanitation Indicator", category: "HOUSING", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "cooking_fuel", label: "Primary Cooking Fuel", category: "HOUSING", unit: "CATEGORICAL", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "lighting_fuel", label: "Primary Lighting Fuel", category: "HOUSING", unit: "CATEGORICAL", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "waste_disposal", label: "Solid Waste Disposal Method", category: "HOUSING", unit: "CATEGORICAL", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
+  { id: "roof_material", label: "Roof Material", category: "HOUSING", unit: "CATEGORICAL", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "wall_material", label: "Wall Material", category: "HOUSING", unit: "CATEGORICAL", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "floor_material", label: "Floor Material", category: "HOUSING", unit: "CATEGORICAL", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "tenure_status", label: "Housing Tenure (Owner/Tenant)", category: "HOUSING", unit: "CATEGORICAL", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "rooms_count", label: "Habitable Rooms Count", category: "HOUSING", unit: "COUNT", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "water_source", label: "Primary Drinking Water Source", category: "HOUSING", unit: "CATEGORICAL", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "water_distance", label: "Distance to Water Source", category: "HOUSING", unit: "METERS_OR_MINUTES", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "toilet_type", label: "Toilet Facility Type", category: "HOUSING", unit: "CATEGORICAL", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "toilet_shared", label: "Shared Sanitation Indicator", category: "HOUSING", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "cooking_fuel", label: "Primary Cooking Fuel", category: "HOUSING", unit: "CATEGORICAL", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "lighting_fuel", label: "Primary Lighting Fuel", category: "HOUSING", unit: "CATEGORICAL", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "waste_disposal", label: "Solid Waste Disposal Method", category: "HOUSING", unit: "CATEGORICAL", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
 
   // Durable Assets & Productive Equipment (14 variables)
-  { id: "asset_electricity_grid", label: "Electricity Grid Connection", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "asset_solar_panel", label: "Solar Energy System", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "asset_tv", label: "Television Set Ownership", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "asset_radio", label: "Radio Ownership", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "asset_refrigerator", label: "Refrigerator Ownership", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "asset_motor_vehicle", label: "Car/Truck Ownership", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "asset_motorcycle", label: "Motorcycle (Boda Boda) Ownership", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "asset_bicycle", label: "Bicycle Ownership", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "asset_smart_phone", label: "Smartphone Ownership", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "asset_computer_laptop", label: "Computer/Laptop Ownership", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "asset_washing_machine", label: "Washing Machine Ownership", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "asset_internet_broadband", label: "Home Broadband Internet", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "asset_generator", label: "Power Generator", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "asset_tractor", label: "Agricultural Tractor", category: "ASSETS", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
+  { id: "asset_electricity_grid", label: "Electricity Grid Connection", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "asset_solar_panel", label: "Solar Energy System", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "asset_tv", label: "Television Set Ownership", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "asset_radio", label: "Radio Ownership", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "asset_refrigerator", label: "Refrigerator Ownership", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "asset_motor_vehicle", label: "Car/Truck Ownership", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "asset_motorcycle", label: "Motorcycle (Boda Boda) Ownership", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "asset_bicycle", label: "Bicycle Ownership", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "asset_smart_phone", label: "Smartphone Ownership", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "asset_computer_laptop", label: "Computer/Laptop Ownership", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "asset_washing_machine", label: "Washing Machine Ownership", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "asset_internet_broadband", label: "Home Broadband Internet", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "asset_generator", label: "Power Generator", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "asset_tractor", label: "Agricultural Tractor", category: "ASSETS", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
 
   // Agricultural & Livestock Holdings (6 variables)
-  { id: "land_ownership_acres", label: "Agricultural Land Owned (Acres)", category: "AGRICULTURE", unit: "ACRES", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "land_tenure_title", label: "Land Title Deed Possession", category: "AGRICULTURE", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "livestock_cattle_count", label: "Number of Cattle Owned", category: "AGRICULTURE", unit: "COUNT", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "livestock_shoats_count", label: "Number of Sheep/Goats Owned", category: "AGRICULTURE", unit: "COUNT", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "livestock_poultry_count", label: "Number of Poultry Owned", category: "AGRICULTURE", unit: "COUNT", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "irrigation_access", label: "Access to Irrigation Infrastructure", category: "AGRICULTURE", unit: "BINARY", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
+  { id: "land_ownership_acres", label: "Agricultural Land Owned (Acres)", category: "AGRICULTURE", unit: "ACRES", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "land_tenure_title", label: "Land Title Deed Possession", category: "AGRICULTURE", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "livestock_cattle_count", label: "Number of Cattle Owned", category: "AGRICULTURE", unit: "COUNT", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "livestock_shoats_count", label: "Number of Sheep/Goats Owned", category: "AGRICULTURE", unit: "COUNT", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "livestock_poultry_count", label: "Number of Poultry Owned", category: "AGRICULTURE", unit: "COUNT", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "irrigation_access", label: "Access to Irrigation Infrastructure", category: "AGRICULTURE", unit: "BINARY", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
 
   // Geographic & Regional Stratification (5 variables)
-  { id: "county_code", label: "County of Residence (1-47)", category: "GEOGRAPHY", unit: "COUNTY_CODE", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "subcounty_code", label: "Sub-County Administrative Unit", category: "GEOGRAPHY", unit: "ADMIN_CODE", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "urban_rural_designation", label: "Urban or Rural Stratum", category: "GEOGRAPHY", unit: "CATEGORICAL", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "agro_ecological_zone", label: "Agro-Ecological Zone / Aridity Index", category: "GEOGRAPHY", unit: "CATEGORICAL", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" },
-  { id: "distance_tarmac_road", label: "Distance to Nearest All-Weather Road", category: "GEOGRAPHY", unit: "KILOMETERS", status: "STATUTORILY_NAMED_COEFFICIENT_UNAVAILABLE" }
+  { id: "county_code", label: "County of Residence (1-47)", category: "GEOGRAPHY", unit: "COUNTY_CODE", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "subcounty_code", label: "Sub-County Administrative Unit", category: "GEOGRAPHY", unit: "ADMIN_CODE", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "urban_rural_designation", label: "Urban or Rural Stratum", category: "GEOGRAPHY", unit: "CATEGORICAL", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "agro_ecological_zone", label: "Agro-Ecological Zone / Aridity Index", category: "GEOGRAPHY", unit: "CATEGORICAL", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" },
+  { id: "distance_tarmac_road", label: "Distance to Nearest All-Weather Road", category: "GEOGRAPHY", unit: "KILOMETERS", status: "PROVISIONAL_EXTERNAL_DISCLOSURE" }
 ]);
 
 /**
  * The Master Baseline Specification Record for official SHA Regulation 21 PMT.
  */
 export const OFFICIAL_SHA_BASELINE_SPECIFICATION = Object.freeze({
-  specId: "SHA-BASELINE-REG21-2024",
-  officialModelName: "Social Health Authority Regulation 21 Proxy Means Testing Instrument (MTI)",
-  legalBasis: "Social Health Insurance Act, 2023; Social Health Insurance (General) Regulations, 2024 (Regulation 21 and Fifth Schedule)",
-  status: SHA_BASELINE_STATUSES.PARTIALLY_DOCUMENTED,
+  specId: "SHA-BASELINE-REG21-PROVISIONAL",
+  officialModelName: "Official SHA Means-Testing Instrument — Implementation Details Pending Verification",
+  legalBasis: "Social Health Insurance Act, 2023 (Section 27); Social Health Insurance (General) Regulations, 2024 (Regulations 17 and 21)",
+  status: SHA_BASELINE_STATUSES.NOT_CONFIGURED,
   effectivePeriod: {
     startDate: "2024-10-01",
     endDate: null,
@@ -99,7 +103,7 @@ export const OFFICIAL_SHA_BASELINE_SPECIFICATION = Object.freeze({
     coefficients: null,
     intercept: null,
     fixedEffects: null,
-    notes: "Urban regression coefficients and constant not disclosed in Gazette Notice or Regulations."
+    notes: "Urban regression coefficients and constant have not been officially published by SHA."
   },
   ruralModelSpecification: {
     status: "UNAVAILABLE",
@@ -107,7 +111,7 @@ export const OFFICIAL_SHA_BASELINE_SPECIFICATION = Object.freeze({
     coefficients: null,
     intercept: null,
     fixedEffects: null,
-    notes: "Rural regression coefficients and constant not disclosed in Gazette Notice or Regulations."
+    notes: "Rural regression coefficients and constant have not been officially published by SHA."
   },
   inputVariableDictionary: SHA_REG21_PROXY_VARIABLES,
   preprocessingRules: {
@@ -115,7 +119,7 @@ export const OFFICIAL_SHA_BASELINE_SPECIFICATION = Object.freeze({
     categoricalEncodings: null,
     continuousScaling: null,
     outlierTreatments: null,
-    notes: "Categorical dummy variable encodings and base categories have not been disclosed."
+    notes: "Categorical dummy variable encodings and reference categories have not been disclosed."
   },
   missingValueRules: {
     status: "UNAVAILABLE",
@@ -136,16 +140,18 @@ export const OFFICIAL_SHA_BASELINE_SPECIFICATION = Object.freeze({
   },
   contributionMappingRules: {
     status: "PARTIALLY_DOCUMENTED",
-    statutoryRate: 0.0275,
+    statutoryAnnualRate: 0.0275,
     minimumContributionMonthly: 300,
     maximumContributionMonthly: null, // Removed under SHIF regulations
     scoreBands: null,
     subsidyThresholdPovertyScore: null,
-    notes: "Fifth Schedule stipulates 2.75% of income with a minimum of KSh 300, but the exact bracket cutoff scores assigning households to specific contribution tiers remain undisclosed."
+    notes: "Regulation 17(1) establishes the annual contribution for non-salaried households at 2.75% of household income determined via Regulation 21, with Regulation 17(2) providing a KSh 300/mo minimum. The exact score-to-income and cutoff algorithms deployed by SHA remain undisclosed."
   },
   officialSourceReferences: [
-    "Kenya Gazette Supplement No. 173 (Legislative Supplement No. 67), Legal Notice No. 147 of 2024",
-    "Fifth Schedule: Means Testing Instrument and Assessment Criteria"
+    "Social Health Insurance Act, 2023 (Section 27)",
+    "Social Health Insurance (General) Regulations, 2024 (Regulations 17 and 21)",
+    "Note: The Fifth Schedule of the Regulations is titled 'Zones' under Regulation 62(3) and does NOT contain the PMT formula.",
+    "Investigative disclosures: Africa Uncensored / Lighthouse Reports / The Guardian (May 2026)"
   ],
   independentTechnicalReviewer: null,
   verificationTestCases: [],

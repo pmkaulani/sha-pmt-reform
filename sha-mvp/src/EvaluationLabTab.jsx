@@ -133,15 +133,20 @@ export default function EvaluationLabTab({ results }) {
       ? STANDARD_REGISTERED_PROTOCOLS["PROTO-KNBS-KIHBS-PREDICTIVE-V1"]
       : STANDARD_REGISTERED_PROTOCOLS["PROTO-SHA-AFFORDABILITY-V1"];
 
+    // Evaluate strictly on the holdout partition to prevent training/calibration leakage
+    const holdoutRecords = (partitionSummary?.partitions?.[PARTITION_TYPES.HOLDOUT]?.length > 0)
+      ? partitionSummary.partitions[PARTITION_TYPES.HOLDOUT]
+      : demoRecords;
+
     const res = runEmpiricalComparison({
       comparisonMode: evaluationMode,
       candidateModelIds: candidateModels,
       targetId: selectedTargetId,
       datasetManifest: dataset,
-      evaluationRecords: demoRecords,
+      evaluationRecords: holdoutRecords,
       protocol: proto,
       subgroupField: selectedSubgroupField,
-      minSubgroupSize: 2 // Demo threshold
+      minSubgroupSize: 1 // Demo threshold for partitioned holdout
     });
 
     setLastComparisonRun(res);

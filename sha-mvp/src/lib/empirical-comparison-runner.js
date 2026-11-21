@@ -103,13 +103,39 @@ export function runEmpiricalComparison({
     return report;
   }
 
-  // 2. Synthetic data safeguard
+  // 2. Synthetic data and provenance safeguards
   const isSynthetic = datasetManifest?.datasetType === "SYNTHETIC" ||
     evaluationRecords.some(r => r?._isSynthetic === true);
-  if (isSynthetic) {
+
+  // Provenance binding: A survey manifest CANNOT execute against synthetic records
+  if (datasetManifest?.datasetType === "SURVEY" && isSynthetic) {
+    report.status = "BLOCKED";
+    report.blockers.push(
+      "Provenance mismatch: Dataset manifest declares SURVEY microdata, but evaluation records contain synthetic demonstration fixtures. Evaluation refused."
+    );
+    report.limitations.push("Survey comparisons require genuine, verified survey microdata with intact sampling design.");
+    return report;
+  }
+
+  // Protocol freeze enforcement: Formal empirical evaluation requires a FROZEN pre-registered protocol
+  if (datasetManifest?.datasetType === "SURVEY" || datasetManifest?.isApprovedForEmpiricalEvaluation === true) {
+    if (!protocol || protocol.approvalStatus !== "FROZEN") {
+      report.status = "BLOCKED";
+      report.blockers.push(
+        `Protocol freeze required: Formal empirical evaluation against '${datasetManifest?.id || "SURVEY"}' requires a pre-registered protocol with approvalStatus 'FROZEN'. Current status: '${protocol?.approvalStatus || "UNREGISTERED"}'.`
+      );
+      report.limitations.push("Pre-registration freeze prevents post-hoc cherry-picking or adjusting evaluation metrics after inspecting data.");
+      return report;
+    }
+  } else if (isSynthetic) {
     report.warnings.push(
       "DEMONSTRATION RUN: Evaluated using synthetic data fixtures. Results verify software execution only and do NOT establish empirical accuracy or equity."
     );
+    if (protocol?.approvalStatus !== "FROZEN") {
+      report.warnings.push(
+        `Demonstration protocol status is '${protocol?.approvalStatus || "DEMO_PROTOCOL_TEMPLATE"}'. Must be frozen before formal empirical claims.`
+      );
+    }
   }
 
   // 3. Resolve models from registry
@@ -149,6 +175,14 @@ export function runEmpiricalComparison({
     // Check construct compatibility for each candidate model
     const incompatibleModels = [];
     for (const m of resolvedModels) {
+      if (m.id === "COMPARATOR_PMT_ILLUSTRATIVE" && datasetManifest?.datasetType === "SURVEY") {
+        incompatibleModels.push({
+          modelId: m.id,
+          modelName: m.name,
+          reason: "Illustrative comparator uses arbitrary weights and cannot claim consumption prediction eligibility against survey microdata solely based on KSh/yr units."
+        });
+        continue;
+      }
       const comp = checkModelTargetCompatibility(m.id, targetId);
       if (!comp.canEvaluate) {
         incompatibleModels.push({
@@ -182,11 +216,15 @@ export function runEmpiricalComparison({
       }
 
       // Check if all models produced valid predictions for this row
+      // Predictions must be explicitly tied to modelId (no generic row.predicted fallback)
       const predictions = {};
       let allModelsValid = true;
 
       for (const m of resolvedModels) {
-        const pred = row[`pred_${m.id}`] ?? row[m.id] ?? row.predicted;
+        const pred = row.modelPredictions?.[m.id]?.predicted ??
+          row[`pred_${m.id}`] ??
+          (row[m.id] !== undefined && typeof row[m.id] === "number" ? row[m.id] : null);
+
         if (typeof pred !== "number" || !Number.isFinite(pred)) {
           allModelsValid = false;
           break;
@@ -275,13 +313,26 @@ export function runEmpiricalComparison({
 
     let totalPairs = 0;
     let excludedAffordCount = 0;
+    let zeroOrNegativeResourcesCount = 0;
 
     for (const m of resolvedModels) {
       const pairedHouseholdData = [];
 
       for (const row of evaluationRecords) {
-        const resMonthly = row.measuredMonthlyResources ?? row.monthlyIncome ?? row.householdMonthlyIncome;
-        const proposedContrib = row[`contrib_${m.id}`] ?? row.proposedContribution ?? row.monthlyContribution;
+        const resMonthly = row.measuredMonthlyResources ??
+          row.monthlyIncome ??
+          row.householdMonthlyIncome ??
+          (row.availableDisposableIncomeKsh !== undefined ? row.availableDisposableIncomeKsh / 12 : undefined);
+
+        // Explicit model attribution only — generic fallbacks removed
+        const proposedContrib = row.modelPredictions?.[m.id]?.monthlyContribution ??
+          row[`contrib_${m.id}`] ??
+          row[`monthlyContribution_${m.id}`] ??
+          null;
+
+        if (typeof resMonthly === "number" && Number.isFinite(resMonthly) && resMonthly <= 0) {
+          zeroOrNegativeResourcesCount++;
+        }
 
         if (typeof resMonthly !== "number" || typeof proposedContrib !== "number" || resMonthly <= 0 || proposedContrib < 0) {
           excludedAffordCount++;
@@ -306,8 +357,18 @@ export function runEmpiricalComparison({
 
     report.pairedSampleSize = totalPairs;
     report.excludedObservationsCount = excludedAffordCount;
+    report.zeroOrNegativeResourcesSummary = {
+      count: zeroOrNegativeResourcesCount,
+      category: "ZERO_OR_NEGATIVE_RESOURCES",
+      note: "Households with zero or negative disposable resources isolated; standard percentage burden is undefined. Under Regulation 17(2), they remain subject to the KSh 300/mo minimum unless verified for full indigent subsidy."
+    };
+
     report.status = isSynthetic ? "DEMO_ONLY" : "COMPUTED_REQUIRES_REVIEW";
     report.uncertainty = evaluateSamplingUncertainty(datasetManifest);
+
+    report.warnings.push(
+      "Affordability thresholds (5% high burden, 10% severe burden) are illustrative research benchmarks and NOT statutorily approved policy standards under the Social Health Insurance Act, 2023."
+    );
 
     report.limitations.push(
       "Affordability evaluation measures financial burden as a proportion of measured resources. A lower contribution does NOT imply higher predictive accuracy or statutory compliance."

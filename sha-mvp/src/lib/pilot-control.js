@@ -23,6 +23,14 @@ export const PILOT_CONTROL_STATES = Object.freeze({
   TERMINATED: "TERMINATED"
 });
 
+export const ALLOWED_PILOT_CONTROL_TRANSITIONS = Object.freeze({
+  [PILOT_CONTROL_STATES.NOT_STARTED]: [PILOT_CONTROL_STATES.ACTIVE, PILOT_CONTROL_STATES.SUSPENDED, PILOT_CONTROL_STATES.TERMINATED],
+  [PILOT_CONTROL_STATES.ACTIVE]: [PILOT_CONTROL_STATES.PAUSED, PILOT_CONTROL_STATES.SUSPENDED, PILOT_CONTROL_STATES.TERMINATED],
+  [PILOT_CONTROL_STATES.PAUSED]: [PILOT_CONTROL_STATES.ACTIVE, PILOT_CONTROL_STATES.SUSPENDED, PILOT_CONTROL_STATES.TERMINATED],
+  [PILOT_CONTROL_STATES.SUSPENDED]: [PILOT_CONTROL_STATES.ACTIVE, PILOT_CONTROL_STATES.TERMINATED],
+  [PILOT_CONTROL_STATES.TERMINATED]: []
+});
+
 export const PILOT_STOP_CONDITIONS = Object.freeze({
   SECURITY_INCIDENT: "Critical vulnerability or unauthorized access attempt detected.",
   PRIVACY_INCIDENT: "Potential personal data exposure or de-identification failure.",
@@ -92,6 +100,12 @@ export function transitionPilotControlState(currentStateObj, {
     throw new Error(`Invalid target control state '${targetState}'. Must be one of: ${Object.values(PILOT_CONTROL_STATES).join(", ")}`);
   }
 
+  // Permitted transition graph enforcement
+  const allowed = ALLOWED_PILOT_CONTROL_TRANSITIONS[currentStateObj.currentState] || [];
+  if (!allowed.includes(targetState)) {
+    throw new Error(`Illegal state transition from '${currentStateObj.currentState}' to '${targetState}'. Permitted transitions: ${allowed.join(", ") || "none"}.`);
+  }
+
   if (!authorizingRole) {
     throw new Error("authorizingRole is mandatory for pilot state transitions.");
   }
@@ -121,7 +135,7 @@ export function transitionPilotControlState(currentStateObj, {
         executionMode: "SIMULATED_RUNBOOK_DRILL",
         timestamp: new Date().toISOString()
       })),
-      operationalRelianceStatus: "VERIFIED_100_PERCENT_OFFICIAL_SHA",
+      operationalRelianceStatus: "SIMULATION_ASSUMES_OFFICIAL_PROCESS_UNCHANGED",
       resumptionAuthorizationRequired: [
         "SHA_PROGRAMME_SPONSOR",
         "SHA_TECHNICAL_OWNER",

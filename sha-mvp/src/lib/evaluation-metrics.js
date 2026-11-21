@@ -248,13 +248,16 @@ export function calculateSubgroupMetrics(records = [], { groupField, minSubgroup
 
 /**
  * Validates sampling design and uncertainty reporting.
- * Rejects unverified survey weights and fabricated confidence intervals.
+ * Rejects unverified survey weights, fabricated confidence intervals, and uncalibrated models.
+ * Note: Returns UNCERTAINTY_NOT_ESTIMATED because design-aware variance estimation
+ * (Taylor linearization or replication weights) is not implemented in this prototype.
  */
 export function evaluateSamplingUncertainty(datasetManifest) {
   if (!datasetManifest || typeof datasetManifest !== "object") {
     return {
       hasValidDesign: false,
       confidenceIntervalsAvailable: false,
+      status: "UNCERTAINTY_NOT_ESTIMATED",
       reason: "No dataset manifest provided."
     };
   }
@@ -263,6 +266,7 @@ export function evaluateSamplingUncertainty(datasetManifest) {
     return {
       hasValidDesign: false,
       confidenceIntervalsAvailable: false,
+      status: "UNCERTAINTY_NOT_ESTIMATED",
       reason: "Synthetic demonstration data cannot support inferential statistics or confidence intervals."
     };
   }
@@ -271,13 +275,16 @@ export function evaluateSamplingUncertainty(datasetManifest) {
     return {
       hasValidDesign: false,
       confidenceIntervalsAvailable: false,
+      status: "UNCERTAINTY_NOT_ESTIMATED",
       reason: "Complex survey design identifiers (clusters and strata) are missing. Confidence intervals are unavailable."
     };
   }
 
   return {
     hasValidDesign: true,
-    confidenceIntervalsAvailable: true,
+    confidenceIntervalsAvailable: false,
+    status: "UNCERTAINTY_NOT_ESTIMATED",
+    reason: "Complex survey design identifiers are recorded, but design-aware variance estimation (Taylor linearization or replication weights) is not implemented in this prototype. Confidence intervals are unavailable.",
     designDescription: datasetManifest.samplingDesignDescription || "Verified survey design."
   };
 }
@@ -286,6 +293,10 @@ export function evaluateSamplingUncertainty(datasetManifest) {
  * Isolated Affordability Analysis Contract.
  * Evaluates contribution burden relative to disposable resources.
  * Strictly decoupled from predictive accuracy metrics.
+ *
+ * Methodological Invariants:
+ * 1. Households with zero or negative resources are isolated in a dedicated category, NOT silently dropped.
+ * 2. 5% and 10% thresholds are labeled as unapproved illustrative research benchmarks.
  */
 export function calculateAffordabilityMetrics(records = []) {
   if (!Array.isArray(records)) {
@@ -293,6 +304,8 @@ export function calculateAffordabilityMetrics(records = []) {
   }
 
   let excludedCount = 0;
+  let zeroOrNegativeCount = 0;
+  let missingDataCount = 0;
   const validBurdenRatios = [];
   let severeBurdenCount = 0; // > 10%
   let highBurdenCount = 0;   // > 5%
@@ -309,13 +322,21 @@ export function calculateAffordabilityMetrics(records = []) {
       record?.annualDisposableIncome
     );
 
-    if (
-      !Number.isFinite(monthlyContribution) ||
-      !Number.isFinite(annualDisposable) ||
-      annualDisposable <= 0 ||
-      monthlyContribution < 0
-    ) {
+    if (!Number.isFinite(monthlyContribution) || monthlyContribution < 0) {
       excludedCount += 1;
+      missingDataCount += 1;
+      continue;
+    }
+
+    if (!Number.isFinite(annualDisposable)) {
+      excludedCount += 1;
+      missingDataCount += 1;
+      continue;
+    }
+
+    if (annualDisposable <= 0) {
+      excludedCount += 1;
+      zeroOrNegativeCount += 1;
       continue;
     }
 
@@ -334,8 +355,15 @@ export function calculateAffordabilityMetrics(records = []) {
       status: "NOT_EVALUABLE",
       sampleSize: 0,
       excludedCount,
+      zeroOrNegativeCount,
+      missingDataCount,
       metrics: null,
-      reason: "No records with positive disposable income and non-negative contributions were supplied."
+      reason: "No records with positive disposable income and non-negative contributions were supplied.",
+      zeroOrNegativeResourcesCategory: {
+        count: zeroOrNegativeCount,
+        category: "ZERO_OR_NEGATIVE_RESOURCES",
+        note: "Households with zero or negative disposable resources cannot have a percentage burden computed."
+      }
     };
   }
 
@@ -347,14 +375,23 @@ export function calculateAffordabilityMetrics(records = []) {
     status: "CALCULATED",
     sampleSize: n,
     excludedCount,
+    zeroOrNegativeCount,
+    missingDataCount,
     disclaimer: "Affordability metrics evaluate financial strain relative to disposable resources. They are not an evaluation of model predictive accuracy or statutory legality.",
+    zeroOrNegativeResourcesCategory: {
+      count: zeroOrNegativeCount,
+      category: "ZERO_OR_NEGATIVE_RESOURCES",
+      description: "Households with zero or negative disposable income cannot have a finite contribution burden percentage calculated. Under Regulation 17(2), these households remain subject to the KSh 300/mo minimum unless verified for full indigent subsidy under Regulation 17(3)."
+    },
     metrics: {
       medianContributionBurdenRatio: Math.round(medianRatio * 1000) / 1000,
       meanContributionBurdenRatio: Math.round(meanRatio * 1000) / 1000,
       percentFacingHighBurden: Math.round((highBurdenCount / n) * 1000) / 10,
       percentFacingSevereBurden: Math.round((severeBurdenCount / n) * 1000) / 10,
-      highBurdenThreshold: "Contributions exceed 5% of reported annual disposable resources",
-      severeBurdenThreshold: "Contributions exceed 10% of reported annual disposable resources"
+      highBurdenThreshold: "Illustrative research benchmark: contributions exceed 5% of reported annual disposable resources (NOT an official SHA policy standard)",
+      severeBurdenThreshold: "Illustrative research benchmark: contributions exceed 10% of reported annual disposable resources (NOT an official SHA policy standard)",
+      policyStatus: "NOT_POLICY_APPROVED",
+      policyDisclaimer: "The 5% and 10% burden thresholds are illustrative research benchmarks drawn from international health financing literature, NOT official SHA statutory limits under the Social Health Insurance Act, 2023."
     }
   };
 }

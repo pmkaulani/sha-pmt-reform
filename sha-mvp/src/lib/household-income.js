@@ -428,6 +428,8 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
       calculationStatus: "VALIDATION_FAILED",
       errors: validation.errors,
       lines: [],
+      reviewFlags: [],
+      duplicateRelationships: [],
       monthlyEarnedNetKsh: null,
       annualisedEarnedNetKsh: null,
       monthlyPolicyReviewResourcesKsh: null,
@@ -710,6 +712,16 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
 
     reviewFlags,
 
+    hasProvisionalShortWindowSources: lines.some(l => l.periodStatus === "SHORT_WINDOW_PROVISIONAL"),
+    annualisationReliability: lines.some(l => l.periodStatus === "SHORT_WINDOW_PROVISIONAL")
+      ? "PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION"
+      : (canPopulatePrototypeEarnedIncomeBase ? "STANDARD_ANNUAL_ESTIMATE" : "UNRELIABLE_MANUAL_REVIEW_REQUIRED"),
+
+    allowableCostsPolicyNotice: "Reported operating cost deductions represent research prototype assumptions for informal-sector net earnings. Formal deduction categories, caps, and verification guidelines require statutory approval by SHA and MoH.",
+    reimbursementReconciliationNotice: totalReportedReimbursements > 0
+      ? "Reimbursements detected. Comprehensive reconciliation requires explicit itemised expense-to-reimbursement mapping to avoid double recovery."
+      : "No reimbursements reported.",
+
     calculationScope: "PROTOTYPE_EARNED_INCOME_SUBTOTAL_ONLY",
 
     disclaimer:
@@ -718,8 +730,53 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
 }
 
 /**
+ * Creates an authoritative, valid explicit zero-earned-income assessment state.
+ * Used when a household explicitly declares having no earned income from active livelihoods.
+ */
+export function createZeroEarnedIncomeAssessment(commonAssessmentPeriod = null) {
+  return {
+    isValid: true,
+    calculationVersion: "household-income-ledger-v1.1",
+    timestamp: new Date().toISOString(),
+    calculationStatus: "CALCULATED_EXPLICIT_ZERO_EARNED",
+    canPopulatePrototypeEarnedIncomeBase: true,
+    hasDeclaredNoEarnedIncome: true,
+    commonAssessmentPeriod: commonAssessmentPeriod || {
+      windowMonths: 12,
+      note: "Standard 12-month rolling assessment window (formal standard requires SHA policy confirmation)",
+    },
+    lines: [],
+    duplicateRelationships: [],
+    reproducibleInputSnapshot: [],
+    monthlyEarnedNetKsh: 0,
+    annualisedEarnedNetKsh: 0,
+    monthlyPolicyReviewResourcesKsh: 0,
+    monthlyNonEarnedFlowsKsh: 0,
+    monthlyFiduciaryFlowsKsh: 0,
+    requiresManualReview: false,
+    requiresPolicyDecision: false,
+    policyDecisionSummary: null,
+    reviewFlags: [
+      {
+        code: "EXPLICIT_ZERO_EARNED_INCOME",
+        message: "Household has explicitly declared no earned income from active livelihoods.",
+      }
+    ],
+    hasProvisionalShortWindowSources: false,
+    annualisationReliability: "EXPLICIT_ZERO_ANNUAL_ESTIMATE",
+    allowableCostsPolicyNotice: "Operating expense rules reflect research assumptions. Official deduction allowances require SHA approval.",
+    reimbursementReconciliationNotice: "No reimbursements reported.",
+    calculationScope: "PROTOTYPE_EARNED_INCOME_SUBTOTAL_ONLY",
+    disclaimer: "Household explicitly declared zero earned income from active livelihoods. Under statutory rules (Regulation 17(2)), minimum contribution of KSh 300/mo applies unless approved for full indigent subsidy under Regulation 17(3)."
+  };
+}
+
+/**
  * Reproduces the exact household income calculation from a saved snapshot.
  */
 export function reproduceHouseholdIncome(snapshot, commonAssessmentPeriod = null) {
+  if (snapshot && typeof snapshot === "object" && snapshot.hasDeclaredNoEarnedIncome === true) {
+    return createZeroEarnedIncomeAssessment(commonAssessmentPeriod);
+  }
   return calculateHouseholdIncome(snapshot, commonAssessmentPeriod);
 }

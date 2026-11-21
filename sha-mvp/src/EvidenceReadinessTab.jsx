@@ -299,7 +299,7 @@ export default function EvidenceReadinessTab() {
             <div className="mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div className="bg-gray-50 p-3 rounded border">
                 <div className="font-bold text-gray-800">Urban Model Specification</div>
-                <div className="text-gray-600 mt-1">43 proxy variables referenced in Fifth Schedule</div>
+                <div className="text-gray-600 mt-1">43 proxy variables identified in external disclosures (provisional)</div>
                 <div className="text-red-600 font-semibold mt-2">
                   Status: {OFFICIAL_SHA_BASELINE_SPECIFICATION.urbanModelSpecification.status}
                 </div>
@@ -310,7 +310,7 @@ export default function EvidenceReadinessTab() {
 
               <div className="bg-gray-50 p-3 rounded border">
                 <div className="font-bold text-gray-800">Rural Model Specification</div>
-                <div className="text-gray-600 mt-1">43 proxy variables referenced in Fifth Schedule</div>
+                <div className="text-gray-600 mt-1">43 proxy variables identified in external disclosures (provisional)</div>
                 <div className="text-red-600 font-semibold mt-2">
                   Status: {OFFICIAL_SHA_BASELINE_SPECIFICATION.ruralModelSpecification.status}
                 </div>

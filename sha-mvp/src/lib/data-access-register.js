@@ -46,9 +46,9 @@ export const DATA_ACCESS_REGISTER = [
     requestDate: null,
     status: ACCESS_STATUSES.NOT_REQUESTED,
     dataOwnerContact: "Data Protection Officer / Director General, Social Health Authority",
-    provenanceReference: "Social Health Insurance (General) Regulations, 2024 (LN 147/2024)",
+    provenanceReference: "Social Health Insurance (General) Regulations, 2024 (Regulations 17 and 21)",
     restrictionsAndLimitations: "Confidential government technical document; requires formal inter-agency disclosure request.",
-    notesAndNextAction: "Prepare formal technical inquiry package to SHA under Kenya Data Protection Act 2019 research provisions."
+    notesAndNextAction: "Prepare formal technical inquiry package to SHA under Kenya Data Protection Act 2019 research provisions (Sections 30 and 53)."
   },
   {
     resourceId: "SHA-DICT-REG21-VARS",
@@ -60,7 +60,7 @@ export const DATA_ACCESS_REGISTER = [
     requestDate: null,
     status: ACCESS_STATUSES.NOT_REQUESTED,
     dataOwnerContact: "Chief Information Officer, Social Health Authority",
-    provenanceReference: "Regulation 21 and Fifth Schedule proxy means test variables",
+    provenanceReference: "Regulation 21 means-testing framework and provisional external disclosures",
     restrictionsAndLimitations: "Operational survey instruments may be proprietary or restricted.",
     notesAndNextAction: "Include in formal SHA Technical Inquiries Schedule."
   },
@@ -80,7 +80,7 @@ export const DATA_ACCESS_REGISTER = [
   },
   {
     resourceId: "SHA-TARIFF-SUBSIDY-TIERS",
-    resourceName: "Official Fifth Schedule Premium Tariff Bands & Subsidy Thresholds",
+    resourceName: "Official SHA Premium Tariff Bands & Subsidy Thresholds",
     responsibleInstitution: "Social Health Authority (SHA) / Ministry of Health",
     resourceType: RESOURCE_TYPES.TARIFF_SCHEDULE,
     purpose: "Map calculated proxy scores to statutory monthly contribution figures and indigent subsidy eligibility.",
@@ -88,7 +88,7 @@ export const DATA_ACCESS_REGISTER = [
     requestDate: null,
     status: ACCESS_STATUSES.PARTIALLY_RECEIVED,
     dataOwnerContact: "Policy & Planning Directorate, Ministry of Health",
-    provenanceReference: "LN 147/2024 Fifth Schedule (specifies 2.75% and KSh 300 minimum, but lacks score cutoff bands)",
+    provenanceReference: "Regulation 17(1) & (2) (specifies 2.75% annual rate and KSh 300/mo minimum; Note: Fifth Schedule is titled 'Zones' under Regulation 62(3) and lacks score cutoff bands)",
     restrictionsAndLimitations: "Published regulations state minimums but omit intermediate bracket mappings.",
     notesAndNextAction: "Request formal score band schedule."
   },

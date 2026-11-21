@@ -109,26 +109,7 @@ export function runEvaluation({
     };
   }
 
-  // 5. Check Construct Compatibility
-  const compatibility = checkModelTargetCompatibility(modelId, targetId);
-  if (!compatibility.canEvaluate) {
-    return {
-      runId,
-      timestamp,
-      status: "NOT_EVALUABLE",
-      modelId: model.id,
-      modelVersion: model.version,
-      targetId: target.id,
-      datasetId: dataset.id,
-      reason: compatibility.reason || "Model output construct is not comparable to the selected reference target.",
-      limitations: [
-        `Candidate model output '${model.outputMeaning}' cannot be mapped to '${target.name}' without introducing unsupported assumptions.`
-      ],
-      metrics: null
-    };
-  }
-
-  // 6. Dataset Availability & Records
+  // 5. Dataset Availability & Records
   const records = Array.isArray(customRecords) ? customRecords : [];
   if (records.length === 0) {
     return {
@@ -144,7 +125,7 @@ export function runEvaluation({
     };
   }
 
-  // 7. Check for self-evaluation (prevent model generating its own reference outcome)
+  // 6. Check for self-evaluation (prevent model generating its own reference outcome)
   const isSelfEvaluated = records.some(r => r?._generatedByModel === model.id);
   if (isSelfEvaluated) {
     return {
@@ -152,6 +133,25 @@ export function runEvaluation({
       timestamp,
       status: "BLOCKED",
       reason: "Methodological violation: Candidate model cannot generate the reference outcome against which it is evaluated.",
+      metrics: null
+    };
+  }
+
+  // 7. Check Construct Compatibility
+  const compatibility = checkModelTargetCompatibility(modelId, targetId);
+  if (!compatibility.canEvaluate) {
+    return {
+      runId,
+      timestamp,
+      status: "NOT_EVALUABLE",
+      modelId: model.id,
+      modelVersion: model.version,
+      targetId: target.id,
+      datasetId: dataset.id,
+      reason: compatibility.reason || "Model output construct is not comparable to the selected reference target.",
+      limitations: [
+        `Candidate model output '${model.outputMeaning}' cannot be mapped to '${target.name}' without introducing unsupported assumptions.`
+      ],
       metrics: null
     };
   }

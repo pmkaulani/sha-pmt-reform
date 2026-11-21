@@ -66,5 +66,5 @@
 
 4. **Critical Dependencies for Progression:**
    - **Empirical Validation:** Access to representative KNBS household survey data.
-   - **Institutional Transparency:** Disclosure of official Regulation 21 Fifth Schedule regression weights from SHA.
+   - **Institutional Transparency:** Disclosure of official Regulation 21 econometric parameters and regression weights from SHA (provisional external disclosures pending official verification).
    - **Statutory Authority:** Legal opinion from SHA Counsel and DPO approving the shadow testing protocol under Kenya DPA 2019.

@@ -66,7 +66,9 @@ export const MISSING_VALUE_TREATMENTS = Object.freeze({
 export const REVIEWER_STATUSES = Object.freeze({
   DRAFT: "DRAFT",
   REVIEWED: "REVIEWED",
-  VERIFIED: "VERIFIED"
+  VERIFIED: "VERIFIED",
+  DEMO_ONLY: "DEMO_ONLY",
+  UNVERIFIED: "UNVERIFIED"
 });
 
 /**
@@ -228,7 +230,7 @@ export function mapSourceRecord(sourceRecord, mappingList = []) {
         case TRANSFORMATION_RULES.IDENTITY:
           if (mapping.dataType === DATA_TYPES.NUMBER) {
             const num = Number(rawVal);
-            if (isNaN(num)) {
+            if (!Number.isFinite(num)) {
               errors.push(`Cannot convert value '${rawVal}' in '${mapping.sourceDatasetField}' to Number.`);
             } else {
               canonicalRecord[targetKey] = num;
@@ -240,7 +242,7 @@ export function mapSourceRecord(sourceRecord, mappingList = []) {
 
         case TRANSFORMATION_RULES.ANNUALIZE_FROM_MONTHLY:
           const mNum = Number(rawVal);
-          if (isNaN(mNum) || mNum < 0) {
+          if (!Number.isFinite(mNum) || mNum < 0) {
             errors.push(`Invalid monthly value '${rawVal}' for annualization in '${mapping.sourceDatasetField}'.`);
           } else {
             canonicalRecord[targetKey] = mNum * 12;
@@ -250,7 +252,7 @@ export function mapSourceRecord(sourceRecord, mappingList = []) {
 
         case TRANSFORMATION_RULES.MONTHLY_FROM_ANNUAL:
           const aNum = Number(rawVal);
-          if (isNaN(aNum) || aNum < 0) {
+          if (!Number.isFinite(aNum) || aNum < 0) {
             errors.push(`Invalid annual value '${rawVal}' for monthly conversion in '${mapping.sourceDatasetField}'.`);
           } else {
             canonicalRecord[targetKey] = aNum / 12;
@@ -270,7 +272,7 @@ export function mapSourceRecord(sourceRecord, mappingList = []) {
 
         case TRANSFORMATION_RULES.LOG_TRANSFORM:
           const lNum = Number(rawVal);
-          if (isNaN(lNum) || lNum <= 0) {
+          if (!Number.isFinite(lNum) || lNum <= 0) {
             errors.push(`Cannot log-transform non-positive or invalid number '${rawVal}' in '${mapping.sourceDatasetField}'.`);
           } else {
             canonicalRecord[targetKey] = Math.log(lNum);
@@ -279,7 +281,7 @@ export function mapSourceRecord(sourceRecord, mappingList = []) {
 
         case TRANSFORMATION_RULES.BINARY_THRESHOLD:
           const bNum = Number(rawVal);
-          canonicalRecord[targetKey] = !isNaN(bNum) && bNum > 0;
+          canonicalRecord[targetKey] = Number.isFinite(bNum) && bNum > 0;
           break;
 
         default:
@@ -314,8 +316,8 @@ export const DEMO_KIHBS_MAPPING_DICTIONARY = [
     unit: "IDENTIFIER",
     transformationRule: TRANSFORMATION_RULES.IDENTITY,
     missingValueTreatment: MISSING_VALUE_TREATMENTS.REJECT_RECORD,
-    sourceEvidenceReference: "KIHBS 2015/16 Identification Section, col 1",
-    reviewerStatus: REVIEWER_STATUSES.VERIFIED
+    sourceEvidenceReference: "KIHBS 2015/16 Identification Section, variable hhid",
+    reviewerStatus: REVIEWER_STATUSES.DEMO_ONLY
   }),
   createVariableMapping({
     sourceDatasetField: "totcons_annual",
@@ -326,33 +328,34 @@ export const DEMO_KIHBS_MAPPING_DICTIONARY = [
     transformationRule: TRANSFORMATION_RULES.IDENTITY,
     missingValueTreatment: MISSING_VALUE_TREATMENTS.REJECT_RECORD,
     sourceEvidenceReference: "KIHBS 2015/16 Consumption Aggregate Derived File, variable totcons",
-    reviewerStatus: REVIEWER_STATUSES.REVIEWED
+    reviewerStatus: REVIEWER_STATUSES.DEMO_ONLY
   }),
   createVariableMapping({
-    sourceDatasetField: "hh_size",
-    sourceFieldDescription: "Usual Household Resident Member Count",
+    sourceDatasetField: "hhsize",
+    sourceFieldDescription: "Usual Household Resident Member Count (KNBS standard field hhsize)",
     canonicalConcept: CANONICAL_CONCEPTS.HOUSEHOLD_SIZE,
     dataType: DATA_TYPES.NUMBER,
     unit: "COUNT",
     transformationRule: TRANSFORMATION_RULES.IDENTITY,
     missingValueTreatment: MISSING_VALUE_TREATMENTS.REJECT_RECORD,
-    sourceEvidenceReference: "KIHBS 2015/16 Household Roster Section 1",
-    reviewerStatus: REVIEWER_STATUSES.VERIFIED
+    sourceEvidenceReference: "KIHBS 2015/16 Household Roster Section 1, variable hhsize",
+    reviewerStatus: REVIEWER_STATUSES.DEMO_ONLY
   }),
   createVariableMapping({
-    sourceDatasetField: "residence_type",
-    sourceFieldDescription: "Urban/Rural Cluster Designation",
+    sourceDatasetField: "resid",
+    sourceFieldDescription: "KNBS Cluster Stratum (resid: 1=Rural, 2=Peri-Urban, 3=Core Urban) / eatype (1=Urban, 2=Rural)",
     canonicalConcept: CANONICAL_CONCEPTS.URBAN_RURAL_CLASSIFICATION,
     dataType: DATA_TYPES.CATEGORICAL,
     unit: "CATEGORY_CODE",
     transformationRule: TRANSFORMATION_RULES.CATEGORICAL_CODE_MAP,
     categoryMapping: {
-      "1": "URBAN",
-      "2": "RURAL"
+      "1": "RURAL",
+      "2": "URBAN",
+      "3": "URBAN"
     },
     missingValueTreatment: MISSING_VALUE_TREATMENTS.REJECT_RECORD,
-    sourceEvidenceReference: "KIHBS 2015/16 Sample Master Frame Stratification",
-    reviewerStatus: REVIEWER_STATUSES.VERIFIED
+    sourceEvidenceReference: "KIHBS 2015/16 Sample Master Frame Stratification (resid / eatype)",
+    reviewerStatus: REVIEWER_STATUSES.DEMO_ONLY
   }),
   createVariableMapping({
     sourceDatasetField: "roof_mat",
@@ -371,7 +374,7 @@ export const DEMO_KIHBS_MAPPING_DICTIONARY = [
     },
     missingValueTreatment: MISSING_VALUE_TREATMENTS.FLAG_AND_RETAIN,
     sourceEvidenceReference: "KIHBS 2015/16 Housing Section 8, Q14",
-    reviewerStatus: REVIEWER_STATUSES.REVIEWED
+    reviewerStatus: REVIEWER_STATUSES.DEMO_ONLY
   }),
   createVariableMapping({
     sourceDatasetField: "cook_fuel",
@@ -391,6 +394,6 @@ export const DEMO_KIHBS_MAPPING_DICTIONARY = [
     },
     missingValueTreatment: MISSING_VALUE_TREATMENTS.FLAG_AND_RETAIN,
     sourceEvidenceReference: "KIHBS 2015/16 Housing Section 8, Q19",
-    reviewerStatus: REVIEWER_STATUSES.REVIEWED
+    reviewerStatus: REVIEWER_STATUSES.DEMO_ONLY
   })
 ];

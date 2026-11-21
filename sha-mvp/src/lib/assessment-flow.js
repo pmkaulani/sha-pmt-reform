@@ -290,11 +290,16 @@ export function buildAssessmentReview({
 
     requiresManualReview: Boolean(snapshot.requiresManualReview),
     requiresPolicyDecision: Boolean(snapshot.requiresPolicyDecision),
+    isProvisionalPolicyPending: Boolean(snapshot.requiresPolicyDecision),
     policyDecisionSummary: snapshot.policyDecisionSummary ?? (
       snapshot.requiresPolicyDecision
         ? "Transfers and social assistance require approved SHA policy rules regarding means-testing inclusion or exclusion."
         : null
     ),
+    hasProvisionalShortWindowSources: Boolean(snapshot.hasProvisionalShortWindowSources),
+    annualisationReliability: snapshot.annualisationReliability ?? "STANDARD_ANNUAL_ESTIMATE",
+    allowableCostsPolicyNotice: snapshot.allowableCostsPolicyNotice ?? "Operating expense deductions represent research assumptions.",
+    reimbursementReconciliationNotice: snapshot.reimbursementReconciliationNotice ?? "Reconciliation requires itemised mapping.",
 
     disclaimer:
       "This review presents member-reported information for technical demonstration. It is not an official SHA means-testing assessment, eligibility determination, or subsidy approval under the Social Health Insurance Act.",

@@ -302,7 +302,7 @@ export default function PilotReadinessTab() {
                         {evKey}
                       </span>
                       <span style={{ fontSize: 10, color: isChecked ? S.sage : S.terra, fontWeight: 600 }}>
-                        {isChecked ? "(Verified Documented)" : "(Missing Approval)"}
+                        {isChecked ? "(Synthetic Demo Checked)" : "(Missing Approval)"}
                       </span>
                     </div>
                   );

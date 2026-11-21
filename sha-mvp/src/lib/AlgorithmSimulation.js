@@ -1,8 +1,9 @@
 // SHA Means-Testing Evaluation - v2.1 prototype rules engine
-// The 2.75% contribution rate and KSh 300 monthly floor are regulatory reference parameters
-// for non-salaried households under Regulation 18 of the Social Health Insurance Regulations.
+// The 2.75% contribution rate and KSh 300 monthly floor are statutory reference parameters
+// for non-salaried households under Regulation 17(1) & (2) of the Social Health Insurance (General) Regulations, 2024.
 // This prototype does NOT implement or represent the official SHA means-testing instrument established
-// under Regulation 21 and the Fifth Schedule. Current income estimations, illustrative deductions,
+// under Regulation 21 (note: the Fifth Schedule of the Regulations is titled 'Zones' under Regulation 62(3)
+// and does not contain the PMT formula). Current income estimations, illustrative deductions,
 // and calculation rules are research prototype assumptions that require validation against SHA's
 // official instrument, model parameters, and administrative implementation.
 //
@@ -57,14 +58,14 @@ export function validateAssessmentInputs(d) {
 }
 
 export const BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: true, tier: 'Low-Income (Reg. 18 Reference: KSh 300 Floor)' },
-  { min: 131001, max: 450000, isIndigent: false, tier: 'Standard' }, // Reg. 18 2.75% reference parameter
-  { min: 450001, max: Infinity, isIndigent: false, tier: 'Upper' }, // Reg. 18 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
+  { min: 0, max: 131000, monthly: 300, isIndigent: true, tier: 'Low-Income (Reg. 17(2) Reference: KSh 300 Floor)' },
+  { min: 131001, max: 450000, isIndigent: false, tier: 'Standard' }, // Reg. 17(1) 2.75% reference parameter
+  { min: 450001, max: Infinity, isIndigent: false, tier: 'Upper' }, // Reg. 17(1) 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
 ];
 
 export const PROPOSED_BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: true }, // Reg. 18 reference minimum contribution (KSh 300 floor for non-salaried households)
-  { min: 131001, max: Infinity, isIndigent: false }, // Reg. 18 2.75% rate applied to evaluated AGI (prototype policy model; requires validation against Regulation 21 means-testing instrument)
+  { min: 0, max: 131000, monthly: 300, isIndigent: true }, // Reg. 17(2) reference minimum contribution (KSh 300 floor for non-salaried households)
+  { min: 131001, max: Infinity, isIndigent: false }, // Reg. 17(1) 2.75% rate applied to evaluated AGI (prototype policy model; requires validation against Regulation 21 means-testing instrument)
 ];
 
 const ASAL_COUNTIES = {

@@ -75,13 +75,12 @@ All legal and data governance documents have been audited and corrected:
 * **Section 35 & Regulation 22:** Clarified that under Section 35 and Regulation 22 of the Data Protection (General) Regulations 2021, automated decision-making requires **substantive, meaningful human intervention**, and that a perfunctory review checkbox does not satisfy statutory requirements.
 * **Section 53:** Correctly cited as **Processing for Research, Statistical, and Historical Purposes** alongside the **ODPC 2025 Guidance Notes on Processing for Research Purposes**.
 
-### Social Health Insurance Regulatory Corrections:
-* **Regulation 21(2):** Instrument development and calibration.
-* **Regulation 21(3):** Socio-economic information collected.
-* **Regulation 21(4):** Utilization of collected data to determine and estimate household income.
-* **Regulation 21(6):** Direct statutory link to the Fifth Schedule formula.
-* **Legal Notice 55 of 2025:** Formally verified that the 2025 Amendment Regulations **did not amend Regulation 21 or the Fifth Schedule**.
-* **Statutory Reconciliation:** The documentation explicitly presents whether the income ledger can be introduced administratively under Regulation 21(4) or requires an amendment to the Fifth Schedule as an **unresolved legal question requiring formal advice from the Attorney General and SHA Legal Counsel**.
+### Social Health Insurance Statutory & Regulatory Corrections:
+* **Regulation 17(1) & 17(2):** Regulation 17(1) establishes the annual contribution rate of 2.75% of household income as determined in accordance with Regulation 21 for households whose income is not derived from salaried employment. Regulation 17(2) establishes the statutory minimum contribution of KSh 300 per month (KSh 3,600 annually).
+* **Regulation 21(1)–(5):** Regulation 21 governs means testing, with subsections (1) through (5) covering instrument development, proxy indicators, and income estimation. Note: Regulation 21 contains no subsection (6).
+* **The Fifth Schedule is "Zones" (Regulation 62(3)):** The Fifth Schedule to the Regulations is titled **"Zones"** under Regulation 62(3), designating geographic groupings of counties for health facility tariffs. It does **NOT** contain the means-testing formula, regression weights, or proxy variables.
+* **Revocation of LN 147/2024 by LN 55/2025:** Legal Notice 55 of 2025 revoked Legal Notice 147 of 2024. Neither instrument contains a published regression table. The 43-variable PMT regression model is an administrative/econometric instrument developed for SHA (disclosed via journalistic investigations), not a published statutory schedule.
+* **Statutory Reconciliation:** The documentation explicitly presents whether the income ledger can be introduced administratively under Regulation 21(2) & (4) or requires an amendment to the Regulations as an **unresolved legal question requiring formal advice from the Attorney General and SHA Legal Counsel**.
 
 ---
 
@@ -197,7 +196,7 @@ The project is structurally, methodologically, and legally prepared for inspecti
 ## 13. What SHA Must Provide Next
 
 To transition from research prototype into an empirical validation exercise, the Social Health Authority must provide:
-1. **The Deployed MTI Specification:** Official regression weights, regional constants, and Fifth Schedule cutoff bands.
+1. **The Deployed MTI Specification:** Official regression weights, regional constants, preprocessing transforms, and tariff cutoff bands deployed under Regulation 21 (which remain undisclosed administrative operational parameters rather than a statutory schedule).
 2. **The 43-Variable Operational Codebook:** Question wordings, skip patterns, and preprocessing reference categories.
 3. **Statutory Legal Basis Designation:** Formal legal opinion on applicable lawful processing grounds under DPA Section 30.
 4. **Data Sharing Agreement (DSA):** Formal inter-agency agreement under DPA Section 53 and ODPC 2025 Research Guidance for an anonymized benchmark sample (sample size determined via formal statistical power calculation).

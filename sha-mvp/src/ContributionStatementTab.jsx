@@ -197,7 +197,19 @@ export default function ContributionStatementTab({ results, demoPaymentEntries =
               PROVISIONAL_PENDING_POLICY
             </span>
             <div style={{ fontSize: 12, color: "#92400E" }}>
-              <strong>Policy Decision Required:</strong> Household declared transfers, remittances or social assistance. {d.incomeAssessmentSnapshot.policyDecisionSummary || "Treatment in means-testing requires SHA policy determination."}
+              <strong>Policy Decision Required:</strong> Household declared transfers, remittances or social assistance. {d.incomeAssessmentSnapshot.policyDecisionSummary || "Treatment in means-testing requires SHA policy determination."} Output is provisional and non-binding.
+            </div>
+          </div>
+        )}
+
+        {/* Provisional Short Window Extrapolation Callout */}
+        {d.incomeAssessmentSnapshot?.hasProvisionalShortWindowSources && (
+          <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 6, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", background: "#DC2626", color: "#FFF", borderRadius: 4 }}>
+              PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION
+            </span>
+            <div style={{ fontSize: 12, color: "#991B1B" }}>
+              <strong>Provisional Short-Window Extrapolation:</strong> Household reported income sources observed over fewer than 12 months (3–11 months). Annualisation is an uncalibrated provisional extrapolation and cannot be treated as an official binding SHA determination.
             </div>
           </div>
         )}
@@ -215,7 +227,7 @@ export default function ContributionStatementTab({ results, demoPaymentEntries =
           <div>
             <div style={{ fontSize: 11, fontWeight: 600, color: "#64748B", textTransform: "uppercase" }}>Prototype Tier Classification</div>
             <div style={{ fontSize: 14, fontWeight: 700, color: next.isIndigent ? "#059669" : "#0284C7" }}>
-              {next.isIndigent ? "Low-Income Assessment (Reg. 18 Reference: KSh 300 Floor)" : `Standard Assessment Tier (${next.tier || "Standard"})`}
+              {next.isIndigent ? "Low-Income Assessment (Reg. 17(2) Reference: KSh 300 Floor)" : `Standard Assessment Tier (${next.tier || "Standard"})`}
             </div>
           </div>
           <div>
@@ -223,7 +235,13 @@ export default function ContributionStatementTab({ results, demoPaymentEntries =
             <div style={{ fontSize: 16, fontWeight: 800, color: next.isIndigent ? "#059669" : "#0F172A" }}>
               KSh {money(monthlyDue)}/mo
             </div>
-            <div style={{ fontSize: 10, color: "#64748B" }}>Unverified model assumption</div>
+            <div style={{ fontSize: 10, color: d.incomeAssessmentSnapshot?.hasProvisionalShortWindowSources ? "#DC2626" : "#64748B", fontWeight: d.incomeAssessmentSnapshot?.hasProvisionalShortWindowSources ? 600 : 400 }}>
+              {d.incomeAssessmentSnapshot?.hasProvisionalShortWindowSources
+                ? "Provisional extrapolation (non-binding)"
+                : d.incomeAssessmentSnapshot?.requiresPolicyDecision
+                ? "Provisional pending policy (non-binding)"
+                : "Unverified model assumption"}
+            </div>
           </div>
         </div>
 
@@ -380,7 +398,7 @@ export default function ContributionStatementTab({ results, demoPaymentEntries =
               </div>
             )}
             <div style={{ fontSize: 12, color: "#475569" }}>
-              Regulatory Reference Parameters (Reg. 18): <strong>2.75% of evaluated income</strong> (KSh 300/mo minimum floor for non-salaried households) → <strong>KSh {money(monthlyDue)}/mo</strong>
+              Regulatory Reference Parameters (Reg. 17(1) & (2)): <strong>2.75% of evaluated income</strong> (KSh 300/mo minimum floor for non-salaried households) → <strong>KSh {money(monthlyDue)}/mo</strong>
             </div>
           </div>
         </div>
@@ -399,7 +417,7 @@ export default function ContributionStatementTab({ results, demoPaymentEntries =
 
         {/* Prototype Legal Notice */}
         <div style={{ borderTop: "1px dashed #CBD5E1", paddingTop: 12, fontSize: 11, color: "#64748B", lineHeight: 1.5 }}>
-          <strong>PROTOTYPE DEMONSTRATION NOTICE:</strong> This document is an illustrative output produced solely for technical demonstration and policy evaluation of the proposed AGI rules engine. While the 2.75% rate and KSh 300/mo floor reflect regulatory reference parameters under Regulation 18 of the Social Health Insurance Regulations for non-salaried households, this prototype does NOT implement or represent the official means-testing instrument established under Regulation 21 and the Fifth Schedule. All income estimations, illustrative deductions, and model rules are research assumptions that require validation against SHA's official instrument, parameters, and administrative implementation. It is NOT an official determination, statement, demand note, or invoice issued by the Social Health Authority (SHA) of Kenya. Official premiums, determinations, and appeals must be processed exclusively through SHA's authorized channels (*147# or afyayangu.go.ke).
+          <strong>PROTOTYPE DEMONSTRATION NOTICE:</strong> This document is an illustrative output produced solely for technical demonstration and policy evaluation of the proposed AGI rules engine. While the 2.75% annual rate and KSh 300/mo floor reflect statutory reference parameters under Regulation 17(1) & (2) of the Social Health Insurance (General) Regulations, 2024 for non-salaried households, this prototype does NOT implement or represent the official means-testing instrument established under Regulation 21 (note: the Fifth Schedule of the Regulations is titled 'Zones' under Regulation 62(3) and does not contain the PMT formula). All income estimations, illustrative deductions, and model rules are research assumptions that require validation against SHA's official instrument, parameters, and administrative implementation. It is NOT an official determination, statement, demand note, or invoice issued by the Social Health Authority (SHA) of Kenya. Official premiums, determinations, and appeals must be processed exclusively through SHA's authorized channels (*147# or afyayangu.go.ke).
         </div>
       </div>
 
