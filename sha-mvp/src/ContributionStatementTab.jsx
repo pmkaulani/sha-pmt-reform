@@ -190,6 +190,18 @@ export default function ContributionStatementTab({ results, demoPaymentEntries =
           </div>
         </div>
 
+        {/* Provisional Policy Decision Callout */}
+        {d.incomeAssessmentSnapshot?.requiresPolicyDecision && (
+          <div style={{ background: "#FFFBEB", border: "1px solid #FCD34D", borderRadius: 6, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", background: "#D97706", color: "#FFF", borderRadius: 4 }}>
+              PROVISIONAL_PENDING_POLICY
+            </span>
+            <div style={{ fontSize: 12, color: "#92400E" }}>
+              <strong>Policy Decision Required:</strong> Household declared transfers, remittances or social assistance. {d.incomeAssessmentSnapshot.policyDecisionSummary || "Treatment in means-testing requires SHA policy determination."}
+            </div>
+          </div>
+        )}
+
         {/* Member Profile Snapshot */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, background: "#F8FAFC", padding: 14, borderRadius: 8, border: "1px solid #E2E8F0", marginBottom: 20 }}>
           <div>

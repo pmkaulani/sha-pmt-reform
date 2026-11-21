@@ -230,15 +230,22 @@ export function buildAssessmentReview({
     ? otherFinancialFlows
     : derivedOtherFlows;
 
+  const calculationStatus = snapshot.calculationStatus ?? (
+    snapshot.requiresManualReview
+      ? "BLOCKED_MANUAL_REVIEW"
+      : (snapshot.requiresPolicyDecision ? "PROVISIONAL_PENDING_POLICY" : "CALCULATED_STANDARD")
+  );
+
   return {
     status: "MEMBER_REPORTED",
+    calculationStatus,
     provenance: "Unverified household declaration",
     calculationVersion: snapshot.calculationVersion ?? "household-income-ledger-v1.1",
     assessmentPeriod: snapshot.assessmentPeriod ?? snapshot.commonAssessmentPeriod ?? {
       startDate: null,
       endDate: null,
-      windowMonths: 12,
-      note: "Standard 12-month rolling assessment window"
+      windowMonths: null,
+      note: "Assessment period determined per declared income source (formal standard rolling window requires SHA policy confirmation)"
     },
 
     incomeSourceCount: earnedSources.length,
@@ -283,6 +290,11 @@ export function buildAssessmentReview({
 
     requiresManualReview: Boolean(snapshot.requiresManualReview),
     requiresPolicyDecision: Boolean(snapshot.requiresPolicyDecision),
+    policyDecisionSummary: snapshot.policyDecisionSummary ?? (
+      snapshot.requiresPolicyDecision
+        ? "Transfers and social assistance require approved SHA policy rules regarding means-testing inclusion or exclusion."
+        : null
+    ),
 
     disclaimer:
       "This review presents member-reported information for technical demonstration. It is not an official SHA means-testing assessment, eligibility determination, or subsidy approval under the Social Health Insurance Act.",

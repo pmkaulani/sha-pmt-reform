@@ -107,8 +107,20 @@ export const OPERATING_EXPENSE_CATEGORIES = Object.freeze({
     isAllowablePrototype: true,
     description: "Seeds, fertilizer, animal feed, fabrication materials."
   },
+  RAW_MATERIALS: {
+    code: "RAW_MATERIALS",
+    label: "Raw materials and agricultural inputs",
+    isAllowablePrototype: true,
+    description: "Seeds, fertilizer, animal feed, fabrication materials."
+  },
   FUEL_TRANSPORT: {
     code: "FUEL_TRANSPORT",
+    label: "Fuel and business transport",
+    isAllowablePrototype: true,
+    description: "Fuel for commercial vehicle/generator, freight, cargo transit."
+  },
+  TRANSPORT: {
+    code: "TRANSPORT",
     label: "Fuel and business transport",
     isAllowablePrototype: true,
     description: "Fuel for commercial vehicle/generator, freight, cargo transit."
@@ -119,8 +131,20 @@ export const OPERATING_EXPENSE_CATEGORIES = Object.freeze({
     isAllowablePrototype: true,
     description: "Tools, machinery servicing, vehicle servicing for work."
   },
+  EQUIPMENT_REPAIRS: {
+    code: "EQUIPMENT_REPAIRS",
+    label: "Repairs and equipment maintenance",
+    isAllowablePrototype: true,
+    description: "Tools, machinery servicing, vehicle servicing for work."
+  },
   LABOUR_PAYMENTS: {
     code: "LABOUR_PAYMENTS",
+    label: "Wages paid to casual / hired labour",
+    isAllowablePrototype: true,
+    description: "Wages paid to non-household workers directly engaged in business."
+  },
+  LABOUR_PAID: {
+    code: "LABOUR_PAID",
     label: "Wages paid to casual / hired labour",
     isAllowablePrototype: true,
     description: "Wages paid to non-household workers directly engaged in business."
@@ -133,6 +157,12 @@ export const OPERATING_EXPENSE_CATEGORIES = Object.freeze({
   },
   FEES_LICENCES: {
     code: "FEES_LICENCES",
+    label: "County fees and statutory licences",
+    isAllowablePrototype: true,
+    description: "Single business permits, cess, market levies."
+  },
+  FEES_LICENSES: {
+    code: "FEES_LICENSES",
     label: "County fees and statutory licences",
     isAllowablePrototype: true,
     description: "Single business permits, cess, market levies."
@@ -168,6 +198,7 @@ function readAmount(value) {
 /**
  * Calculates observation months from explicit start and end dates.
  * Returns null if dates are invalid or inverted.
+ * Does not arbitrarily truncate periods longer than 12 months.
  */
 export function calculateMonthsFromDates(startDate, endDate) {
   if (!startDate || !endDate) return null;
@@ -176,18 +207,43 @@ export function calculateMonthsFromDates(startDate, endDate) {
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
   if (start > end) return null;
 
-  // Approximate calendar months difference
+  // Real calendar months difference
   const yearDiff = end.getFullYear() - start.getFullYear();
   const monthDiff = end.getMonth() - start.getMonth();
   const dayDiff = (end.getDate() - start.getDate()) / 30;
-  const totalMonths = Math.max(1, Math.min(12, Math.round(yearDiff * 12 + monthDiff + dayDiff)));
+  const totalMonths = Math.max(1, Math.round(yearDiff * 12 + monthDiff + dayDiff));
   return totalMonths;
+}
+
+/**
+ * Resolves active/inactive state of income sources based on zero-earned-income declaration.
+ * Pure helper function ensuring calculation, UI, review and audit snapshots share
+ * identical resolved state.
+ */
+export function resolveEffectiveIncomeSources(incomeSources = [], hasNoEarnedIncome = false) {
+  if (!Array.isArray(incomeSources)) return [];
+  return incomeSources.map((source) => {
+    const rule = INCOME_SOURCE_RULES[source.sourceType] || INCOME_SOURCE_RULES.OTHER_EARNED;
+    const isEarned = (rule?.bucket ?? "EARNED") === "EARNED";
+    if (hasNoEarnedIncome && isEarned) {
+      return {
+        ...source,
+        isActive: false,
+        inactiveReason: "ZERO_EARNED_INCOME_DECLARED",
+      };
+    }
+    return {
+      ...source,
+      isActive: true,
+      inactiveReason: null,
+    };
+  });
 }
 
 /**
  * Validates the full array of income sources, including:
  * - Common assessment reference periods
- * - Date ranges
+ * - Date ranges and manual duration contradiction checks
  * - Itemised operating expenses
  * - Duplicate relationships via `includedInSourceId`
  * - Non-circular references
@@ -246,20 +302,34 @@ export function validateIncomeSources(sources, commonAssessmentPeriod = null) {
     // Observation period calculation: dates take precedence when present
     let months = null;
     if (source.observationStartDate && source.observationEndDate) {
-      months = calculateMonthsFromDates(source.observationStartDate, source.observationEndDate);
-      if (months === null) {
+      const s = new Date(source.observationStartDate);
+      const e = new Date(source.observationEndDate);
+      if (isNaN(s.getTime()) || isNaN(e.getTime())) {
+        errors.push(`${prefix}: Observation start date or end date is invalid.`);
+      } else if (s > e) {
         errors.push(`${prefix}: Observation start date must be before end date.`);
+      } else {
+        const calcMonths = calculateMonthsFromDates(source.observationStartDate, source.observationEndDate);
+        months = calcMonths;
+
+        // Check for manual duration contradiction
+        if (source.monthsObserved !== undefined && source.monthsObserved !== null) {
+          const rawMonths = Number(source.monthsObserved);
+          if (source.manuallyEditedDuration || (rawMonths !== calcMonths && rawMonths !== 12)) {
+            errors.push(`${prefix}: Manually entered observation duration (${rawMonths} months) contradicts observation dates (${calcMonths} months).`);
+          }
+        }
       }
     } else if (source.monthsObserved !== undefined && source.monthsObserved !== null) {
       const rawMonths = Number(source.monthsObserved);
-      if (Number.isInteger(rawMonths) && rawMonths >= 1 && rawMonths <= 12) {
+      if (Number.isInteger(rawMonths) && rawMonths >= 1) {
         months = rawMonths;
       }
     }
 
     if (months === null) {
       errors.push(
-        `${prefix}: Observation period must be between 1 and 12 months, or valid start/end dates must be provided.`
+        `${prefix}: Observation period must be between 1 and 12 months (or longer with documented dates), or valid start/end dates must be provided.`
       );
     }
 
@@ -310,6 +380,8 @@ export function validateIncomeSources(sources, commonAssessmentPeriod = null) {
       if (parentId === id) {
         errors.push(`${prefix}: Self-reference error: Source cannot refer to itself as parent.`);
       }
+    } else if (source.alreadyIncludedElsewhere === true && !source.includedInSourceId) {
+      errors.push(`${prefix}: Source is marked as included elsewhere but does not specify a parent source ID.`);
     }
   });
 
@@ -353,6 +425,7 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
     return {
       isValid: false,
       canPopulatePrototypeEarnedIncomeBase: false,
+      calculationStatus: "VALIDATION_FAILED",
       errors: validation.errors,
       lines: [],
       monthlyEarnedNetKsh: null,
@@ -388,11 +461,12 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
   const lines = sources.map((source) => {
     const rule = INCOME_SOURCE_RULES[source.sourceType];
 
-    let months = 12;
+    let months = source.monthsObserved ? Number(source.monthsObserved) : 12;
     if (source.observationStartDate && source.observationEndDate) {
-      months = calculateMonthsFromDates(source.observationStartDate, source.observationEndDate) || 12;
-    } else if (source.monthsObserved) {
-      months = Number(source.monthsObserved);
+      const calcM = calculateMonthsFromDates(source.observationStartDate, source.observationEndDate);
+      if (calcM !== null) {
+        months = calcM;
+      }
     }
 
     const received = Number(source.amountReceivedKsh || 0);
@@ -423,13 +497,18 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
           description: "Reported direct operating costs"
         }];
       }
-      totalDeductedBusinessExpenses += costs;
+      if (source.isActive !== false) {
+        totalDeductedBusinessExpenses += costs;
+      }
     }
 
     const reportedNet = received - costs;
     const monthlyReceived = received / months;
     const monthlyCosts = costs / months;
     const monthlyNet = reportedNet / months;
+
+    // Inactive handling (e.g. zero-earned-income declared while retaining draft records)
+    const isInactive = source.isActive === false;
 
     // Duplicate relationship handling (`includedInSourceId` takes precedence over legacy boolean)
     let isDuplicate = false;
@@ -438,9 +517,17 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
     if (source.includedInSourceId) {
       parentSourceId = String(source.includedInSourceId).trim();
       isDuplicate = true;
+      const parentSource = sourceMap.get(parentSourceId);
+      const parentLabel = parentSource
+        ? (INCOME_SOURCE_RULES[parentSource.sourceType]?.label || parentSource.sourceType)
+        : parentSourceId;
       duplicateRelationships.push({
         childSourceId: source.id,
-        parentSourceId: parentSourceId
+        duplicateSourceId: source.id,
+        duplicateSourceLabel: rule.label,
+        parentSourceId: parentSourceId,
+        parentSourceLabel: parentLabel,
+        reason: "Declared as included in parent source"
       });
     } else if (source.alreadyIncludedElsewhere === true) {
       isDuplicate = true;
@@ -448,7 +535,10 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
 
     let countedInEarnedIncome = false;
 
-    if (rule.bucket === "EARNED" && !isDuplicate) {
+    if (isInactive) {
+      // Inactive sources are preserved in ledger output but NOT counted
+      countedInEarnedIncome = false;
+    } else if (rule.bucket === "EARNED" && !isDuplicate) {
       monthlyEarnedTotal += monthlyNet;
       countedInEarnedIncome = true;
     } else if (isDuplicate) {
@@ -480,42 +570,53 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
       monthlyFiduciaryTotal += monthlyReceived;
     }
 
-    // Observation period safeguards
+    // Observation period safeguards (only for active sources)
     const requiresFullYear = source.sourceType === "AGRICULTURE" || source.isSeasonal === true;
     let periodStatus = "FULL_ANNUAL";
 
-    if (requiresFullYear && months < 12) {
-      requiresManualReview = true;
-      periodStatus = "SEASONAL_INCOMPLETE";
-      reviewFlags.push({
-        code: "SEASONAL_PERIOD_INCOMPLETE",
-        sourceId: source.id,
-        message: `${rule.label} has only ${months} observed months. Full 12-month coverage is required for seasonal activities to prevent peak harvest extrapolation.`,
-      });
-    } else if (!requiresFullYear && months < 3) {
-      requiresManualReview = true;
-      periodStatus = "LIMITED_OBSERVATION_PERIOD";
-      reviewFlags.push({
-        code: "LIMITED_OBSERVATION_PERIOD",
-        sourceId: source.id,
-        message: `${rule.label} has fewer than 3 observed months. This observation window cannot establish a reliable pattern and requires manual review.`,
-      });
-    } else if (!requiresFullYear && months < 12) {
-      periodStatus = "SHORT_WINDOW_PROVISIONAL";
-      reviewFlags.push({
-        code: "SHORT_WINDOW_PROVISIONAL",
-        sourceId: source.id,
-        message: `${rule.label} covers ${months} observed months. Monthly average is provisional and not an established annual pattern.`,
-      });
-    }
+    if (!isInactive) {
+      if (months > 12) {
+        periodStatus = "EXTENDED_PERIOD";
+        reviewFlags.push({
+          code: "EXTENDED_OBSERVATION_PERIOD",
+          sourceId: source.id,
+          message: `${rule.label} covers ${months} observed months (longer than standard 12-month window). Monthly average is calculated over ${months} months and annualised.`,
+        });
+      } else if (requiresFullYear && months < 12) {
+        requiresManualReview = true;
+        periodStatus = "SEASONAL_INCOMPLETE";
+        reviewFlags.push({
+          code: "SEASONAL_PERIOD_INCOMPLETE",
+          sourceId: source.id,
+          message: `${rule.label} has only ${months} observed months. Full 12-month coverage is required for seasonal activities to prevent peak harvest extrapolation.`,
+        });
+      } else if (!requiresFullYear && months < 3) {
+        requiresManualReview = true;
+        periodStatus = "LIMITED_OBSERVATION_PERIOD";
+        reviewFlags.push({
+          code: "LIMITED_OBSERVATION_PERIOD",
+          sourceId: source.id,
+          message: `${rule.label} has fewer than 3 observed months. This observation window cannot establish a reliable pattern and requires manual review.`,
+        });
+      } else if (!requiresFullYear && months < 12) {
+        periodStatus = "SHORT_WINDOW_PROVISIONAL";
+        reviewFlags.push({
+          code: "SHORT_WINDOW_PROVISIONAL",
+          sourceId: source.id,
+          message: `${rule.label} covers ${months} observed months. Monthly average is provisional and not an established annual pattern.`,
+        });
+      }
 
-    if (rule.bucket === "EARNED" && reportedNet < 0) {
-      requiresManualReview = true;
-      reviewFlags.push({
-        code: "NEGATIVE_REPORTED_NET",
-        sourceId: source.id,
-        message: `${rule.label} has reported operating costs exceeding receipts (KSh ${reportedNet.toLocaleString()}). Manual review required.`,
-      });
+      if (rule.bucket === "EARNED" && reportedNet < 0) {
+        requiresManualReview = true;
+        reviewFlags.push({
+          code: "NEGATIVE_REPORTED_NET",
+          sourceId: source.id,
+          message: `${rule.label} has reported operating costs exceeding receipts (KSh ${reportedNet.toLocaleString()}). Manual review required.`,
+        });
+      }
+    } else {
+      periodStatus = "INACTIVE_RECORD";
     }
 
     return {
@@ -542,13 +643,15 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
       includedInSourceId: parentSourceId,
       alreadyIncludedElsewhere: isDuplicate,
 
+      isActive: !isInactive,
+      inactiveReason: isInactive ? (source.inactiveReason || "ZERO_EARNED_INCOME_DECLARED") : null,
+
       isSeasonal: source.isSeasonal === true,
       provenance: source.provenance || "MEMBER_DECLARED_UNVERIFIED",
     };
   });
 
   // Safeguard: Reimbursement double-counting check
-  // If reimbursements are recorded and expenses are deducted from business, flag for reconciliation
   if (totalReportedReimbursements > 0 && totalDeductedBusinessExpenses > 0) {
     reviewFlags.push({
       code: "REIMBURSEMENT_EXPENSE_OFFSET",
@@ -562,6 +665,13 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
     ? roundKsh(monthlyEarnedTotal)
     : null;
 
+  let calculationStatus = "CALCULATED_STANDARD";
+  if (requiresManualReview) {
+    calculationStatus = "BLOCKED_MANUAL_REVIEW";
+  } else if (requiresPolicyDecision) {
+    calculationStatus = "PROVISIONAL_PENDING_POLICY";
+  }
+
   const snapshot = JSON.parse(JSON.stringify(sources));
 
   return {
@@ -569,11 +679,12 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
     calculationVersion: "household-income-ledger-v1.1",
     timestamp: new Date().toISOString(),
 
+    calculationStatus,
     canPopulatePrototypeEarnedIncomeBase,
 
     commonAssessmentPeriod: commonAssessmentPeriod || {
       windowMonths: 12,
-      note: "Standard 12-month rolling assessment window",
+      note: "Standard 12-month rolling assessment window (prototype design parameter; requires formal SHA policy confirmation)",
     },
 
     lines,
@@ -593,13 +704,16 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
 
     requiresManualReview,
     requiresPolicyDecision,
+    policyDecisionSummary: requiresPolicyDecision
+      ? "Transfers and social assistance require approved SHA policy rules regarding means-testing inclusion or exclusion."
+      : null,
 
     reviewFlags,
 
     calculationScope: "PROTOTYPE_EARNED_INCOME_SUBTOTAL_ONLY",
 
     disclaimer:
-      "This calculation estimates a reported net earned-income subtotal. It is not a complete or approved SHA household means-testing determination. Other household resources, allowable deductions and transfer treatment require formal SHA policy and legal evaluation.",
+      "This calculation estimates a reported net earned-income subtotal under prototype rules. It is not an official SHA means-testing determination or government subsidy approval. Other household resources, allowable deductions and transfer treatment require formal SHA policy and legal evaluation.",
   };
 }
 

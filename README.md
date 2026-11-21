@@ -241,6 +241,41 @@ flowchart TD
 
 ---
 
+## Model Evaluation and Governance
+
+Phase 3 introduces an isolated model evaluation and governance framework to establish how alternative means-testing assessment methods should be tested against independent evidence.
+
+### 1. Why a Model Output Cannot Be Its Own Ground Truth
+In scientific evaluation, a model cannot be tested against its own predictions. Evaluating an AGI rules engine or a PMT-style regression requires an independent reference outcome—such as consumption expenditure or poverty status measured by an independent statistical authority (e.g. KNBS)—not the candidate model's internal score, proposed tier, or classification flags.
+
+### 2. Why a Difference in Contribution Amounts Does Not Prove Accuracy
+If Model A calculates KSh 300/month while Model B calculates KSh 700/month for the same household, that numerical difference demonstrates that the models disagree; it does **not** establish which model is correct. Determining whether either assessment reflects true household capacity requires comparison against independently verified benchmark data.
+
+### 3. Predictive Accuracy and Contribution Affordability Are Separate Questions
+- **Predictive Accuracy:** How closely the assessment method measures a household's actual economic welfare or disposable capacity relative to independent ground truth (measured via Mean Absolute Error, Root Mean Squared Error, sensitivity, specificity, and classification error rates).
+- **Contribution Affordability:** Whether the resulting statutory premium places an undue financial burden on a household relative to its available resources (measured via contribution-to-disposable-income burden ratios).
+An assessment tool could predict consumption with statistical precision yet generate a tariff that is unaffordable for an informal household managing volatile cash flows. These two dimensions must be evaluated through separate metrics.
+
+### 4. Current AGI Models Are Research Hypotheses
+The two candidate engines in this repository:
+- **Original Asset- and Liquidity-Aware AGI v2.1** (`src/lib/AlgorithmSimulation.original-agi-v2.1.js`)
+- **Declared-Income AGI v1 Experiment** (`src/lib/household-income.js` & `src/lib/AlgorithmSimulation.js`)
+are structured policy and software prototypes. They represent competing research hypotheses about how to assess informal-sector means fairly. They have not undergone national empirical validation and are not official SHA determinations.
+
+### 5. The Illustrative PMT Comparator Is NOT SHA's Deployed Model
+The baseline comparator in `src/lib/AlgorithmSimulation.js` is a simplified, illustrative 2-variable proxy regression constructed for demonstration. It is **not** a reconstruction of SHA's proprietary 43-variable regression model, and it does not contain SHA's actual empirical coefficients, categorical transformations, or calibration offsets. It cannot be used to benchmark or criticize the performance of SHA's live system.
+
+### 6. Official SHA Baseline Parameters and KNBS Microdata Are Required
+Comparative empirical evaluation of means-testing reform is strictly **BLOCKED** until two external dependencies are formally provided:
+1. **Official SHA Model Disclosure:** Full regression coefficients, dummy encodings, regional intercepts, and statutory lookup tables under Regulation 21 and the Fifth Schedule.
+2. **Approved Survey Microdata:** Lawfully accessible, anonymised national household budget microdata (e.g. KNBS KIHBS) with verified sampling weights, cluster identifiers, and strata.
+
+### 7. What Can and Cannot Be Concluded from Synthetic Demonstrations
+- **What synthetic demonstrations can establish:** Software correctness, edge-case resilience, user-flow usability, input validation integrity, and calculation reproducibility across simulated scenarios.
+- **What synthetic demonstrations CANNOT establish:** National accuracy, poverty targeting efficiency, demographic fairness, fiscal neutrality, or compliance with Article 27 of the Constitution. All synthetic evaluation runs are marked `DEMO_ONLY`.
+
+---
+
 ## Author
 
 **Peter M. Kaulani**  

@@ -11,6 +11,9 @@ import { logger } from "./lib/Logger.js";
 import AppealPreparationTab from "./AppealPreparationTab.jsx";
 import ContributionStatementTab from "./ContributionStatementTab.jsx";
 import OfficerReviewTab from "./OfficerReviewTab.jsx";
+import EvaluationLabTab from "./EvaluationLabTab.jsx";
+import EvidenceReadinessTab from "./EvidenceReadinessTab.jsx";
+import PilotReadinessTab from "./PilotReadinessTab.jsx";
 import {
   createInitialReviewRecord,
   createReviewEvent,
@@ -21,7 +24,8 @@ import {
   calculateHouseholdIncome,
   INCOME_SOURCE_RULES,
   OPERATING_EXPENSE_CATEGORIES,
-  calculateMonthsFromDates
+  calculateMonthsFromDates,
+  resolveEffectiveIncomeSources
 } from "./lib/household-income.js";
 import {
   MEMBER_ASSESSMENT_STEPS,
@@ -476,7 +480,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                       </>
                     ) : (
                       <>
-                        <div style={{fontSize:11,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:8}}>Vehicles ({d.vehicles.length})</div>
+                        <div style={{fontSize:11,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:8}}>Vehicles ({d.vehicles.length}) — Contextual asset indicator; does not directly alter earned income base</div>
                         <div style={{display:"grid",gap:8}}>
                           {d.vehicles.map((v,idx)=>(
                             <div key={idx} style={{display:"flex",gap:8,alignItems:"flex-end"}}>
@@ -588,14 +592,21 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
         </div>
 
         {d.hasNoEarnedIncome ? (
-          <div style={{padding: 16, background: S.sageD, border: `1px solid ${S.sageBd}`, borderRadius: 8, color: S.sage}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,fontWeight:700,fontSize:14}}>
-              <CheckCircle2 size={18}/>
-              <span>Zero earned income declared for this household</span>
+          <div style={{display:"grid",gap:12}}>
+            <div style={{padding: 16, background: S.sageD, border: `1px solid ${S.sageBd}`, borderRadius: 8, color: S.sage}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,fontWeight:700,fontSize:14}}>
+                <CheckCircle2 size={18}/>
+                <span>Zero earned income declared for this household</span>
+              </div>
+              <div style={{fontSize:12,color:S.text,marginTop:6,lineHeight:1.5}}>
+                The prototype's earned income base is set to <strong>KSh 0/month</strong>. You do not need to invent earnings. Click <strong>Continue to Other Money →</strong> below to record any cash transfers, family remittances, loans, or chama funds.
+              </div>
             </div>
-            <div style={{fontSize:12,color:S.text,marginTop:6,lineHeight:1.5}}>
-              The prototype's earned income base is set to <strong>KSh 0/month</strong>. You do not need to invent earnings. Click <strong>Continue to Other Money →</strong> below to record any cash transfers, family remittances, loans, or chama funds.
-            </div>
+            {earnedEntries.length > 0 && (
+              <div style={{padding: 12, background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 8, fontSize: 12, color: "#92400E", lineHeight: 1.4}}>
+                <strong>Draft records retained:</strong> {earnedEntries.length} earned income source(s) were previously entered. They are retained in your draft but marked <strong>INACTIVE</strong> and will not be counted in the assessment. Unchecking the box above will re-activate them.
+              </div>
+            )}
           </div>
         ) : (
           <div style={{display:"grid",gap:14}}>
@@ -615,16 +626,12 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                     id: `src-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
                     sourceType: earnedEntries.length === 0 ? "SELF_EMPLOYMENT" : "CASUAL_LABOUR",
                     monthsObserved: 12,
-                    amountReceivedKsh: 60000,
-                    directCostsKsh: 20000,
+                    amountReceivedKsh: 0,
+                    directCostsKsh: 0,
                     includedInSourceId: null,
                     alreadyIncludedElsewhere: false,
                     isSeasonal: false,
-                    expenses: [{
-                      category: "STOCK_PURCHASES",
-                      amountKsh: 20000,
-                      description: "Reported direct operating cost"
-                    }]
+                    expenses: []
                   });
                 }}
                 style={{padding:"8px 14px",background:S.blue,color:"#FFF",border:"none",borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 4px rgba(2,132,199,0.2)"}}
@@ -730,7 +737,10 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                               updListItem("incomeSources", originalIndex, "observationStartDate", val);
                               if (val && src.observationEndDate) {
                                 const m = calculateMonthsFromDates(val, src.observationEndDate);
-                                if (m) updListItem("incomeSources", originalIndex, "monthsObserved", m);
+                                if (m) {
+                                  updListItem("incomeSources", originalIndex, "monthsObserved", m);
+                                  updListItem("incomeSources", originalIndex, "manuallyEditedDuration", false);
+                                }
                               }
                             }}
                             style={{width:"100%",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"9px 12px",fontSize:13,fontFamily:"inherit"}}
@@ -746,7 +756,10 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                               updListItem("incomeSources", originalIndex, "observationEndDate", val);
                               if (src.observationStartDate && val) {
                                 const m = calculateMonthsFromDates(src.observationStartDate, val);
-                                if (m) updListItem("incomeSources", originalIndex, "monthsObserved", m);
+                                if (m) {
+                                  updListItem("incomeSources", originalIndex, "monthsObserved", m);
+                                  updListItem("incomeSources", originalIndex, "manuallyEditedDuration", false);
+                                }
                               }
                             }}
                             style={{width:"100%",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"9px 12px",fontSize:13,fontFamily:"inherit"}}
@@ -755,10 +768,22 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                         <FieldNumber
                           label="Observed Duration (Months)"
                           value={src.monthsObserved || 12}
-                          onChange={v=>updListItem("incomeSources", originalIndex, "monthsObserved", Math.max(1, Math.min(12, Math.round(v))))}
+                          onChange={v=>{
+                            const val = Math.max(1, Math.round(v));
+                            updListItem("incomeSources", originalIndex, "monthsObserved", val);
+                            if (src.observationStartDate && src.observationEndDate) {
+                              const calcM = calculateMonthsFromDates(src.observationStartDate, src.observationEndDate);
+                              if (calcM !== val) {
+                                updListItem("incomeSources", originalIndex, "manuallyEditedDuration", true);
+                              } else {
+                                updListItem("incomeSources", originalIndex, "manuallyEditedDuration", false);
+                              }
+                            }
+                          }}
                           min={1}
-                          max={12}
+                          max={60}
                           step={1}
+                          note={src.monthsObserved > 12 ? "Extended observation window (>12 months)" : undefined}
                         />
                       </div>
 
@@ -772,23 +797,16 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                           step={500}
                         />
                         {uiRules.showOperatingExpenses ? (
-                          <div style={{display:"grid",gap:6}}>
-                            <FieldNumber
-                              label="Reported operating costs (KSh)"
-                              value={src.directCostsKsh}
-                              onChange={v=>{
-                                const amt = Number(v || 0);
-                                updListItem("incomeSources", originalIndex, "directCostsKsh", amt);
-                                updListItem("incomeSources", originalIndex, "expenses", [{
-                                  category: src.expenseCategory || "STOCK_PURCHASES",
-                                  amountKsh: amt,
-                                  description: "Reported direct operating cost"
-                                }]);
-                              }}
-                              min={0}
-                              step={500}
-                              note="Allowable direct expenses: stock, raw materials, stall fees."
-                            />
+                          <div style={{display:"flex",flexDirection:"column",justifyContent:"center",padding:"10px 14px",background:S.surfaceUp,borderRadius:6,border:`1px solid ${S.borderUp}`}}>
+                            <div style={{fontSize:11,fontWeight:700,color:S.muted,textTransform:"uppercase"}}>Allowable Operating Costs</div>
+                            <div style={{fontSize:16,fontWeight:800,color:S.text,marginTop:4}}>
+                              KSh {(Number(src.directCostsKsh) || 0).toLocaleString()}
+                            </div>
+                            <div style={{fontSize:11,color:S.muted,marginTop:2}}>
+                              {Array.isArray(src.expenses) && src.expenses.length > 0
+                                ? `${src.expenses.length} itemised line item(s) below`
+                                : "No expenses itemised (KSh 0 deductible)"}
+                            </div>
                           </div>
                         ) : (
                           <div style={{display:"flex",flexDirection:"column",justifyContent:"center",padding:"10px 14px",background:S.faint,borderRadius:6,border:`1px dashed ${S.borderUp}`}}>
@@ -801,6 +819,114 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                           </div>
                         )}
                       </div>
+
+                      {/* Itemised Operating Expenses Editor */}
+                      {uiRules.showOperatingExpenses && (
+                        <div style={{marginTop:12,padding:12,background:S.faint,borderRadius:8,border:`1px solid ${S.border}`}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:6}}>
+                            <div>
+                              <div style={{fontSize:12,fontWeight:700,color:S.text}}>
+                                Itemised Operating Expenses ({Array.isArray(src.expenses) ? src.expenses.length : 0})
+                              </div>
+                              <div style={{fontSize:11,color:S.muted}}>
+                                Deductible direct costs: stock, raw materials, fuel, transport, repairs, labour, rent, fees.
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={()=>{
+                                const currentExpenses = Array.isArray(src.expenses) ? [...src.expenses] : [];
+                                const newExpense = {
+                                  id: `exp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+                                  category: "STOCK_PURCHASES",
+                                  amountKsh: 0,
+                                  description: ""
+                                };
+                                const updated = [...currentExpenses, newExpense];
+                                const total = updated.reduce((sum, e) => sum + (Number(e.amountKsh) || 0), 0);
+                                updListItem("incomeSources", originalIndex, "expenses", updated);
+                                updListItem("incomeSources", originalIndex, "directCostsKsh", total);
+                              }}
+                              style={{padding:"4px 10px",background:S.blue,color:"#FFF",border:"none",borderRadius:4,fontSize:11,fontWeight:600,cursor:"pointer"}}
+                            >
+                              + Add expense line item
+                            </button>
+                          </div>
+
+                          {Array.isArray(src.expenses) && src.expenses.length > 0 ? (
+                            <div style={{display:"grid",gap:8}}>
+                              {src.expenses.map((exp, expIdx)=>(
+                                <div key={exp.id || expIdx} style={{display:"grid",gridTemplateColumns:"2fr 1.2fr 2fr auto",gap:8,alignItems:"center",background:S.surface,padding:8,borderRadius:6,border:`1px solid ${S.borderUp}`}}>
+                                  <FieldSelect
+                                    label="Category"
+                                    value={exp.category}
+                                    onChange={cat=>{
+                                      const updated = [...src.expenses];
+                                      updated[expIdx] = { ...updated[expIdx], category: cat };
+                                      updListItem("incomeSources", originalIndex, "expenses", updated);
+                                    }}
+                                    options={[
+                                      ["STOCK_PURCHASES", "Stock purchases (goods for resale)"],
+                                      ["RAW_MATERIALS", "Raw materials & inputs"],
+                                      ["TRANSPORT", "Fuel & business transport"],
+                                      ["EQUIPMENT_REPAIRS", "Repairs & maintenance"],
+                                      ["LABOUR_PAID", "Casual / hired labour wages"],
+                                      ["RENT_UTILITIES", "Premises rent & utilities"],
+                                      ["FEES_LICENSES", "County fees & licences"],
+                                      ["OTHER_OPERATING", "Other direct operating costs"]
+                                    ]}
+                                    hideSpacer
+                                  />
+                                  <FieldNumber
+                                    label="Amount (KSh)"
+                                    value={exp.amountKsh}
+                                    onChange={amt=>{
+                                      const updated = [...src.expenses];
+                                      updated[expIdx] = { ...updated[expIdx], amountKsh: Number(amt || 0) };
+                                      const total = updated.reduce((sum, e) => sum + (Number(e.amountKsh) || 0), 0);
+                                      updListItem("incomeSources", originalIndex, "expenses", updated);
+                                      updListItem("incomeSources", originalIndex, "directCostsKsh", total);
+                                    }}
+                                    min={0}
+                                    step={100}
+                                    hideSpacer
+                                  />
+                                  <div>
+                                    <Label>Description / Note</Label>
+                                    <input
+                                      type="text"
+                                      value={exp.description || ""}
+                                      placeholder="e.g. wholesale goods stock"
+                                      onChange={e=>{
+                                        const updated = [...src.expenses];
+                                        updated[expIdx] = { ...updated[expIdx], description: e.target.value };
+                                        updListItem("incomeSources", originalIndex, "expenses", updated);
+                                      }}
+                                      style={{width:"100%",background:S.surface,border:`1px solid ${S.borderUp}`,borderRadius:6,color:S.text,padding:"8px 10px",fontSize:12,fontFamily:"inherit"}}
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={()=>{
+                                      const updated = src.expenses.filter((_, idx) => idx !== expIdx);
+                                      const total = updated.reduce((sum, e) => sum + (Number(e.amountKsh) || 0), 0);
+                                      updListItem("incomeSources", originalIndex, "expenses", updated);
+                                      updListItem("incomeSources", originalIndex, "directCostsKsh", total);
+                                    }}
+                                    style={{background:"transparent",color:S.terra,border:`1px solid ${S.terraBd}`,borderRadius:4,padding:"6px 8px",fontSize:11,fontWeight:600,cursor:"pointer",marginTop:18}}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{fontSize:11,color:S.muted,fontStyle:"italic",padding:"6px 0"}}>
+                              No itemised expenses added. Direct costs will be treated as KSh 0 unless line items are added.
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Seasonal Questions */}
                       {uiRules.showSeasonalDetails && (
@@ -883,7 +1009,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                 id: `src-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
                 sourceType: "REMITTANCES",
                 monthsObserved: 12,
-                amountReceivedKsh: 24000,
+                amountReceivedKsh: 0,
                 directCostsKsh: 0,
                 includedInSourceId: null,
                 alreadyIncludedElsewhere: false,
@@ -1017,10 +1143,22 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                     <FieldNumber
                       label="Observed Duration (Months)"
                       value={src.monthsObserved || 12}
-                      onChange={v=>updListItem("incomeSources", originalIndex, "monthsObserved", Math.max(1, Math.min(12, Math.round(v))))}
+                      onChange={v=>{
+                        const val = Math.max(1, Math.round(v));
+                        updListItem("incomeSources", originalIndex, "monthsObserved", val);
+                        if (src.observationStartDate && src.observationEndDate) {
+                          const calcM = calculateMonthsFromDates(src.observationStartDate, src.observationEndDate);
+                          if (calcM !== val) {
+                            updListItem("incomeSources", originalIndex, "manuallyEditedDuration", true);
+                          } else {
+                            updListItem("incomeSources", originalIndex, "manuallyEditedDuration", false);
+                          }
+                        }
+                      }}
                       min={1}
-                      max={12}
+                      max={60}
                       step={1}
+                      note={src.monthsObserved > 12 ? "Extended observation window (>12 months)" : undefined}
                     />
                   </div>
 
@@ -1096,7 +1234,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
               </div>
               <div className="grid-2">
                 <FieldNumber label="M-Pesa Transaction Count" value={d.transactionCount} onChange={v=>upd("transactionCount",v)} min={0} note="Used to identify high-velocity subsistence workers."/>
-                <FieldNumber label="Number of Fuliza Defaults" value={d.fulizaDefaults} onChange={v=>upd("fulizaDefaults",v)} max={50} note="Count of defaults, NOT the Shilling amount owed."/>
+                <FieldNumber label="Number of Fuliza Defaults" value={d.fulizaDefaults} onChange={v=>upd("fulizaDefaults",v)} max={50} note="Count of defaults (contextual liquidity distress indicator; does not apply direct contribution penalty)."/>
               </div>
               <div style={{display:"grid",gap:10,background:S.faint,padding:12,borderRadius:8,border:`1px solid ${S.border}`}}>
                 <div style={{fontSize:11,fontWeight:700,color:S.muted,textTransform:"uppercase",letterSpacing:0.5}}>Triangulation & Contextual Flags</div>
@@ -1119,23 +1257,27 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
       {/* STAGE 3: REVIEW AND ASSESSMENT                                        */}
       {/* ───────────────────────────────────────────────────────────────────── */}
       {step===3&&(()=>{
-        const liveIncomeSnapshot = calculateHouseholdIncome(d.incomeSources || []);
+        const effectiveSources = resolveEffectiveIncomeSources(d.incomeSources || [], d.hasNoEarnedIncome);
+        const liveIncomeSnapshot = calculateHouseholdIncome(effectiveSources);
         const reviewData = buildAssessmentReview({
           inputs: d,
           incomeAssessmentSnapshot: liveIncomeSnapshot,
-          incomeSources: d.incomeSources || []
+          incomeSources: effectiveSources
         });
+
+        const isProvisionalPolicy = liveIncomeSnapshot.calculationStatus === "PROVISIONAL_PENDING_POLICY";
+        const isBlockedReview = liveIncomeSnapshot.requiresManualReview || liveIncomeSnapshot.calculationStatus === "BLOCKED_MANUAL_REVIEW";
 
         return (
           <div style={{display:"grid",gap:16}}>
             {/* Status Banner */}
-            <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:8,padding:14}}>
+            <div style={{background: isBlockedReview ? "#FEF2F2" : isProvisionalPolicy ? "#FFFBEB" : "#F0FDF4", border: `1px solid ${isBlockedReview ? "#FECACA" : isProvisionalPolicy ? "#FCD34D" : "#BBF7D0"}`, borderRadius:8, padding:14}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:11,fontWeight:800,letterSpacing:0.5,padding:"3px 8px",borderRadius:4,background:"#166534",color:"#FFF"}}>
-                    {reviewData.status}
+                  <span style={{fontSize:11,fontWeight:800,letterSpacing:0.5,padding:"3px 8px",borderRadius:4,background: isBlockedReview ? "#DC2626" : isProvisionalPolicy ? "#D97706" : "#166534", color:"#FFF"}}>
+                    {liveIncomeSnapshot.calculationStatus || reviewData.status}
                   </span>
-                  <span style={{fontSize:13,fontWeight:700,color:"#166534"}}>
+                  <span style={{fontSize:13,fontWeight:700,color: isBlockedReview ? "#991B1B" : isProvisionalPolicy ? "#92400E" : "#166534"}}>
                     Member-Reported Household Declaration
                   </span>
                 </div>
@@ -1286,7 +1428,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                   {liveIncomeSnapshot.duplicateRelationships.map((dup, idx)=>(
                     <div key={`dup-${idx}`} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#92400E"}}>
                       <Info size={13} style={{flexShrink:0}}/>
-                      <span><strong>[DUPLICATE_TRACKED]</strong> {dup.duplicateSourceLabel} is linked to {dup.parentSourceLabel}; excluded to prevent double-counting.</span>
+                      <span><strong>[DUPLICATE_TRACKED]</strong> {dup.duplicateSourceLabel} (ID: {dup.duplicateSourceId}) is linked to {dup.parentSourceLabel} (ID: {dup.parentSourceId}); excluded from earned income to prevent double-counting.</span>
                     </div>
                   ))}
                   {liveIncomeSnapshot.reviewFlags.map((flag, idx)=>(
@@ -1299,6 +1441,11 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                 {liveIncomeSnapshot.requiresManualReview && (
                   <div style={{marginTop:8,padding:"6px 10px",background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:4,fontSize:11,color:"#B91C1C",fontWeight:600}}>
                     ⚠️ Manual Review Required: One or more income sources require officer review before automated means-testing can proceed.
+                  </div>
+                )}
+                {isProvisionalPolicy && !isBlockedReview && (
+                  <div style={{marginTop:8,padding:"6px 10px",background:"#FFFBEB",border:"1px solid #FCD34D",borderRadius:4,fontSize:11,color:"#92400E",fontWeight:600}}>
+                    📋 Provisional Assessment (Policy Decision Required): Member reported transfers or social assistance. Treatment in final means-testing requires SHA policy determination.
                   </div>
                 )}
               </div>
@@ -1427,12 +1574,22 @@ function ComparisonTab({results, adminParams}) {
             </div>
             <div style={{marginTop:16,display:"flex",gap:8,flexWrap:"wrap"}}>
               <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"4px 10px",borderRadius:4,background:S.surface,border:`1px solid ${box.bdColor}`,color:box.color}}>{box.tier} TIER</span>
-              {box.indigent&&<span style={{fontSize:10,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"4px 10px",borderRadius:4,background:S.sage,color:"#FFF"}}>PROTOTYPE MINIMUM CONTRIBUTION RULE</span>}
+              {box.indigent&&<span style={{fontSize:10,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"4px 10px",borderRadius:4,background:S.sage,color:"#FFF"}}>PROTOTYPE MINIMUM CONTRIBUTION RULE (KSh 300 Floor)</span>}
               {box.note&&<span style={{fontSize:10,fontWeight:600,letterSpacing:"0.5px",padding:"4px 10px",borderRadius:4,background:S.amber,color:"#FFF",display:"flex",alignItems:"center",gap:4}}><ShieldCheck size={12}/>{box.note}</span>}
             </div>
           </div>
         ))}
       </div>
+
+      {/* Provisional Policy Decision Callout */}
+      {nxt.incomeAssessmentSnapshot?.requiresPolicyDecision && (
+        <div style={{background:"#FFFBEB",border:"1px solid #FCD34D",borderRadius:8,padding:14,display:"flex",gap:10,alignItems:"flex-start"}}>
+          <span style={{fontSize:10,fontWeight:800,letterSpacing:0.5,padding:"3px 8px",borderRadius:4,background:"#D97706",color:"#FFF",flexShrink:0}}>PROVISIONAL_PENDING_POLICY</span>
+          <div style={{fontSize:12,color:"#92400E",lineHeight:1.5}}>
+            <strong>Policy Decision Required:</strong> Household declared incoming transfers, remittances or social assistance. {nxt.incomeAssessmentSnapshot.policyDecisionSummary || "Treatment in means-testing requires SHA policy determination."} The contribution shown is calculated on declared net earned income only and remains provisional.
+          </div>
+        </div>
+      )}
 
       {/* Difference callout */}
       {Math.abs(diff)>0&&(
@@ -2368,13 +2525,15 @@ export default function SHADemo() {
       assessmentInputs.monthlyNetEarnedIncome = 0;
     }
 
-    // New structured income path for custom assessments.
+    // Structured income path for custom assessments.
+    const effectiveSources = resolveEffectiveIncomeSources(inputs.incomeSources || [], inputs.hasNoEarnedIncome);
+
     if (
-      Array.isArray(inputs.incomeSources) &&
-      inputs.incomeSources.length > 0
+      Array.isArray(effectiveSources) &&
+      effectiveSources.length > 0
     ) {
       incomeAssessment = calculateHouseholdIncome(
-        inputs.incomeSources
+        effectiveSources
       );
 
       if (!incomeAssessment.isValid) {
@@ -2399,7 +2558,7 @@ export default function SHADemo() {
         ...assessmentInputs,
 
         monthlyNetEarnedIncome:
-          incomeAssessment.monthlyEarnedNetKsh,
+          inputs.hasNoEarnedIncome ? 0 : incomeAssessment.monthlyEarnedNetKsh,
 
         incomeAssessmentSnapshot: incomeAssessment,
       };
@@ -2443,7 +2602,8 @@ export default function SHADemo() {
         ...nxtRaw,
         modelVersion: modelVersions.declaredIncome.id,
         annualIncome: nxtRaw.estimatedAnnualIncome,
-        monthly: nxtRaw.monthlyContribution
+        monthly: nxtRaw.monthlyContribution,
+        incomeAssessmentSnapshot: assessmentInputs.incomeAssessmentSnapshot
       };
       
       // Calculate fraud risk with this assessment
@@ -2472,6 +2632,9 @@ export default function SHADemo() {
   const TABS=[
     ["comparison","Financial Comparison"],
     ["models","AGI Model Versions"],
+    ["evalLab","Evaluation Lab"],
+    ["evidenceReadiness","Data & Baseline Readiness"],
+    ["pilotReadiness","Pilot Readiness"],
     ["statement","Contribution Statement"],
     ["challenge","Prepare Challenge"],
     ["officer","Officer Review (Demo)"],
@@ -2748,6 +2911,9 @@ export default function SHADemo() {
 
                 {activeTab==="comparison"&&<ComparisonTab results={results} adminParams={adminParams}/>}
                 {activeTab==="models"&&<ModelVersionsTab results={results}/>}
+                {activeTab==="evalLab"&&<EvaluationLabTab results={results}/>}
+                {activeTab==="evidenceReadiness"&&<EvidenceReadinessTab />}
+                {activeTab==="pilotReadiness"&&<PilotReadinessTab />}
                 {activeTab==="statement"&&<ContributionStatementTab results={results} demoPaymentEntries={demoPaymentEntries} onAddDemoPayment={handleAddDemoPayment} />}
                 {activeTab==="challenge"&&<AppealPreparationTab results={results} challengeDrafts={challengeDrafts} onSaveChallengeDraft={handleSaveChallengeDraft} />}
                 {activeTab==="officer"&&<OfficerReviewTab
