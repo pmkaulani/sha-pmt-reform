@@ -1852,7 +1852,7 @@ export function generateRevenueStressTest(totalPopulation = 15500000, avgContrib
  * @param {string} officerId - ID of the officer conducting the assessment (default: 'SYSTEM')
  * @returns {Object} Immutable audit record
  */
-export function createAuditRecord(inputs, currentResult, proposedResult, fraudRisk, officerId = 'SYSTEM') {
+export function createAuditRecord(inputs, currentResult, proposedResult, fraudRisk, officerId = 'SYSTEM', modelVersions = null) {
   const now = new Date();
   // FIX (audit v2): Math.random() is not appropriate for an "immutable audit
   // record" ID (not cryptographically secure, theoretically guessable).
@@ -1871,7 +1871,7 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
     // docstring for the remaining server-side-pepper caveat.
     citizenIdHash: hashMsisdn(inputs.msisdn),
     createdAt: now.toISOString(),
-    algorithmVersion: 'PMT-v2.1-AGI',
+    algorithmVersion: modelVersions?.declaredIncome?.id || proposedResult?.modelVersion || 'declared-income-agi-v1',
     status: 'SUBMITTED',
     appealStatus: null,
     inputs: {
@@ -1895,11 +1895,32 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
         tier: currentResult.tier
       },
       proposedModel: {
+        version: modelVersions?.declaredIncome?.id || proposedResult?.modelVersion || 'declared-income-agi-v1',
         adjustedGrossIncome: proposedResult.adjustedGrossIncome,
         monthlyContribution: proposedResult.monthly || proposedResult.monthlyContribution,
         isIndigent: proposedResult.isIndigent,
         tier: proposedResult.tier
-      }
+      },
+      proposedModelVersions: modelVersions ? {
+        originalAgi: {
+          id: modelVersions.originalAgi.id,
+          version: modelVersions.originalAgi.version,
+          sourceCommit: modelVersions.originalAgi.sourceCommit,
+          estimatedAnnualIncome: modelVersions.originalAgi.result.estimatedAnnualIncome,
+          adjustedGrossIncome: modelVersions.originalAgi.result.adjustedGrossIncome,
+          monthlyContribution: modelVersions.originalAgi.result.monthlyContribution,
+          isIndigent: modelVersions.originalAgi.result.isIndigent
+        },
+        declaredIncome: {
+          id: modelVersions.declaredIncome.id,
+          version: modelVersions.declaredIncome.version,
+          sourceCommit: modelVersions.declaredIncome.sourceCommit,
+          estimatedAnnualIncome: modelVersions.declaredIncome.result.estimatedAnnualIncome,
+          adjustedGrossIncome: modelVersions.declaredIncome.result.adjustedGrossIncome,
+          monthlyContribution: modelVersions.declaredIncome.result.monthlyContribution,
+          isIndigent: modelVersions.declaredIncome.result.isIndigent
+        }
+      } : null
     },
     fraudFlags: fraudRisk?.fraudFlags?.map(f => f.name) || [],
     fraudRiskPercentile: fraudRisk?.fraudRiskPercentile || 0,
