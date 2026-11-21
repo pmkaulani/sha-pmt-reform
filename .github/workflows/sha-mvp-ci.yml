@@ -1,0 +1,39 @@
+name: SHA PMT prototype checks
+
+on:
+  pull_request:
+    branches:
+      - feat/sha-meeting-readiness-challenge-draft
+      - recovery/restore-original-agi-v2.1
+  push:
+    branches:
+      - recovery/restore-original-agi-v2.1
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sha-mvp/package-lock.json
+
+      - name: Install dependencies
+        working-directory: sha-mvp
+        run: npm ci
+
+      - name: Run regression tests
+        working-directory: sha-mvp
+        run: npm test
+
+      - name: Build production bundle
+        working-directory: sha-mvp
+        run: npm run build
