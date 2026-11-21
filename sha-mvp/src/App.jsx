@@ -4,7 +4,9 @@ import {
   Radio, Tv, Refrigerator, Laptop, Smartphone, Phone, 
   Bike, Car, ShieldCheck, Info, CheckCircle2, AlertTriangle, Fingerprint, ChevronDown, Settings
 } from "lucide-react";
-import { calculateCurrentModel, calculateCurrentModelContribution, calculateProposedModel, calculateFraudRisk, analyzeSector, calculateFairnessMetrics, PRESETS, createAuditRecord, generateRevenueStressTest, testCurrentModelDisparityByCounty, generateFraudStatistics, generateSyntheticPopulation, calculatePopulationErrorRates, validateAssessmentInputs } from "./lib/AlgorithmSimulation.js";
+import { calculateCurrentModel, calculateCurrentModelContribution, calculateFraudRisk, analyzeSector, calculateFairnessMetrics, PRESETS, createAuditRecord, generateRevenueStressTest, testCurrentModelDisparityByCounty, generateFraudStatistics, generateSyntheticPopulation, calculatePopulationErrorRates, validateAssessmentInputs } from "./lib/AlgorithmSimulation.js";
+import { calculateProposedModelVersions } from "./lib/model-versioning.js";
+import ModelVersionsTab from "./ModelVersionsTab.jsx";
 import { logger } from "./lib/Logger.js";
 import AppealPreparationTab from "./AppealPreparationTab.jsx";
 import ContributionStatementTab from "./ContributionStatementTab.jsx";
@@ -1504,7 +1506,8 @@ export default function SHADemo() {
         tier: curRaw.isIndigent ? "LOW" : lassoAnnual <= 450000 ? "MIDDLE" : "HIGH" // display label kept as-is; BANDS.tier used internally
       };
       
-      const nxtRaw = calculateProposedModel(inputs, adminParams);
+      const modelVersions = calculateProposedModelVersions(inputs, adminParams);
+      const nxtRaw = modelVersions.declaredIncome.result;
       const nxt = {
         ...nxtRaw,
         annualIncome: nxtRaw.estimatedAnnualIncome,
@@ -1528,7 +1531,7 @@ export default function SHADemo() {
       const auditRecord = createAuditRecord(inputs, cur, nxt, fraudRisk);
       logger.audit('assessment_run', { auditRecord });
       
-      setResults({current:cur, next:nxt, d:inputs, fraudRisk:fraudRisk, sectorAnalysis:sectorAnalysis, fairnessMetrics:fairnessMetrics, auditRecord});
+      setResults({current:cur, next:nxt, modelVersions, d:inputs, fraudRisk:fraudRisk, sectorAnalysis:sectorAnalysis, fairnessMetrics:fairnessMetrics, auditRecord});
       setClassifying(false);
       setActiveTab("comparison");
     },800);
@@ -1536,6 +1539,7 @@ export default function SHADemo() {
 
   const TABS=[
     ["comparison","Financial Comparison"],
+    ["models","AGI Model Versions"],
     ["statement","Contribution Statement"],
     ["challenge","Prepare Challenge"],
     ["officer","Officer Review (Demo)"],
@@ -1811,6 +1815,7 @@ export default function SHADemo() {
 
 
                 {activeTab==="comparison"&&<ComparisonTab results={results} adminParams={adminParams}/>}
+                {activeTab==="models"&&<ModelVersionsTab results={results}/>}
                 {activeTab==="statement"&&<ContributionStatementTab results={results} demoPaymentEntries={demoPaymentEntries} onAddDemoPayment={handleAddDemoPayment} />}
                 {activeTab==="challenge"&&<AppealPreparationTab results={results} challengeDrafts={challengeDrafts} onSaveChallengeDraft={handleSaveChallengeDraft} />}
                 {activeTab==="officer"&&<OfficerReviewTab
