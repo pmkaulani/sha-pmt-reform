@@ -54,7 +54,7 @@ export default function ContributionStatementTab({ results, demoPaymentEntries =
   };
 
   const rec = breakdown.reconciliation || {};
-  const assessmentId = results.auditRecord?.assessmentId || "DEMO-ASSESS-LOCAL";
+  const sessionReference = results.auditRecord?.localAssessmentId || "LOCAL-DEMO-SESSION";
   const monthlyDue = next.monthlyContribution || next.monthly || 300;
   const isReconciled = rec.isReconciled !== false &&
     rec.baseReconciliationDifference === 0 &&
@@ -181,7 +181,7 @@ export default function ContributionStatementTab({ results, demoPaymentEntries =
                 UNVERIFIED PROTOTYPE EVALUATION
               </div>
               <div style={{ fontSize: 11, color: "#64748B", marginTop: 6 }}>
-                Session Reference: <strong style={{ color: "#0F172A" }}>{assessmentId}</strong>
+                Session Reference: <strong style={{ color: "#0F172A" }}>{sessionReference}</strong>
               </div>
               <div style={{ fontSize: 11, color: "#64748B" }}>
                 Date: {new Date().toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "numeric" })}
