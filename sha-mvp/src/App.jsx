@@ -319,7 +319,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
           <Toggle label="Receives social aid?" tip="Such as Inua Jamii or HSFP cash transfers" value={d.receivesAid} onChange={v=>upd("receivesAid",v)} hideSpacer/>
           <Toggle label="Has Chronic Illness? (CHE)" tip="Applies illustrative chronic illness / CHE adjustment (40% adjustment: illustrative prototype policy assumption — requires SHA validation)" value={d.hasChronicIllness} onChange={v=>upd("hasChronicIllness",v)} hideSpacer/>
           <Toggle label="Registered Disability (NCPWD)?" tip="Applies illustrative disability adjustment (30% adjustment: illustrative prototype policy assumption — requires SHA validation)" value={d.hasRegisteredDisability} onChange={v=>upd("hasRegisteredDisability",v)} hideSpacer/>
-          <Toggle label="Refugee / IDP status?" tip="Automatically classifies as indigent/state-sponsored" value={d.isRefugee} onChange={v=>upd("isRefugee",v)} hideSpacer/>
+          <Toggle label="Refugee / IDP status?" tip="Triggers an illustrative low-income override inside this prototype only; it is not an official SHA or state-sponsorship decision." value={d.isRefugee} onChange={v=>upd("isRefugee",v)} hideSpacer/>
         </div>
       </div>}
 
@@ -402,7 +402,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                 <button onClick={()=>addListItem("vehicles",{type:"STANDARD_OLD"})} style={{marginTop:10,padding:"8px 14px",background:"transparent",color:S.blue,border:`1px solid ${S.blueBd}`,borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add another vehicle</button>
               </>
             )}
-            <div style={{fontSize:12, color: S.muted, marginTop: 10, lineHeight: 1.5}}>Each vehicle is valued individually — a household is no longer limited to declaring just one car's worth of value. Cross-referenced with the <strong>NTSA TIMS</strong> database against the total declared count to catch undisclosed vehicles.</div>
+            <div style={{fontSize:12, color: S.muted, marginTop: 10, lineHeight: 1.5}}>Each vehicle is represented separately in the prototype's asset assessment. No NTSA/TIMS query is made; an authenticated agency connection would require separate legal authority, consent and implementation.</div>
           </div>
         )}
       </div>}
@@ -410,8 +410,8 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
       {/* Step 4: Livelihood */}
       {step===4&&<div style={{display:"grid",gap:16}}>
         <div className="grid-2">
-          <FieldNumber label="Land owned (acres)" value={d.landAcreage} onChange={v=>upd("landAcreage",v)} min={0} max={100} step={0.5} note="The proposed AGI model automatically applies a massive ASAL (Arid and Semi-Arid Lands) discount to land acreage in pastoralist counties to avoid penalizing barren land."/>
-          <FieldNumber label="Livestock count (all types)" value={d.livestockCount} onChange={v=>upd("livestockCount",Math.max(0,Math.round(v)))} min={0} max={500} note="Subsistence livestock is not a reliable cash income source. The model distinguishes between commercial farming and subsistence pastoralism."/>
+          <FieldNumber label="Land owned (acres)" value={d.landAcreage} onChange={v=>upd("landAcreage",v)} min={0} max={100} step={0.5} note="Original asset/liquidity AGI v2.1 applies an illustrative county-based ASAL land adjustment. The current declared-income variant records land as contextual information only; no land registry or market valuation is queried."/>
+          <FieldNumber label="Livestock count (all types)" value={d.livestockCount} onChange={v=>upd("livestockCount",Math.max(0,Math.round(v)))} min={0} max={500} note="Livestock is contextual in the declared-income variant. Original AGI v2.1 applies an illustrative county-based valuation adjustment; neither model verifies livestock ownership or actual market value."/>
         </div>
         <div style={{padding:16,background:S.faint,borderRadius:8,border:`1px solid ${S.border}`}}>
           <Toggle label="Do you own land in more than one county?" value={d.landParcels && d.landParcels.length>0} onChange={v=>{
@@ -445,7 +445,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
             }} hideSpacer/>
           {d.rentalProperties && d.rentalProperties.length>0 && (
             <div style={{marginTop:12,display:"grid",gap:10}}>
-              <div style={{fontSize:12,color:S.muted,lineHeight:1.5}}>Treated as a business: rent from occupied units counts as income (not double-counted as a separate asset value). Vacant units still carry a conservative imputed value, since a paid-off empty rental house is real wealth that would otherwise be invisible. 3+ properties with substantial income and no KRA PIN is flagged for tax-compliance review, not penalized automatically.</div>
+              <div style={{fontSize:12,color:S.muted,lineHeight:1.5}}>Rental-property details are recorded for contextual review in the current declared-income variant. Original AGI v2.1 applies its own rental-income/asset treatment. No rental register or KRA record is queried or verified by this prototype.</div>
               {d.rentalProperties.map((prop,idx)=>(
                 <div key={idx} style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0"}}>
@@ -488,11 +488,11 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
         </div>
 
         <div style={{fontSize:13,color:S.text,lineHeight:1.4,marginBottom:2,padding:10,background:S.blueD,borderRadius:8,border:`1px solid ${S.blueBd}`}}>
-          <strong>The Potential data-source checks:</strong> The proposed algorithm cross-references self-reported data against KRA (Income), NTSA (Assets), and Telcos/M-Pesa (Liquidity) to catch hidden wealth and protect the poor.
+          <strong>Potential future data-source checks:</strong> A production design could compare member-declared information with lawfully accessible KRA, NTSA and MNO/M-Pesa data. None of these services is connected here; all values below are manually entered demonstration inputs.
         </div>
         <div className="grid-3">
-          <FieldNumber label="Gross M-Pesa (Monthly)" value={d.grossMpesaMonthly} onChange={v=>upd("grossMpesaMonthly",v)} note="Current PMT treats gross velocity as income."/>
-          <FieldNumber label="Avg Retained Balance (12-Mo)" value={d.avgRetainedBalance} onChange={v=>upd("avgRetainedBalance",v)} note="Proposed model checks actual liquidity."/>
+          <FieldNumber label="Gross M-Pesa (Monthly)" value={d.grossMpesaMonthly} onChange={v=>upd("grossMpesaMonthly",v)} note="Illustrative comparator only: its hand-authored scoring adds weight to gross M-Pesa activity. This is not a reconstruction of SHA's production algorithm."/>
+          <FieldNumber label="Avg Retained Balance (12-Mo)" value={d.avgRetainedBalance} onChange={v=>upd("avgRetainedBalance",v)} note="The declared-income variant records this manually entered balance as contextual liquidity information; it does not retrieve account balances."/>
           <FieldNumber label="Diaspora Remittances (Monthly KSh)" value={d.diasporaRemittances} onChange={v=>upd("diasporaRemittances",v)} note="Excluded from AGI to encourage inward flows."/>
         </div>
         
@@ -811,7 +811,8 @@ function USSDTab({results}) {
             </button>
           ))}
           <div style={{marginTop:16,padding:"20px",background:S.surface,border:`1px solid ${S.border}`,borderRadius:10,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
-            <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.text,marginBottom:12}}>Technical Specifications</div>
+            <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.text,marginBottom:6}}>Illustrative architecture targets (not measured service metrics)</div>
+            <div style={{fontSize:11,color:S.muted,lineHeight:1.45,marginBottom:12}}>These are proposed design requirements for a future service, not deployed infrastructure or observed performance.</div>
             {["P99 latency < 2 seconds end-to-end","Session circuit-break at 160s → SMS resume link","Active-active configuration: Safaricom · Airtel · Telkom","580 TPS sustained under peak load","Authentication: MSISDN + 6-digit PIN + IMSI-bound JWT"].map(s=>(
               <div key={s} style={{fontSize:13,color:S.muted,display:"flex",gap:10,marginBottom:8,alignItems:"center"}}>
                 <CheckCircle2 size={16} color={S.sage} style={{flexShrink:0}}/><span>{s}</span>
@@ -920,7 +921,7 @@ function MetricsTab() {
                 Bias & Compliance tab — but it's a property you verify by
                 running that test against real assessment data, not one the
                 formulas guarantee by construction. */}
-            This is a deterministic rules engine, not a trained model — there's no optimization step and nothing "converges". What actually backs the fairness claim: <code style={{wordBreak:"break-all"}}>testCurrentModelDisparityByCounty()</code> measures disparity in current-model overcharging across county and gender groups from real assessment data, gated on a minimum sample size per group. Live results are on the <strong>Bias & Compliance</strong> tab. That test — not a training guarantee — is the real evidence, and it should be re-run continuously against production data, not just at launch.
+            This is a deterministic rules engine, not a trained model. The Bias & Compliance dashboard currently runs disagreement and disparity calculations on generated synthetic households, using the proposal as a comparison reference. It does not evaluate real SHA assessment records, establish equalized odds, or prove population-level fairness, accuracy or legal compliance. A real pilot dataset and independently defined outcome labels are required for those conclusions.
           </div>
         </div>
       </div>
