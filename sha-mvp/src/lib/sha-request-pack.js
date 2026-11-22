@@ -53,7 +53,7 @@ export const SHA_REQUEST_ITEMS = [
     itemNumber: 6,
     title: "Household Scoring Formula & Welfare Output Transformation",
     category: "SCORE_DERIVATION",
-    description: "The mathematical formula mapping raw regression scores into estimated per-capita consumption or welfare percentiles.",
+    description: "The mathematical formula mapping raw regression scores into estimated per-capita consumption or welfare percentiles, clarifying how operational per-capita consumption relates to the Fifth Schedule per-capita income specification (log(y)^u = a^u + b^uX_h^u + c^uZ_hi^u + epsilon_h^u).",
     rationale: "Clarifies whether the score represents direct log expenditure, a normalized index, or an empirical percentile."
   },
   {

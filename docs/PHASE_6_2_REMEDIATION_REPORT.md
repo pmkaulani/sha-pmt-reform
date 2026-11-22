@@ -14,7 +14,7 @@
 Phase 6.2 was initiated to address critical legal, methodological, and architectural deficiencies identified during the comprehensive repository audit. Rather than adding speculative features or advancing prematurely to pilot deployment, Phase 6.2 focused on **statutory accuracy, fail-closed evaluation rigor, assessment integrity, and defensible institutional claims**.
 
 ### Key Outcomes:
-1. **Statutory Baseline Correction:** Purged the erroneous assertion that the Fifth Schedule of the Social Health Insurance (General) Regulations, 2024 or "Regulation 21(6)" contains SHA's means-testing formula. Clarified that the Fifth Schedule is titled **"Zones"** under Regulation 62(3) (facility reimbursement zones), Regulation 21 contains only subsections (1)–(5), and Regulation 17(1) & (2) establish the 2.75% non-salaried contribution rate and KSh 300/mo minimum. The official baseline was formally reframed as `OFFICIAL SHA MEANS-TESTING INSTRUMENT — IMPLEMENTATION DETAILS PENDING VERIFICATION`.
+1. **Statutory Baseline Alignment (LN 49/2024):** Aligned statutory citations with the gazetted Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024, published in Kenya Gazette Supplement No. 60, Legislative Supplement No. 28, on 8 March 2024). Confirmed that Regulation 18(1) & (2) govern non-salaried contributions (2.75% rate and KSh 300/mo minimum), while Regulation 17(1)–(2) govern salaried employment. Confirmed that Regulation 21(6) explicitly prescribes that means testing be conducted using the formula set out in the Fifth Schedule ('Means Testing', p. 798): $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$, estimating log per-capita income across urban and rural strata, while Regulation 21(3) sets out broad socioeconomic data domains (housing characteristics, access to basic services, household composition and characteristics). Regulation 62 designates 'Zones' for health facility tariffs. The official baseline was formally reframed as `OFFICIAL SHA MEANS-TESTING INSTRUMENT — IMPLEMENTATION DETAILS PENDING VERIFICATION`.
 2. **Data Protection Law Realignment:** Corrected citations across the repository to properly reflect the Kenya Data Protection Act, 2019 (Sections 25, 28, 29, 30(1)(b)(viii), 30(1)(e), 31, 32, 35, 36, 39, and 53) and Regulation 22 of the Data Protection (General) Regulations, 2021 (mandating substantive, meaningful human intervention in automated decision-making).
 3. **Fail-Closed Empirical Comparison Runner:** Hardened `runEmpiricalComparison` to refuse execution when survey manifests are paired with synthetic fixtures (`Provenance mismatch`), require frozen pre-registered protocols (`approvalStatus === "FROZEN"`), eliminate generic prediction fallbacks, isolate zero/negative disposable resources into a dedicated unburdened category, and mark affordability thresholds as unapproved illustrative research benchmarks (`NOT_POLICY_APPROVED`).
 4. **EvaluationLab Holdout Enforcement:** Updated `EvaluationLabTab.jsx` to evaluate candidate models strictly against the independent holdout partition (`PARTITION_TYPES.HOLDOUT`) rather than the complete sample.
@@ -27,23 +27,26 @@ Phase 6.2 was initiated to address critical legal, methodological, and architect
 
 ## 2. Statutory Realities & Baseline Reframing
 
-### Legal Finding 1: The Fifth Schedule is "Zones", Not PMT
-* **Statutory Location:** Fifth Schedule to the Social Health Insurance (General) Regulations, 2024.
-* **Governing Regulation:** Regulation 62(3).
-* **Actual Statutory Content:** Establishes geographic zones for health facility tariffs and regional clustering (e.g., Zone A, Zone B, Zone C).
-* **Remediation Action:** Removed all claims that the Fifth Schedule contains the 43-variable PMT regression formula or proxy weights. Added explicit clarification notices in code comments, disclaimers, registries, and documentation.
+### Legal Finding 1: The Fifth Schedule is "Means Testing" (Regulation 21(6)); Regulation 62 is "Zones"
+* **Statutory Location:** Fifth Schedule (Gazette p. 798) to the Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024; published in Gazette Supplement No. 60, Leg. Supp. No. 28, 8 March 2024).
+* **Governing Regulation:** Regulation 21(6) explicitly prescribes: *"Means testing shall be conducted using the formula set out in the Fifth Schedule."*
+* **Actual Statutory Content:** The Fifth Schedule is titled **"Means Testing"** and specifies the econometric equation:
+  $$\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$$
+  where $\log(y)^u$ is log per-capita income, $a^u$ is a structural parameter, $b^uX_h^u$ are household-specific indicators, $c^uZ_{hi}^u$ are individual-specific indicators, and $\varepsilon_h^u$ are estimation errors across urban and rural strata ($u$). Regulation 21(3) separately identifies broad data domains (housing characteristics, access to basic services, household composition and characteristics). The Fifth Schedule itself does not enumerate 43 specific variables.
+* **Claims Management Zones:** Regulation 62 is titled **"Zones"**, establishing geographic zones of counties for health facility reimbursement tariffs.
 
-### Legal Finding 2: Legal Notice 55 of 2025 Revocation
-* **Regulatory History:** Legal Notice No. 55 of 2025 revoked Legal Notice No. 147 of 2024.
-* **Content Audit:** Neither Legal Notice 147 of 2024 nor Legal Notice 55 of 2025 publishes the regression coefficients, intercepts, or score cutoff tables deployed by SHA.
-* **Remediation Action:** Removed assertions that LN 55/2025 "amended" or "failed to amend" PMT schedules. Clarified that SHA's 43-variable PMT regression model is an administrative/econometric instrument developed for SHA and disclosed via investigative journalism (Africa Uncensored / Lighthouse Reports / The Guardian, May 2026), rather than a published statutory schedule.
+### Legal Finding 2: Legal Notice 55 of 2025 Revocation & March 2026 High Court Ruling
+* **Regulatory History:** Legal Notice No. 55 of 2025 expressly revokes Legal Notice No. 147 of 2024 in Clause 9 (it does *not* revoke principal LN 49 of 2024).
+* **Judicial Context (March 2026):** In *Okoiti & 2 others v Cabinet Secretary, Ministry of Health & 20 others [2026] KEHC 3972 (KLR)* (19 March 2026), the High Court declared Legal Notices 48, 49, 146, and 147 of 2024 validly made, while ordering corrective action that includes implementing fair and effective means testing for non-salaried persons. (Does not evaluate algorithmic accuracy or fairness; appeal status subject to confirmation).
+* **Remediation Action:** Clarified that while the Fifth Schedule sets out the statutory formula structure under Regulation 21(6), SHA's operational 43-variable calibration, variable codebook, and cutoff parameters remain undisclosed in the Gazette. According to Lighthouse Reports (4 May 2026), SHA disclosed in an ATI response (Nov 2025) that its operational model uses the 2021 KCHS predicting log per-capita *consumption*. The relationship between predicted consumption and the Fifth Schedule's per-capita income specification forms a key research question.
 
 ### Legal Finding 3: Statutory Contribution Rate and Minimum Floor
-* **Non-Salaried Contribution Rate:** Regulation 17(1) establishes the annual contribution for non-salaried households at 2.75% of household income determined in accordance with Regulation 21.
-* **Statutory Minimum Floor:** Regulation 17(2) establishes the minimum contribution of KSh 300 per month (KSh 3,600 annually).
-* **Indigent Subsidy:** Regulation 17(3) governs households verified as unable to pay the minimum premium.
-* **No Regulation 21(6):** Regulation 21 governs means testing and contains subsections (1) through (5) only. There is no subsection (6).
-* **No Regulation 18 Rate Setting:** Purged all erroneous references citing "Regulation 18" for contribution rates.
+* **Salaried Employment:** Regulation 17(1)–(2) establishes contributions for salaried households at 2.75% of gross salary or wage, with a statutory minimum of KSh 300 per month.
+* **Non-Salaried Contribution Rate:** Regulation 18(1) establishes the annual contribution for non-salaried households at 2.75% of household income determined through the means-testing instrument.
+* **Non-Salaried Minimum Floor:** Regulation 18(2) establishes the minimum contribution floor of KSh 300 per month (KSh 3,600 annually).
+* **Payment Timing & Financing:** Regulation 18(3)–(6) governs payment timing and premium financing.
+* **Financial Assistance (Indigents):** Regulation 19 governs households in need of financial assistance. Application of the KSh 300 floor under Reg 18(2) does not constitute an indigent determination.
+* **Means-Testing Instrument & Formula:** Regulation 21(1)–(5) governs MTI development and socioeconomic data collection; Regulation 21(6) mandates use of the formula in the Fifth Schedule ('Means Testing').
 
 ### Reconstructed Baseline Specification
 In [`sha-mvp/src/lib/sha-baseline-registry.js`](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/lib/sha-baseline-registry.js) and [`sha-mvp/src/lib/evaluation-model-registry.js`](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/lib/evaluation-model-registry.js):
@@ -100,7 +103,7 @@ All documentation and data exchange modules were audited against Kenyan statutor
 6. **Sampling Uncertainty:**
    `evaluateSamplingUncertainty()` deterministically returns `status: "UNCERTAINTY_NOT_ESTIMATED"` and `confidenceIntervalsAvailable: false` because design-aware variance estimation (Taylor linearization or replicate weights) is not implemented in the client prototype.
 7. **Model Poverty Target De-Listing:**
-   In [`evaluation-model-registry.js`](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/lib/evaluation-model-registry.js), AGI models are flagged as `isEligible: false` and `status: "NOT_EVALUABLE_INCOMPATIBLE"` for `INDEPENDENT_POVERTY_STATUS`, citing the Regulation 17(2) administrative minimum contribution.
+   In [`evaluation-model-registry.js`](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/lib/evaluation-model-registry.js), AGI models are flagged as `isEligible: false` and `status: "NOT_EVALUABLE_INCOMPATIBLE"` for `INDEPENDENT_POVERTY_STATUS`, citing the Regulation 18(2) administrative minimum contribution.
 
 ### EvaluationLabTab Holdout Partitioning
 In [`sha-mvp/src/EvaluationLabTab.jsx`](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/EvaluationLabTab.jsx), model evaluation now consumes:
@@ -116,7 +119,7 @@ This guarantees that candidate models are evaluated strictly against the indepen
 1. **Explicit Zero-Earned-Income Assessment State:**
    - Added `createZeroEarnedIncomeAssessment()` to [`sha-mvp/src/lib/household-income.js`](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/lib/household-income.js).
    - In [`sha-mvp/src/App.jsx`](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/App.jsx), when `inputs.hasNoEarnedIncome` is toggled true, the system calls `createZeroEarnedIncomeAssessment()` rather than passing an empty array to `calculateHouseholdIncome([])`.
-   - The state is marked `isValid: true`, `monthlyEarnedNetKsh: 0`, `annualisedEarnedNetKsh: 0`, `calculationStatus: "CALCULATED_EXPLICIT_ZERO_EARNED"`, with explicit disclaimers citing Regulation 17(2) minimum contribution and Regulation 17(3) indigent subsidy rules.
+   - The state is marked `isValid: true`, `monthlyEarnedNetKsh: 0`, `annualisedEarnedNetKsh: 0`, `calculationStatus: "CALCULATED_EXPLICIT_ZERO_EARNED"`, with explicit disclaimers citing Regulation 18(2) minimum contribution and Regulation 19 indigent financial assistance rules (with salaried households governed under Regulation 17(1)–(2)).
 2. **Unearned Transfers Blockers:**
    - Any declaration of transfers or social assistance triggers `requiresPolicyDecision: true` and qualifies calculation status as `PROVISIONAL_PENDING_POLICY`.
    - In [`sha-mvp/src/lib/assessment-flow.js`](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/lib/assessment-flow.js), `isProvisionalPolicyPending` flags that transfer treatment requires approved SHA policy rules.
@@ -180,7 +183,7 @@ This guarantees that candidate models are evaluated strictly against the indepen
    - Replaced claims of "7 evidence-based deductions" with "7 research-informed deduction rules".
 3. **Statutory Corrections Propagated:**
    - Audited and updated [`README.md`](file:///c:/Users/STD%20USER/Desktop/work/SHA/README.md), [`FINAL_INTEGRITY_AUDIT.md`](file:///c:/Users/STD%20USER/Desktop/work/SHA/docs/FINAL_INTEGRITY_AUDIT.md), [`DATA_GOVERNANCE.md`](file:///c:/Users/STD%20USER/Desktop/work/SHA/docs/DATA_GOVERNANCE.md), [`DEPLOYMENT_ACCEPTANCE_CRITERIA.md`](file:///c:/Users/STD%20USER/Desktop/work/SHA/docs/DEPLOYMENT_ACCEPTANCE_CRITERIA.md), [`LEGAL_AND_DATA_GOVERNANCE_CHECKLIST.md`](file:///c:/Users/STD%20USER/Desktop/work/SHA/docs/LEGAL_AND_DATA_GOVERNANCE_CHECKLIST.md), and institutional handover documents.
-   - Zero occurrences of "Regulation 21(6)" or "Regulation 18" remain in the repository.
+   - Reconciled statutory citations with gazetted LN 49/2024: Regulation 18(1)–(2) for non-salaried households, Regulation 17(1)–(2) for salaried, and Regulation 21(6) / Fifth Schedule ('Means Testing').
 
 ---
 

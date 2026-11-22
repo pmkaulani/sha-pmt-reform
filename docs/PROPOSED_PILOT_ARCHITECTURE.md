@@ -6,7 +6,7 @@
 ---
 
 > ### ⚠️ Architectural Scope & Trust Boundary Notice
-> This document specifies the proposed technical architecture for a future **SHA-controlled, air-gapped pilot environment**. The current repository is a client-side research and evaluation prototype. **No live API connections to the SHA production core, MPESA payment gateways, or member databases exist or are attempted.** The interfaces documented below represent technical integration contracts for SHA's enterprise engineering teams.
+> This document specifies the proposed technical architecture for a future **SHA-controlled, air-gapped pilot environment**. The current repository is a client-side research and evaluation prototype. **No application-level API submission path to an SHA backend or other assessment-data service was identified in inspected source; the interface references Google Fonts for standard typography (generating ordinary connection metadata, distinct from submitting household data); code inspection is not packet-capture verification; the prototype has zero connection to live SHA infrastructure or member databases.** The interfaces documented below represent technical integration contracts for SHA's enterprise engineering teams.
 
 ---
 
@@ -163,7 +163,13 @@ The proposed operational pilot consists of 12 modular components designed under 
 
 ---
 
-## 3. Strict Non-Interference Guarantees
-1. **Zero Core Write Access:** The pilot pipeline has zero network routes or database permissions to write to primary SHA billing or member tables.
-2. **Asynchronous Decoupling:** Even total failure or shutdown of the pilot container cluster will cause zero latency or downtime for citizens registering on official SHA portals.
-3. **Fail-Safe Operational Reversion:** If any pilot component is suspended, all operational reliance immediately reverts 100% to the official Regulation 21 instrument.
+## 3. Non-Interference Design Specifications & Implementation Prerequisites
+
+> ### ⚠️ Status & Implementation Prerequisite
+> - **Current Prototype:** Standalone, disconnected research software. It currently has zero network links to live SHA databases or cloud VPCs.
+> - **Target Pilot Design:** Outlined below as an architectural blueprint for Stages 2–3.
+> - **Mandatory Prerequisites:** These non-interference controls require formal cloud infrastructure implementation, configuration of read-only IAM policies, independent penetration testing, and formal SHA Board approval prior to pilot operation.
+
+1. **Zero Core Write Access:** The proposed pilot pipeline requires network routing and database permissions that strictly forbid write access to primary SHA billing or member tables.
+2. **Asynchronous Decoupling:** In the event of total failure or shutdown of the pilot container cluster, asynchronous decoupling ensures zero latency or disruption for citizens registering on official SHA portals.
+3. **Fail-Safe Operational Reversion:** If any pilot component is suspended, all operational reliance immediately reverts 100% to the official Regulation 21(6) instrument.

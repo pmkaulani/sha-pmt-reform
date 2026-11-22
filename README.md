@@ -8,9 +8,13 @@ A prototype policy and software proposal exploring whether a transparent Adjuste
 
 ## The Problem
 
-Kenya's Social Health Authority deployed a linear-regression Proxy Means Test (PMT) algorithm—developed using the 2021 Kenya Continuous Household Survey (KCHS, ~17,000 households) with 43 variables across separate urban and rural submodels predicting log per-capita consumption. 
+Under the **Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024, published in Kenya Gazette Supplement No. 60, Legislative Supplement No. 28, on 8 March 2024)**, Regulation 21(6) prescribes that means testing shall be conducted using the formula set out in the Fifth Schedule (Gazette p. 798):
+$$\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$$
+where $\log(y)^u$ is log per-capita income, $a^u$ is a structural parameter, $b^uX_h^u$ are household-specific indicators, $c^uZ_{hi}^u$ are individual-specific indicators, $\varepsilon_h^u$ are estimation errors, $u$ denotes urban or rural strata, and $X, Z$ are matrices of indicators or correlates of income. Regulation 21(3) separately identifies broad socioeconomic data domains (housing characteristics, access to basic services, household composition and characteristics). The Fifth Schedule itself does not enumerate 43 specific variables or list every individual asset.
 
-An independent econometric reconstruction of SHA's model by *Lighthouse Reports* (May 2026), in collaboration with *Africa Uncensored* and *The Guardian*, revealed severe structural inaccuracies:
+In November 2025, in response to an Access to Information request, SHA disclosed that its operational model—developed using the 2021 Kenya Continuous Household Survey (KCHS, ~17,000 households)—uses 43 variables across separate urban and rural submodels predicting log per-capita *consumption*. 
+
+An independent econometric reconstruction of SHA's model by *Lighthouse Reports* (published 4 May 2026), in collaboration with *Africa Uncensored* and *The Guardian*, revealed severe structural inaccuracies:
 - **Overpredicts consumption for the poorest:** Among the poorest households, approximately 16% are classified correctly, while about 80% have their consumption overpredicted—subjecting indigent families to premiums they cannot afford.
 - **Severe rural-urban disparity:** The model achieves an $R^2$ of **0.66** for the urban submodel, but drops to **0.46** for the rural submodel, meaning more than half the variance in rural household living standards is unaccounted for.
 - **Large-scale misclassification:** Among the bottom 40% of households, 39% are erroneously predicted to fall above that welfare band. In the bottom 25%, more than half are misclassified upward.
@@ -33,7 +37,8 @@ The model's inequities were documented before rollout:
 ### Parliamentary & Judicial Interventions
 
 - **Health Committee findings (March 2026):** The National Assembly Health Committee cautioned SHA officials that the fund faces grave sustainability risks, reporting monthly collections of approximately KSh 7.4 billion against recurrent costs of roughly KSh 7.2 billion, leaving virtually no margin for operational shocks. An earlier committee inquiry found that SHA had failed to implement transparent means testing as required by Section 27(2)(c) of the Social Health Insurance Act, and noted that mandatory lump-sum annual premiums excluded low-income households. *(Note: This project argues that informal-sector non-compliance is driven in substantial part by unaffordable algorithmic assessments and procedural opacity).*
-- **High Court structural interdict (March 19, 2026):** In a constitutional challenge to the rollout, Justice Bahati Mwamuye held that the October 2024 implementation violated constitutional rights to health and dignity. While declining to suspend the health scheme outright, the court issued a 90-day structural interdict ordering the Ministry of Health to file a comprehensive affidavit detailing corrective measures—including emergency-treatment safeguards—and criticised the transparency of the health technology procurement.
+- **High Court constitutional ruling (March 19, 2026):** In *Okoiti & 2 others v Cabinet Secretary, Ministry of Health & 20 others [2026] KEHC 3972 (KLR)*, the High Court held that Legal Notices 48, 49, 146, and 147 of 2024 were validly made, confirming that the Senate motion to annul Legal Notices 48 and 49 did not pass the required threshold. The Court directed corrective action that includes implementing fair and effective means-testing mechanisms for non-salaried persons. *(Note: The judgment affirms statutory validity, not SHA's algorithmic accuracy, fairness, or predictive performance; unverified appeal or stay status remains subject to legal confirmation).* On the same date, in a complementary constitutional challenge (Justice Bahati Mwamuye), the court issued a 90-day structural interdict ordering the Ministry of Health to file a comprehensive affidavit detailing corrective rollout measures.
+- **Revocation of LN 147/2024:** Legal Notice No. 55 of 2025, clause 9, revokes the Social Health Insurance (Amendment) Regulations, 2024 (LN 147 of 2024). It does *not* revoke the principal Legal Notice No. 49 of 2024.
 
 ---
 
@@ -70,8 +75,8 @@ The existing financial comparison and member workflow continue to use the declar
 
 - **Demographic baseline:** Kenya has approximately 16.7 million eligible informal-sector workers (drawn from an estimated 12–14 million total households, with 12.2 million recorded in the 2019 KNBS Census).
 - **Current revenue imbalance:** Formal-sector PAYE employees (~3.3 million contributors) contribute roughly KSh 73 billion annually against SHA's KSh 102 billion target, while informal compliance has lagged severely (early administrative data reported fewer than 200,000 paying informal members contributing ~KSh 780 million).
-- **Beyond nominal premium tiers:** In May 2026, SHA stated that 92% of assessed informal households are assigned premiums of KSh 850 or less (45% between KSh 300–500 and 47% between KSh 501–850). However, compliance is dictated not merely by the sticker price, but by citizen trust in the fairness of the assessment and how contributions are structured.
-- **AGI revenue projection (Uncalibrated Illustrative Scenario):** If modeled under an illustrative benchmark of 60% informal-worker compliance (drawing on regional community-based health financing hypotheses), an average monthly assessment of **KSh 520** would mathematically yield an indicative **~KSh 58 billion annually**. *Essential Caveat:* This figure is an unverified, illustrative simulation and NOT an actuarial revenue projection or an empirically validated yield. Actual collections depend on empirical income distributions, collection costs, digital payment friction, and formal SHA administrative policy.
+- **Informal compliance and trust:** In May 2026, SHA stated that 92% of assessed informal households are assigned premiums of KSh 850 or less (45% between KSh 300–500 and 47% between KSh 501–850). However, compliance is dictated not merely by nominal premium tiers, but by citizen trust in the fairness of the assessment, clarity of operating expense deductions, and transparent appeal avenues.
+- **Historical Revenue Hypotheses (Superseded):** Early exploratory hackathon materials modeled an illustrative 60% compliance benchmark yielding ~KSh 58 billion annually (~KSh 4.84B/month) at an assumed KSh 520 average monthly assessment. **This speculative scenario is formally superseded and archived (see [SUPERSEDED_NOTICE.md](docs/archive/SUPERSEDED_NOTICE.md)).** Actuarial revenue projections cannot be constructed without empirical KNBS microdata and official administrative collection curves. The research prototype does not enforce arbitrary tariff anchors (such as KSh 495 or KSh 520), but models cash-flow assessment mechanics under Regulation 18(1) & (2).
 
 ---
 
@@ -79,7 +84,7 @@ The existing financial comparison and member workflow continue to use the declar
 
 This reform aligns with major policy, judicial, and statistical developments across Kenya's healthcare transition:
 
-- **Lipa SHA Pole Pole (Live since July 2025):** SHA's installment payment mechanism, integrated with the Hustler Fund's insurance premium financing platform, enables informal-sector members to spread annual premiums over up to 24 months. The program requires the first four months' premium upfront, with the remaining 20 months paid in daily, weekly, or monthly installments via M-Pesa Ratiba or USSD. However, individuals with existing SHA arrears or Hustler Fund loans overdue past 45 days are disqualified. At v2.1's projected KSh 520 average monthly assessment, an upfront four-month deposit (~KSh 2,080) remains a potential barrier for ultra-low-income households unless paired with zero-deposit or subsidized entry tiers.
+- **Premium Financing Context (Regulation 18(4)–(6)):** Under Regulation 18(4)–(6), non-salaried members may access approved premium financing arrangements (such as SHA's administrative Lipa SHA Pole Pole installment mechanism). *Prototype Boundary:* This research prototype evaluates means-testing and cash-flow assessment mechanics; it does NOT implement or operate a live premium financing gateway. Upfront deposit requirements under financing schemes remain an administrative policy consideration for low-income informal households.
 - **Ombudsman Payment-Records Order (July 2026):** On an application dated Nov 19, 2025, the Commission on Administrative Justice ordered SHA to release within 21 days disaggregated hospital reimbursement records (NHIF disbursements from 2018–2024 and SHA/SHIF payments from 2025 onward). While that ruling enforces provider payment transparency, this repository delivers **algorithmic transparency** for household means testing.
 - **KIHBS 2025/26 Recalibration Opportunity:** The Kenya National Bureau of Statistics (KNBS) commenced a 12-month national fieldwork campaign for the 2025/26 Kenya Integrated Household Budget Survey in July 2025 across 24,480 households and 960 refugee camp households. Once published, this survey will provide an updated empirical dataset to retrain national means-testing models, eliminating dependence on outdated 2021 survey data.
 
@@ -140,7 +145,9 @@ This reform aligns with major policy, judicial, and statistical developments acr
 | AI Bill 2026 | Algorithmic impact assessment, bias testing, and explainability | Design mapping only: no legal certification or independent algorithmic impact assessment has been completed |
 | Ombudsman Direction (Nov 2025) | Access to Information compliance (Africa Uncensored FOI) | ⚠️ Partly complied by SHA: Model formula and 43 variables disclosed; regression coefficients withheld |
 | High Court (Mwita, June 2025) | Salaried deduction double taxation observation | ℹ️ Judicial observation only; petition struck out as premature; Ministry continues salaried deductions noting tax-deductibility under Tax Laws (Amendment) Act 2024 |
+| High Court (Okoiti, March 19, 2026) | [2026] KEHC 3972 (KLR): Declared LN 48, 49, 146, 147 validly made; ordered corrective action for fair means testing | 📋 Confirms regulatory validity while mandating fair and effective means testing for non-salaried persons; does not assess algorithmic accuracy or fairness |
 | High Court (Mwamuye, March 19, 2026) | 90-day structural interdict on constitutional violations in rollout | 📋 Complementary: Open-source reference addressing means-testing transparency alongside the Ministry's mandated corrective affidavit process |
+| LN 55 of 2025 (Clause 9) | Revocation of LN 147 of 2024 | ⚖️ Revokes the 2024 Amendment Regulations (LN 147/2024); does not revoke principal LN 49 of 2024 |
 
 ---
 
@@ -150,7 +157,7 @@ This reform aligns with major policy, judicial, and statistical developments acr
 - **Algorithm Documentation** — Full technical specification with formulae ([docs/SHA_Algorithm_v2.1_Documentation.docx](docs/SHA_Algorithm_v2.1_Documentation.docx))
 - **AI Bill 2026 Compliance** — Regulatory compliance framework ([docs/AI_BILL_2026_COMPLIANCE.docx](docs/AI_BILL_2026_COMPLIANCE.docx))
 - **Legal Ethical Architectural Evaluation** — Constitutional and statutory compliance framework ([docs/LEGAL_ETHICAL_ARCHITECTURAL_EVALUATION.docx](docs/LEGAL_ETHICAL_ARCHITECTURAL_EVALUATION.docx))
-- **Calculation Receipts** — Proposed citizen-facing explanation framework ([docs/SHAP_DEDUCTION_RECEIPTS.docx](docs/SHAP_DEDUCTION_RECEIPTS.docx))
+- **Calculation Receipts (Historical Draft)** — Early conceptual explanation note ([docs/SHAP_DEDUCTION_RECEIPTS.docx](docs/SHAP_DEDUCTION_RECEIPTS.docx); superseded by active calculation breakdown in [ContributionStatementTab.jsx](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/ContributionStatementTab.jsx))
 - **Privacy Policy** — Draft data protection policy for proposed deployment; not a compliance certification ([docs/PRIVACY_POLICY.docx](docs/PRIVACY_POLICY.docx))
 
 ---
@@ -175,10 +182,13 @@ This repository contains a **demonstration prototype and policy proposal**, not 
 - **Illustrative baseline:** the existing-system comparator is a hand-authored PMT-style approximation. It is not a reconstruction of SHA's disclosed 43-variable regression, and it must not be described as SHA's actual scoring formula.
 - **Proposed calculation:** the AGI implementation is a deterministic JavaScript rules engine using fixed rules and constants. It is not a trained machine-learning model, a Fairlearn ensemble, or an optimized model.
 - **No agency integrations:** KRA, NTSA, IPRS and mobile-network records are not queried. Status indicators are derived from demonstration form inputs, not independently verified agency records.
+- **Network and external requests:** The reviewed application source contains no identified application-level API submission path to an SHA backend or other assessment-data service (`fetch`, `XMLHttpRequest`, and `WebSocket` return zero instances in application code). The interface references Google Fonts, which can generate third-party stylesheet and font requests carrying ordinary connection metadata; these requests are distinct from transmitting household assessment data. Source inspection is not packet-capture verification. The prototype has no connection to SHA production infrastructure or live member databases.
+- **In-memory draft retention:** Challenge drafts and review queue entries exist only in React component state (`useState`) during the active browser session; no citizen or household assessment records are persisted to browser storage (`localStorage` or `sessionStorage`). Real SHA member records must NOT be entered.
+- **Content Security Policy (CSP):** The development server configures `connect-src 'self'`, which restricts outbound connection mechanisms (`fetch`, `XHR`, `WebSocket`), while fonts and stylesheets are governed by separate directives; production static bundles require server/CDN header configuration. No `.env` files or remote API credentials exist in the repository.
 - **Synthetic testing:** fairness and error-rate outputs are calculated from generated households. The proposed rules engine is used as a comparison reference in some calculations, not as independently verified ground truth. Small groups may be excluded because they do not meet the minimum sample size.
 - **Fraud indicators:** the fraud screen uses hand-authored heuristic rules and manually assigned weights. Its score is not a calibrated probability, percentile, or finding that a person committed fraud.
 - **Calculation explanation:** the interface displays factors and deduction lines from the rules engine. This is a transparent calculation breakdown, not a SHAP/Shapley attribution unless a separate validated Shapley implementation is added.
-- **Assessment challenge:** the challenge screen prepares a statement locally and allows a user to download it as text. It does not submit an appeal to SHA, upload evidence, create a case, or start an official review period. Members must use SHA's existing official appeal channel for an actual submission.
+- **Assessment challenge:** the challenge screen prepares a statement locally in memory and allows a user to download it as text. It does not submit an appeal to SHA, upload evidence, create a case, or start an official review period. Members must use SHA's existing official appeal channel for an actual submission.
 - **Audit and privacy:** audit entries remain in the current browser session and are cleared on reload unless manually exported. The prototype does not provide durable audit storage, production encryption, backend access controls, or enforced retention/deletion.
 - **Test data only:** do not enter real citizen identifiers, account numbers, mobile numbers, health details, or other sensitive personal information.
 
@@ -232,11 +242,10 @@ flowchart TD
         AGI <--> MNO[(MNO Gateway\nM-Pesa/Airtel)]
     end
     
-    AGI --> Fraud{Fraud Engine \n18 Flags}
-    Fraud -- Digital Ghost --> CHP[CHP Physical Verification]
-    Fraud -- Flagged --> Manual[Manual Review \nCHP/DPA §35]
-    Fraud -- Cleared --> Tier(Tier Classification \nKSh 300 - KSh 5,000)
-    Tier --> SHAP[SHAP Explainability \n*147*4#]
+    AGI --> Consistency{Consistency Verification \nHeuristics}
+    Consistency -- Review Flag --> Manual[Caseworker / CHP Review \nDPA §35 & Reg 22]
+    Consistency -- Verified --> Tier(Contribution Setting \nReg 18(1) & (2) Floor)
+    Tier --> Breakdown[Calculation Breakdown \n*147*4#]
 ```
 
 ---
@@ -265,9 +274,17 @@ are structured policy and software prototypes. They represent competing research
 ### 5. The Illustrative PMT Comparator Is NOT SHA's Deployed Model
 The baseline comparator in `src/lib/AlgorithmSimulation.js` is a simplified, illustrative 2-variable proxy regression constructed for demonstration. It is **not** a reconstruction of SHA's proprietary 43-variable regression model, and it does not contain SHA's actual empirical coefficients, categorical transformations, or calibration offsets. It cannot be used to benchmark or criticize the performance of SHA's live system.
 
-### 6. Official SHA Baseline Parameters and KNBS Microdata Are Required
+### 6. Authoritative Technical Specification and KNBS Microdata Are Required
 Comparative empirical evaluation of means-testing reform is strictly **BLOCKED** until two external dependencies are formally provided:
-1. **Official SHA Model Disclosure:** Full regression coefficients, dummy encodings, regional intercepts, and statutory lookup tables under Section 27 and Regulations 18, 19, and 21(6). *(Note: Under the Social Health Insurance Regulations, 2024, Regulation 21(6) designates the Fifth Schedule, titled 'Means Testing', as the statutory formula; however, the complete operational model, variable encodings, and implementation parameters remain undisclosed by SHA; Regulation 62 is titled 'Zones').*
+1. **Authoritative Production Technical Specification:** Authoritative current documentation from SHA covering:
+   - Current production model version and specification.
+   - Numerical regression coefficients and intercepts ($a^u, b^u, c^u$).
+   - Variable definitions and categorical encodings (distinguishing the statutory data domains of Regulation 21(3) from the operational 43 variables).
+   - Training data version and preparation (2021 KCHS).
+   - Missing-data and imputation rules.
+   - Post-estimation calibration.
+   - Conversion of model output into contribution amounts or brackets under Regulation 18(1) and Regulation 19.
+   - Clarification of the central methodological question: *"How does the operational per-capita consumption prediction relate to the per-capita income estimation specified in the Fifth Schedule ($\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$)?"*
 2. **Approved Survey Microdata:** Lawfully accessible, anonymised national household budget microdata (e.g. KNBS KIHBS) with verified sampling weights, cluster identifiers, and strata.
 
 ### 7. What Can and Cannot Be Concluded from Synthetic Demonstrations

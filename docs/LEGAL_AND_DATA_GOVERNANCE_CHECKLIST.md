@@ -32,20 +32,24 @@
 * **Section 27(4):** Mandates that the national government shall assist households that cannot afford the statutory contribution, anchoring the indigent subsidy.
 
 ### The Statutory Framework: Section 27 and Regulations 17 and 21:
-Under the **Social Health Insurance Act, 2023** and the **Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024)**:
-* **Regulation 17:** Governs contributions for persons in salaried employment.
+Under the **Social Health Insurance Act, 2023** and the **Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024, published in Kenya Gazette Supplement No. 60, Legislative Supplement No. 28, on 8 March 2024)**:
+* **Regulation 17:** Governs contributions for persons in salaried employment (statutory payroll deductions).
 * **Regulation 18(1):** Establishes that non-salaried households shall pay an annual contribution of 2.75% of household income determined through means testing.
 * **Regulation 18(2):** Establishes the statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually).
-* **Regulation 18(3):** Governs payment timing before the annual contribution lapses.
+* **Regulation 18(3)–(6):** Governs payment timing and authorizes approved commercial bank or SACCO premium financing arrangements.
 * **Regulation 19:** Governs households in need of financial assistance (indigent households). Administrative application of the KSh 300 floor under Reg 18(2) does NOT constitute a statutory indigent determination.
 * **Regulation 21:** Governs means testing:
   - *Regulation 21(1):* Mandates means-testing for households whose income is not derived from salaried employment.
   - *Regulation 21(2):* Provides that the means-testing instrument shall be developed by the Cabinet Secretary for Health in collaboration with the Cabinet Secretary responsible for social protection.
+  - *Regulation 21(3):* Outlines broad socioeconomic data domains collected for means testing: housing characteristics, access to basic services, and household composition and characteristics.
   - *Regulation 21(6):* Prescribes that means testing shall be conducted using the formula set out in the Fifth Schedule.
-* **Fifth Schedule ('Means Testing'):** The Fifth Schedule to the gazetted Regulations is titled **"Means Testing"** and contains stated urban and rural regression equations. *(Note: While the functional equation is gazetted, SHA's full operational regression weights, variable codebooks, categorical transformations, and cutoff parameters remain undisclosed).*
-* **Regulation 62 ('Zones'):** Regulation 62 is titled **"Zones"**, designating regional geographic county groupings for health facility reimbursement tariffs.
-* **Legal Notice 55 of 2025:** Expressly revokes Legal Notice 147 of 2024 in Clause 9.
-* **Statutory Status:** The deployed SHA Means-Testing Instrument operational parameters remain pending official verification and disclosure by SHA.
+* **Fifth Schedule ('Means Testing', Gazette p. 798):** Specifies the econometric formula:
+  $$\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$$
+  estimating log per-capita income across urban and rural strata ($u$). *(Note: The schedule itself does not enumerate 43 specific variables. While investigative reporting by Lighthouse Reports in May 2026 notes that SHA disclosed in a Nov 2025 ATI response that its operational model uses 43 variables from 2021 KCHS predicting log per-capita consumption, numerical coefficients and cutoff thresholds remain undisclosed in the Gazette).*
+* **Regulation 62 ('Zones'):** Regulation 62 is titled **"Zones"**, designating regional geographic county groupings for health facility reimbursement tariffs (separate from Means Testing).
+* **Legal Notice 55 of 2025:** Expressly revokes Legal Notice 147 of 2024 in Clause 9 (does not revoke principal LN 49 of 2024).
+* **Judicial Context (March 2026):** In *Okoiti & 2 others v Cabinet Secretary, Ministry of Health & 20 others [2026] KEHC 3972 (KLR)* (19 March 2026), the High Court declared Legal Notices 48, 49, 146, and 147 of 2024 validly made, while ordering corrective action that includes implementing fair and effective means testing for non-salaried persons. (Does not evaluate algorithmic accuracy; appeal status subject to confirmation).
+* **Statutory Status:** The deployed SHA Means-Testing Instrument operational parameters remain pending official verification and disclosure by SHA. A primary research question is how the operational per-capita consumption prediction relates to the Fifth Schedule's per-capita income estimation.
 
 ### Statutory Clarification Regarding Data Protection & Research:
 * **DPA 2019 Section 53:** While Section 53 provides research and statistical exemptions, it does NOT constitute a blanket disclosure authorization; lawful processing still requires a valid statutory basis under Section 30 and appropriate DPIA safeguards under Section 31.

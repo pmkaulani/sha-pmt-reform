@@ -16,12 +16,13 @@ When PMT is repurposed to determine **compulsory monthly financial contributions
 
 ### 2. Candidate Methodological Frameworks Examined
 
-#### Model 1: Official Regulation 21(6) / Fifth Schedule PMT (Baseline)
-- **Econometric Form:** Ordinary Least Squares (OLS) regression predicting $\ln(\text{Consumption})$.
-- **Inputs:** 43 proxy variables (dwelling roof/wall/floor, energy, sanitation, livestock, appliances).
-- **Core Construct:** Long-term permanent consumption proxy.
+#### Model 1: Statutory Regulation 21(6) / Fifth Schedule PMT & Reported Operational Model
+- **Statutory Formula (Fifth Schedule, Gazette p. 798):** $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$, estimating log per-capita income across urban and rural strata ($u$).
+- **Reported Operational Model (Lighthouse Reports, May 2026):** OLS regression derived from the 2021 Kenya Continuous Household Survey using 43 proxy variables predicting log per-capita *consumption*.
+- **Core Construct:** Long-term permanent consumption proxy (operational) vs. per-capita income estimation (statutory).
+- **Primary Research Question:** How does the operational per-capita consumption prediction relate to the per-capita income estimation specified in the Fifth Schedule?
 - **Strength:** Resistant to income under-reporting; observable physical proxies.
-- **Limitation:** Insensitive to sudden economic shocks, droughts, or volatile monthly cash flow; physical assets cannot be spent to pay monthly hospital premiums.
+- **Limitation:** Insensitive to sudden economic shocks, droughts, or volatile monthly cash flow; physical assets cannot be spent to pay monthly hospital premiums. Numerical coefficients remain undisclosed in the Gazette.
 
 #### Model 2: Original Asset- and Liquidity-Aware AGI v2.1
 - **Econometric Form:** Multi-layer rules engine incorporating declared income, contextual asset amortizations, and mobile money liquidity velocity.

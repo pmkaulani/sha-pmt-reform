@@ -19,7 +19,7 @@ Phase 6.3 represents the **final end-to-end integration verification and demonst
 3. **Application Navigation & Screen Audit:** Successfully launched the Vite development server (`http://localhost:5173/app.html`) and systematically exercised all 15 functional tabs/screens with the headless browser subagent, checking desktop (1280x800) and mobile (390x844) viewport layouts.
 4. **Assessment Journey Safeguards:**
    - **Scenario A (Informal Microbusiness):** Completed full assessment through Stage 1 (Household), Stage 2 (Earned Income), Stage 3 (Other Money), and Stage 4 (Review), navigating to the Financial Comparison tab without error.
-   - **Scenario B (Explicit Zero Earned Income):** Verified that selecting "Our household currently has no earned income" produces a clean, non-crashing `CALCULATED_EXPLICIT_ZERO_EARNED` status, an indicative pre-adjustment base of KSh 0, and applies the statutory Regulation 17(2) administrative floor of KSh 300/month.
+   - **Scenario B (Explicit Zero Earned Income):** Verified that selecting "Our household currently has no earned income" produces a clean, non-crashing `CALCULATED_EXPLICIT_ZERO_EARNED` status, an indicative pre-adjustment base of KSh 0, and applies the statutory Regulation 18(2) administrative floor of KSh 300/month (with salaried household minimums governed under Regulation 17(2)).
    - **Scenario C (Unearned Financial Flows / Transfers):** Confirmed that declaring cash assistance, remittances, or soft loans isolates them into non-earned policy review buckets and displays the visible `PROVISIONAL_PENDING_POLICY` alert banner in Financial Comparison.
    - **Scenario D (Short Observation Windows 3–11 Months):** Confirmed that observation periods shorter than 12 months trigger the visible `PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION` alert banner in Financial Comparison and Contribution Statement, preventing any unqualified contribution result.
    - **Scenario E (Operating Cost Itemisation & Reimbursement Reconciliation):** Verified deductible direct operating expense categories, expense-to-reimbursement reconciliation notices, and preservation of reported net earnings.
@@ -35,7 +35,7 @@ Phase 6.3 represents the **final end-to-end integration verification and demonst
    - Data quality profiler inspects non-finite values (`NaN`, `Infinity`, null) using `Number.isFinite()`.
    - Pilot Readiness strictly enforces the sequential state machine (`ALLOWED_PILOT_CONTROL_TRANSITIONS`) across all 5 stages, normalising Stage 2 as `OFFLINE_REPLAY` / `STAGE_2_OFFLINE_HISTORICAL_REPLAY`.
    - Rollback capability explicitly reflects `SIMULATION_ASSUMES_OFFICIAL_PROCESS_UNCHANGED`.
-7. **Statutory Reference Audit:** Eradicated lingering citations to "Regulation 18" and "Regulation 21(6)", aligning all contribution rate and floor references with `Regulation 17(1) & (2)` of the Social Health Insurance (General) Regulations, 2024.
+7. **Statutory Reference Audit:** Aligned all contribution rate and floor references with the gazetted Social Health Insurance Regulations, 2024 (LN 49/2024): Regulation 18(1) & (2) for non-salaried households, Regulation 17(1)–(2) for salaried employment, Regulation 19 for indigent assistance, and Regulation 21(6) with the Fifth Schedule ('Means Testing').
 8. **Automated Integration Testing:** Implemented comprehensive integration test suite `sha-mvp/tests/phase-6-3-integration.test.js` (12 / 12 passing). Total test suite execution: **237 passed across 15 test files (100% pass rate, 0 failed, 0 skipped)**.
 9. **Build & Vulnerability Hygiene:** Production Vite build completed cleanly in 5.30s. `npm audit` returned **0 vulnerabilities**.
 
@@ -57,12 +57,12 @@ Unstaged Modifications: 32 tracked files (Phase 3 through Phase 6.3 hardening)
 ### Unstaged File Tracking Register:
 - **Core Application UI & Views:**
   - `sha-mvp/src/App.jsx`: Added defensive snapshot fallbacks for direct-entry baselines, null-safe review flags handling, and `PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION` warning callouts.
-  - `sha-mvp/src/ContributionStatementTab.jsx`: Added `PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION` callout banner, updated contribution descriptor to "Provisional extrapolation (non-binding)", and aligned statutory citations with Reg. 17(1) & (2).
+  - `sha-mvp/src/ContributionStatementTab.jsx`: Added `PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION` callout banner, updated contribution descriptor to "Provisional extrapolation (non-binding)", and aligned statutory citations with Reg. 18(1) & (2) for non-salaried households.
   - `sha-mvp/src/EvaluationLabTab.jsx`: Enforces holdout partition isolation (`PARTITION_TYPES.HOLDOUT`), zero/negative resources isolation, and pre-registered protocol freeze checks.
   - `sha-mvp/src/DataReadinessTab.jsx`: Houses KNBS codebook mapper (`DEMO_ONLY`), data quality profiler, and Data Access Register.
   - `sha-mvp/src/PilotReadinessTab.jsx`: Houses sequential pilot progression, gate checklist (`(Synthetic Demo Checked)`), and simulated rollback controller.
 - **Domain Logic & Algorithmic Engines:**
-  - `sha-mvp/src/lib/AlgorithmSimulation.js`: Purged residual Reg. 18 comments and aligned tier band labels with Reg. 17(1) & (2).
+  - `sha-mvp/src/lib/AlgorithmSimulation.js`: Purged residual draft citations and aligned tier band labels with Reg. 18(1) & (2) for non-salaried households.
   - `sha-mvp/src/lib/household-income.js`: Added null-safe `reviewFlags: []` and `duplicateRelationships: []` to validation failure returns, supporting resilient review UI rendering.
   - `sha-mvp/src/lib/empirical-comparison-runner.js`: Enforces provenance mismatch blocks, protocol freeze checks, registered model verification, and unburdened affordability isolation.
   - `sha-mvp/src/lib/pilot-stages.js`: Normalised Stage 2 identifier and enforced transition graph `ALLOWED_PILOT_CONTROL_TRANSITIONS`.
@@ -97,19 +97,19 @@ The full application was launched via Vite (`npm --prefix sha-mvp run dev -- --p
 
 | # | Screen / Tab | URL / Selector | Inspection Status | Key Findings & Safeguards Verified |
 |---|--------------|----------------|-------------------|-----------------------------------|
-| 1 | Landing Page | `http://localhost:5173/` | **PASS** | Title: "SHA PMT Reform — Fixing Kenya's Health Insurance Algorithm". Direct prototype links to `/app.html`. Clean layout, responsive navbar. |
+| 1 | Landing Page | `http://localhost:5173/` | **PASS** | Title: "Household Income Assessment Research Prototype". Direct prototype links to `/app.html`. Clean layout, responsive navbar. |
 | 2 | Assessment Wizard (Stage 0–4) | `/app.html` (Form) | **PASS** | Steps 0 (Household Profile & Presets), 1 (Housing & Assets), 2 (Earned Income Ledger), 3 (Other Financial Flows), 4 (Review). Persona buttons, required inputs, and disclaimers render properly. |
 | 3 | Financial Comparison | Tab `comparison` | **PASS** | Displays illustrative PMT baseline vs proposed AGI rules engine, monthly difference callout, indicative pre-adjustment bases, unverified agency source indicators (IPRS, NTSA, MNO, KRA marked `NOT CONNECTED` / `USER ENTERED`). |
 | 4 | AGI Model Versions | Tab `models` | **PASS** | Compares historical Asset/Liquidity AGI v2.1 vs Declared-Income AGI v1.0, showing deduction records, contextual signals, and model divergence explanations. |
 | 5 | Evaluation Lab | Tab `evalLab` | **PASS** | Displays pre-registered protocol selector, candidate models list, evaluation dataset selector, holdout partition badge (`PARTITION: HOLDOUT`), synthetic demo badge (`DEMO_ONLY`), and JSON export button. |
 | 6 | Data & Baseline Readiness | Tab `dataReadiness` | **PASS** | Displays Data Access Register (tracked dataset requests and permissions), KNBS codebook mapper (`DEMO_ONLY`), and Data Quality Profiler (`Number.isFinite()`). |
 | 7 | Pilot Readiness | Tab `pilotReadiness` | **PASS** | Displays all 5 pilot stages, normalises Stage 2 (`OFFLINE_REPLAY`), displays gate criteria tagged `(Synthetic Demo Checked)`, and simulated rollback drill controller (`SIMULATION_ASSUMES_OFFICIAL_PROCESS_UNCHANGED`). |
-| 8 | Contribution Statement | Tab `statement` | **PASS** | Displays formal breakdown, statutory references citing Regulation 17(1) & (2), `PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION` banner, unverified demo payment recording, and print view. |
+| 8 | Contribution Statement | Tab `statement` | **PASS** | Displays formal breakdown, statutory references citing Regulation 18(1) & (2) for non-salaried households, `PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION` banner, unverified demo payment recording, and print view. |
 | 9 | Prepare Challenge | Tab `challenge` | **PASS** | Displays non-binding challenge draft builder, evidence attachment catalog (metadata-only), dispute calculation, and disclaimer stating no submission is made to SHA. |
 | 10 | Officer Review (Demo) | Tab `officer` | **PASS** | Displays demonstration casework queue, side-by-side reported vs corrected inputs, review notes, and dual sign-off controls (`isBindingOnOfficialRecord: false`). |
 | 11 | Fairness Analysis | Tab `fairness` | **PASS** | Displays demographic parity ratios, subgroup disparity analysis across rural/urban strata, and small-cell suppression warnings ($N < 5$). |
 | 12 | Fraud Risk Assessment | Tab `fraud` | **PASS** | Displays contextual wealth heuristics, digital debt flags, and friction-free verification indicators without automated disqualification. |
-| 13 | Bias & Legal Compliance | Tab `bias` | **PASS** | Displays statutory compliance checklist referencing Kenya Data Protection Act 2019 (Sections 25, 30, 35, 53) and SHI Regulations 17, 21, and 62. |
+| 13 | Bias & Legal Compliance | Tab `bias` | **PASS** | Displays statutory compliance checklist referencing Kenya Data Protection Act 2019 (Sections 25, 30, 35, 53) and SHI Regulations 18, 19, 21(6), and 62. |
 | 14 | Calculation Breakdown | Tab `shap` | **PASS** | Displays waterfall decomposition of deductions, vulnerability offsets, living allowance adjustments, and final AGI base calculation. |
 | 15 | USSD Simulation | Tab `ussd` | **PASS** | Interactive *147# feature-phone simulation demonstrating plain-language status lookup, tier explanations, and dispute guidance. |
 
@@ -145,7 +145,7 @@ flowchart TD
 #### Scenario B: Explicit Zero Earned Income
 - **Input Profile:** Subsistence / destitute household with active livelihoods checkbox unchecked ("Our household currently has no earned income").
 - **Earned Income Ledger:** `createZeroEarnedIncomeAssessment()` executed. Earned base set to KSh 0.
-- **Review Summary:** Displayed `CALCULATED_EXPLICIT_ZERO_EARNED` status with explicit disclaimer noting that under Regulation 17(2), the statutory KSh 300/mo minimum applies unless approved for indigent subsidy under Regulation 17(3).
+- **Review Summary:** Displayed `CALCULATED_EXPLICIT_ZERO_EARNED` status with explicit disclaimer noting that under Regulation 18(2), the statutory KSh 300/mo minimum applies unless approved for indigent subsidy under Regulation 19.
 - **Classification Execution:** Produced pre-adjustment base of KSh 0 and proposed contribution of KSh 300/mo (minimum contribution rule).
 - **Result:** **PASS**.
 
@@ -233,20 +233,22 @@ The Pilot Readiness module (`PilotReadinessTab.jsx`, `pilot-stages.js`, `pilot-r
 
 ## 9. Statutory Reference & Legal Alignment Audit
 
-A comprehensive statutory audit reconciled all legal references with the gazetted **Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024)**, resolving earlier numbering discrepancies originating from the pre-gazettement public participation draft:
+A comprehensive statutory audit reconciled all legal references with the gazetted **Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024, published in Kenya Gazette Supplement No. 60, Legislative Supplement No. 28, on 8 March 2024)**, resolving earlier numbering discrepancies originating from the pre-gazettement public participation draft:
 
 | Statutory Subject | Gazetted Provision (LN 49/2024) | Statutory Content & Audit Status |
 |-------------------|---------------------------------|----------------------------------|
-| *Salaried Employment* | **Regulation 17** | Contributions for persons in salaried employment (statutory deductions). |
+| *Salaried Employment* | **Regulation 17** | Contributions for persons in salaried employment (statutory payroll deductions). |
 | *Non-Salaried Contribution Rate* | **Regulation 18(1)** | Annual contribution for non-salaried households: 2.75% of household income determined through means testing. |
 | *Minimum Contribution Floor* | **Regulation 18(2)** | Statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually). |
-| *Payment Timing* | **Regulation 18(3)** | Timing of annual contributions prior to lapse. |
+| *Payment Timing & Financing* | **Regulation 18(3)–(6)** | Timing of annual contributions; statutory provisions authorizing approved commercial bank/SACCO premium financing (prototype does not operate a live financing integration). |
 | *Financial Assistance (Indigents)* | **Regulation 19** | Households in need of financial assistance. Application of the KSh 300 floor does NOT constitute an automatic indigent determination. |
 | *Means Testing Instrument* | **Regulation 21(2)** | Developed by CS Health in collaboration with CS Social Protection. |
+| *Socioeconomic Data Domains* | **Regulation 21(3)** | Collects housing characteristics, access to basic services, and household composition and characteristics. |
 | *Means Testing Formula* | **Regulation 21(6)** | Prescribes that means testing shall be conducted using the formula set out in the Fifth Schedule. |
-| *Fifth Schedule ('Means Testing')* | **Fifth Schedule** | Titled **"Means Testing"**; contains stated urban and rural regression equations. *(Operational parameters, weights, and dummy encodings remain undisclosed by SHA).* |
-| *Zones* | **Regulation 62** | Titled **"Zones"**; designates regional geographic county groupings for health facility reimbursement tariffs. |
-| *Revocation of LN 147/2024* | **Legal Notice 55 of 2025** | Clause 9 expressly revokes Legal Notice 147 of 2024. |
+| *Fifth Schedule ('Means Testing')* | **Fifth Schedule (p. 798)** | Specifies econometric formula: $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$, estimating log per-capita income across urban and rural strata ($u$). *(Note: The schedule itself does not enumerate 43 specific variables. Investigative reporting by Lighthouse Reports in May 2026 notes that SHA disclosed in a Nov 2025 ATI response that its operational model uses 43 variables from 2021 KCHS predicting log per-capita consumption; numerical coefficients remain undisclosed).* |
+| *Zones* | **Regulation 62** | Titled **"Zones"**; designates regional geographic county groupings for health facility reimbursement tariffs (separate from Means Testing). |
+| *Revocation of LN 147/2024* | **Legal Notice 55 of 2025** | Clause 9 expressly revokes Legal Notice 147 of 2024 (does not revoke principal LN 49 of 2024). |
+| *Judicial Context* | **High Court [2026] KEHC 3972 (KLR)** | *Okoiti v CS Health* (19 March 2026): Declared LN 48, 49, 146, 147 validly made; confirmed Senate annulment threshold failed; ordered corrective action for fair and effective means testing for non-salaried persons. (Does not evaluate algorithmic accuracy; appeal status subject to confirmation). |
 | *Data Protection Citations* | **Kenya DPA 2019 & Reg 22** | Sections 25, 30, 31, 35, 53 of DPA 2019; Regulation 22 of Data Protection (General) Regulations 2021 (substantive human review). |
 
 ---
@@ -272,7 +274,7 @@ TAP version 13
 
 ### Integration Suite Coverage (`phase-6-3-integration.test.js`):
 1. **End-to-End Multi-Source Microbusiness Flow:** Validates itemised operating costs, gross vs net calculations, and review generation.
-2. **Explicit Zero Earned Income Safeguard:** Confirms `createZeroEarnedIncomeAssessment()` produces non-crashing zero net income and Regulation 17(2) floor.
+2. **Explicit Zero Earned Income Safeguard:** Confirms `createZeroEarnedIncomeAssessment()` produces non-crashing zero net income and Regulation 18(2) non-salaried floor.
 3. **Unearned Financial Flows Safeguard:** Confirms transfers route to `POLICY_REVIEW` bucket and trigger `PROVISIONAL_PENDING_POLICY`.
 4. **Short Observation Window Safeguard:** Confirms 3–11 month windows trigger `SHORT_WINDOW_PROVISIONAL` and `PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION`.
 5. **Evaluation Lab Provenance Mismatch Guard:** Confirms runner blocks synthetic fixtures paired with real survey manifests.
