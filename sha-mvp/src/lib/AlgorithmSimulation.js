@@ -1,10 +1,13 @@
 // SHA Means-Testing Evaluation - v2.1 prototype rules engine
-// The 2.75% contribution rate and KSh 300 monthly floor are regulatory reference parameters
-// for non-salaried households under Regulation 18 of the Social Health Insurance Regulations.
-// This prototype does NOT implement or represent the official SHA means-testing instrument established
-// under Regulation 21 and the Fifth Schedule. Current income estimations, illustrative deductions,
-// and calculation rules are research prototype assumptions that require validation against SHA's
-// official instrument, model parameters, and administrative implementation.
+// The 2.75% contribution rate and KSh 300 monthly floor are statutory reference parameters
+// for non-salaried households under Regulation 18(1) & (2) of the Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024).
+// Means testing is conducted pursuant to Regulation 21(6) using the formula set out in the Fifth Schedule ('Means Testing').
+// Note: While the Fifth Schedule sets out an urban/rural means-testing equation, complete operational parameters,
+// coefficients, variable encodings, and production implementation details have not been fully disclosed.
+// Current income estimations, illustrative deductions, and calculation rules are research prototype assumptions
+// that require validation against SHA's official instrument, model parameters, and administrative implementation.
+// Regulation 19 governs households in need of financial assistance (indigent households); applying the KSh 300
+// minimum contribution under Regulation 18(2) does not constitute a statutory indigence determination.
 //
 // IMPORTANT (audit v2, read before citing this file to a technical reviewer):
 // This entire module is a deterministic rules engine (if/else + fixed
@@ -36,12 +39,16 @@ export function deriveVehicleList(d) {
  */
 export function validateAssessmentInputs(d) {
   const errors = [];
-  if (d.monthlyNetEarnedIncome === null || d.monthlyNetEarnedIncome === undefined || d.monthlyNetEarnedIncome === "") {
+  if (
+    d.monthlyNetEarnedIncome === null ||
+    d.monthlyNetEarnedIncome === undefined ||
+    (typeof d.monthlyNetEarnedIncome === "string" && d.monthlyNetEarnedIncome.trim() === "")
+  ) {
     errors.push("Declared monthly net earned income is required.");
   } else {
     const income = Number(d.monthlyNetEarnedIncome);
-    if (isNaN(income)) {
-      errors.push("Declared monthly net earned income must be a valid number.");
+    if (!Number.isFinite(income)) {
+      errors.push("Declared monthly net earned income must be a finite valid number.");
     } else if (income < 0) {
       errors.push("Declared monthly net earned income cannot be negative.");
     }
@@ -53,14 +60,14 @@ export function validateAssessmentInputs(d) {
 }
 
 export const BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: true, tier: 'Low-Income (Reg. 18 Reference: KSh 300 Floor)' },
-  { min: 131001, max: 450000, isIndigent: false, tier: 'Standard' }, // Reg. 18 2.75% reference parameter
-  { min: 450001, max: Infinity, isIndigent: false, tier: 'Upper' }, // Reg. 18 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
+  { min: 0, max: 131000, monthly: 300, isIndigent: true, tier: 'Low-Income (Reg. 18(2) Minimum Contribution Rule: KSh 300 Floor)' },
+  { min: 131001, max: 450000, isIndigent: false, tier: 'Standard' }, // Reg. 18(1) 2.75% reference parameter
+  { min: 450001, max: Infinity, isIndigent: false, tier: 'Upper' }, // Reg. 18(1) 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
 ];
 
 export const PROPOSED_BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: true }, // Reg. 18 reference minimum contribution (KSh 300 floor for non-salaried households)
-  { min: 131001, max: Infinity, isIndigent: false }, // Reg. 18 2.75% rate applied to evaluated AGI (prototype policy model; requires validation against Regulation 21 means-testing instrument)
+  { min: 0, max: 131000, monthly: 300, isIndigent: true }, // Reg. 18(2) reference minimum contribution (KSh 300 floor for non-salaried households)
+  { min: 131001, max: Infinity, isIndigent: false }, // Reg. 18(1) 2.75% rate applied to evaluated AGI (prototype policy model; requires validation against Regulation 21(6) Fifth Schedule means-testing instrument)
 ];
 
 const ASAL_COUNTIES = {
@@ -91,9 +98,13 @@ const DEFAULT_MAX_RENT = {
 };
 
 /**
- * Calculates an illustrative PMT-style baseline for side-by-side demonstration.
- * This hand-authored comparator is NOT a reconstruction of SHA's disclosed 43-variable regression
- * and must not be described as SHA's actual formula or as evidence of real overcharging.
+ * Author-created illustrative comparator — not SHA's instrument.
+ * 
+ * DISCLOSURE: This hand-authored comparator uses invented weights and demonstration constants
+ * (e.g. gross M-Pesa volume factor, flat dwelling additions). It is NOT SHA's operational means-testing
+ * instrument under Regulation 21(6) and the Fifth Schedule, and is NOT a reconstruction of SHA's 43-variable
+ * regression. It exists solely as an illustrative baseline for software testing and interface demonstration.
+ * A difference between this comparator and an AGI model does not demonstrate actual SHA overcharging.
  */
 export function calculateCurrentModel(d) {
   let score = 0;
@@ -566,7 +577,7 @@ export function calculateProposedModel(d, adminParams = {}) {
   const INDIGENT_THRESHOLD = 131000;
   if (!isIndigent && adjustedGrossIncome <= INDIGENT_THRESHOLD) {
     isIndigent = true;
-    factors.push({ name: 'Pro-Poor Constraint', impact: 'Medium', direction: 'down', description: 'AGI below illustrative low-income threshold (KSh 131,000)', isFlaw: false });
+    factors.push({ name: 'Pro-Poor Constraint', impact: 'Medium', direction: 'down', description: 'AGI below illustrative low-income threshold (KSh 131,000) — minimum contribution rule applied under Regulation 18(2)', isFlaw: false });
   }
 
   // Meta-Flaw 30: 2.75% Rate Assumption
@@ -574,7 +585,7 @@ export function calculateProposedModel(d, adminParams = {}) {
   let tier = "LOW";
   
   if (isIndigent) {
-    monthlyContribution = 300; // Illustrative minimum contribution assumption (KSh 300 floor)
+    monthlyContribution = 300; // Minimum contribution rule under Regulation 18(2) (KSh 300/mo floor)
   } else {
     monthlyContribution = Math.max(300, Math.round((adjustedGrossIncome * 0.0275) / 12));
     if (adjustedGrossIncome > 450000) tier = "HIGH";
@@ -599,13 +610,28 @@ export function calculateProposedModel(d, adminParams = {}) {
     factors.push({ name: 'Consent Withheld — Manual Review', impact: 'High', direction: 'neutral', description: 'Citizen exercised DPA §32 right to withhold data consent. Routed to CHP manual verification. No algorithmic penalty applied.', isFlaw: false });
   }
 
-  const verifiedSources = [
-    (d.kraPinType && d.kraPinType !== 'NONE'),
-    d.isNtsaVerified,
-    (!isOffline && !isDigitalGhost)
-  ].filter(Boolean).length;
-  const confidenceTier = verifiedSources >= 2 ? "HIGH" : verifiedSources === 1 ? "MEDIUM" : "LOW";
-  const confidenceBand = { HIGH: 0.10, MEDIUM: 0.20, LOW: 0.35 }[confidenceTier];
+  const evidenceCoverage = {
+    householdIncome:
+      "MEMBER_REPORTED",
+
+    liquidityInformation:
+      isOffline
+        ? "NOT_AVAILABLE"
+        : "MEMBER_REPORTED_NOT_VERIFIED",
+
+    kraInformation:
+      d.kraPinType && d.kraPinType !== "NONE"
+        ? "MEMBER_REPORTED_NOT_VERIFIED"
+        : "NOT_PROVIDED",
+
+    vehicleInformation:
+      d.isNtsaVerified
+        ? "MEMBER_REPORTED_NOT_VERIFIED"
+        : "NOT_PROVIDED",
+
+    externalVerification:
+      "NOT_CONNECTED",
+  };
 
   return {
     estimatedAnnualIncome: annualBaseTotal,
@@ -620,9 +646,11 @@ export function calculateProposedModel(d, adminParams = {}) {
     modelName: 'SHA PMT v2.1 — proposed AGI rules engine',
     deductions: postBaseDeductions,
     calculationBreakdown: calculationBreakdown,
-    confidenceTier: confidenceTier,
-    agiRangeLow: Math.max(0, Math.round(adjustedGrossIncome * (1 - confidenceBand))),
-    agiRangeHigh: Math.round(adjustedGrossIncome * (1 + confidenceBand))
+    evidenceCoverage,
+    // No calibrated statistical confidence interval is available.
+    confidenceTier: null,
+    agiRangeLow: null,
+    agiRangeHigh: null
   };
 }
 
@@ -1852,7 +1880,7 @@ export function generateRevenueStressTest(totalPopulation = 15500000, avgContrib
  * @param {string} officerId - ID of the officer conducting the assessment (default: 'SYSTEM')
  * @returns {Object} Immutable audit record
  */
-export function createAuditRecord(inputs, currentResult, proposedResult, fraudRisk, officerId = 'SYSTEM') {
+export function createAuditRecord(inputs, currentResult, proposedResult, fraudRisk, officerId = 'SYSTEM', modelVersions = null, adminParams = {}) {
   const now = new Date();
   // FIX (audit v2): Math.random() is not appropriate for an "immutable audit
   // record" ID (not cryptographically secure, theoretically guessable).
@@ -1860,10 +1888,15 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
   const uid = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID().split('-')[0].toUpperCase()
     : Math.random().toString(36).substring(2, 10).toUpperCase(); // last-resort fallback only
-  const assessmentId = `SHA-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${uid}`;
+  const datePart = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const localAssessmentId = `LOCAL-ASSESSMENT-${datePart}-${uid}`;
+
+  // This browser-only prototype has not submitted or registered an SHA case.
+  const reproducibleInputSnapshot = JSON.parse(JSON.stringify(inputs || {}));
+  delete reproducibleInputSnapshot.msisdn;
 
   return {
-    assessmentId,
+    localAssessmentId,
     // FIX (audit v2): this used to be the literal string "SHA256(1234****)"
     // — the first 4 real digits of the phone number wrapped in a label that
     // implied hashing had occurred. It hadn't. This now runs a real,
@@ -1871,10 +1904,18 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
     // docstring for the remaining server-side-pepper caveat.
     citizenIdHash: hashMsisdn(inputs.msisdn),
     createdAt: now.toISOString(),
-    algorithmVersion: 'PMT-v2.1-AGI',
-    status: 'SUBMITTED',
+    algorithmVersion: modelVersions?.declaredIncome?.id || proposedResult?.modelVersion || 'declared-income-agi-v1',
+    status: 'LOCAL_DEMONSTRATION',
+    isOfficialSubmission: false,
     appealStatus: null,
+    // Full calculation inputs (excluding direct phone identifier) and the
+    // administrative parameters used by both engines make this result reproducible.
+    assessmentInputSnapshot: reproducibleInputSnapshot,
+    incomeAssessmentSnapshot: inputs.incomeAssessmentSnapshot ? JSON.parse(JSON.stringify(inputs.incomeAssessmentSnapshot)) : null,
+    modelParametersSnapshot: JSON.parse(JSON.stringify(adminParams || {})),
     inputs: {
+      monthlyNetEarnedIncome: inputs.monthlyNetEarnedIncome,
+      incomeSources: Array.isArray(inputs.incomeSources) ? JSON.parse(JSON.stringify(inputs.incomeSources)) : [],
       county: inputs.county,
       householdSize: inputs.householdSize,
       headAge: inputs.headAge,
@@ -1895,20 +1936,41 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
         tier: currentResult.tier
       },
       proposedModel: {
+        version: modelVersions?.declaredIncome?.id || proposedResult?.modelVersion || 'declared-income-agi-v1',
         adjustedGrossIncome: proposedResult.adjustedGrossIncome,
         monthlyContribution: proposedResult.monthly || proposedResult.monthlyContribution,
         isIndigent: proposedResult.isIndigent,
         tier: proposedResult.tier
-      }
+      },
+      proposedModelVersions: modelVersions ? {
+        originalAgi: {
+          id: modelVersions.originalAgi.id,
+          version: modelVersions.originalAgi.version,
+          sourceCommit: modelVersions.originalAgi.sourceCommit,
+          estimatedAnnualIncome: modelVersions.originalAgi.result.estimatedAnnualIncome,
+          adjustedGrossIncome: modelVersions.originalAgi.result.adjustedGrossIncome,
+          monthlyContribution: modelVersions.originalAgi.result.monthlyContribution,
+          isIndigent: modelVersions.originalAgi.result.isIndigent
+        },
+        declaredIncome: {
+          id: modelVersions.declaredIncome.id,
+          version: modelVersions.declaredIncome.version,
+          sourceCommit: modelVersions.declaredIncome.sourceCommit,
+          estimatedAnnualIncome: modelVersions.declaredIncome.result.estimatedAnnualIncome,
+          adjustedGrossIncome: modelVersions.declaredIncome.result.adjustedGrossIncome,
+          monthlyContribution: modelVersions.declaredIncome.result.monthlyContribution,
+          isIndigent: modelVersions.declaredIncome.result.isIndigent
+        }
+      } : null
     },
     fraudFlags: fraudRisk?.fraudFlags?.map(f => f.name) || [],
     fraudRiskPercentile: fraudRisk?.fraudRiskPercentile || 0,
     createdBy: officerId,
     modifiedHistory: [],
     retentionPolicy: {
-      rawInputsPurgeDate: new Date(now.getTime() + 2 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      finalOutcomeRetainUntil: new Date(now.getTime() + 7 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      policy: 'Tiered Retention per DPA §39'
+      policy: 'No statutory retention policy is implemented. This record exists in browser memory only and is cleared when the session is reloaded unless manually exported.',
+      backendRetentionImplemented: false,
+      deletionEnforced: false
     }
   };
 }

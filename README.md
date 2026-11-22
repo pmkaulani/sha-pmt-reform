@@ -39,7 +39,7 @@ The model's inequities were documented before rollout:
 
 ## The Solution — AGI Model (v2.1)
 
-The AGI model applies **7 evidence-based deductions** to the assessed consumption base prior to calculating the statutory 2.75% contribution rate, adjusting the assessment base rather than the rate:
+The AGI model proposes **7 research-informed deduction rules** to the assessed consumption base prior to calculating the statutory 2.75% contribution rate, adjusting the assessment base rather than the rate:
 
 | Deduction | Description |
 |---|---|
@@ -51,12 +51,27 @@ The AGI model applies **7 evidence-based deductions** to the assessed consumptio
 | Tools of Trade | Productive income-generating assets depreciated rather than penalised as luxury wealth |
 | Fiduciary Exemption | Community group and chama savings excluded from personal income |
 
+### Model version lineage and recovery
+
+The repository now preserves two distinct proposed calculation models. They are alternative research designs, not sequential stages of one formula:
+
+| Version | Calculation base | Treatment of assets and liquidity |
+|---|---|---|
+| **Original asset- and liquidity-aware AGI v2.1** | Recovered from `master` commit `c1a5a09` and preserved in `src/lib/AlgorithmSimulation.original-agi-v2.1.js` | Retained balances, seasonal liquidity, chama/fiduciary treatment, SACCO capital, commercial assets, rental activity, land and livestock can feed the constructed assessment base, subject to the model's adjustments. |
+| **Declared-income AGI v1 experiment** | The later meeting-readiness implementation in `src/lib/AlgorithmSimulation.js` | Annualised declared net earned income is the base; assets, retained balances, transaction activity and debt are contextual verification signals. |
+
+`src/lib/model-versioning.js` runs both versions against the same household input snapshot. The **AGI Model Versions** screen presents their separate bases, adjusted gross incomes, contribution outputs, deductions and contextual signals.
+
+The existing financial comparison and member workflow continue to use the declared-income variant as their current primary demonstration output. Adding the recovered model does not silently switch contribution statements, member challenge drafts or officer-review records to a different formula. A later integration should explicitly decide how model versions are referenced in each immutable assessment snapshot.
+
+**Governance boundary:** both engines are research prototypes. Neither is SHA's production Regulation 21(6) / Fifth Schedule means-testing instrument, neither can issue an official assessment, and differences between their outputs are not evidence that either one is empirically correct. The historical engine is preserved for traceability; future changes should create a new version rather than overwrite it.
+
 ### Revenue Modeling & Informal Sector Participation
 
 - **Demographic baseline:** Kenya has approximately 16.7 million eligible informal-sector workers (drawn from an estimated 12–14 million total households, with 12.2 million recorded in the 2019 KNBS Census).
 - **Current revenue imbalance:** Formal-sector PAYE employees (~3.3 million contributors) contribute roughly KSh 73 billion annually against SHA's KSh 102 billion target, while informal compliance has lagged severely (early administrative data reported fewer than 200,000 paying informal members contributing ~KSh 780 million).
 - **Beyond nominal premium tiers:** In May 2026, SHA stated that 92% of assessed informal households are assigned premiums of KSh 850 or less (45% between KSh 300–500 and 47% between KSh 501–850). However, compliance is dictated not merely by the sticker price, but by citizen trust in the fairness of the assessment and how contributions are structured.
-- **AGI revenue projection:** Modeled at a realistic 60% compliance benchmark among informal workers (drawing on regional community-based health financing experiences, such as Rwanda's CBHI tiering and community mobilization), an average monthly assessment of **KSh 520** yields an estimated **~KSh 58 billion annually** in predictable informal contributions, providing the revenue stability required to support universal health coverage.
+- **AGI revenue projection (Uncalibrated Illustrative Scenario):** If modeled under an illustrative benchmark of 60% informal-worker compliance (drawing on regional community-based health financing hypotheses), an average monthly assessment of **KSh 520** would mathematically yield an indicative **~KSh 58 billion annually**. *Essential Caveat:* This figure is an unverified, illustrative simulation and NOT an actuarial revenue projection or an empirically validated yield. Actual collections depend on empirical income distributions, collection costs, digital payment friction, and formal SHA administrative policy.
 
 ---
 
@@ -223,6 +238,41 @@ flowchart TD
     Fraud -- Cleared --> Tier(Tier Classification \nKSh 300 - KSh 5,000)
     Tier --> SHAP[SHAP Explainability \n*147*4#]
 ```
+
+---
+
+## Model Evaluation and Governance
+
+Phase 3 introduces an isolated model evaluation and governance framework to establish how alternative means-testing assessment methods should be tested against independent evidence.
+
+### 1. Why a Model Output Cannot Be Its Own Ground Truth
+In scientific evaluation, a model cannot be tested against its own predictions. Evaluating an AGI rules engine or a PMT-style regression requires an independent reference outcome—such as consumption expenditure or poverty status measured by an independent statistical authority (e.g. KNBS)—not the candidate model's internal score, proposed tier, or classification flags.
+
+### 2. Why a Difference in Contribution Amounts Does Not Prove Accuracy
+If Model A calculates KSh 300/month while Model B calculates KSh 700/month for the same household, that numerical difference demonstrates that the models disagree; it does **not** establish which model is correct. Determining whether either assessment reflects true household capacity requires comparison against independently verified benchmark data.
+
+### 3. Predictive Accuracy and Contribution Affordability Are Separate Questions
+- **Predictive Accuracy:** How closely the assessment method measures a household's actual economic welfare or disposable capacity relative to independent ground truth (measured via Mean Absolute Error, Root Mean Squared Error, sensitivity, specificity, and classification error rates).
+- **Contribution Affordability:** Whether the resulting statutory premium places an undue financial burden on a household relative to its available resources (measured via contribution-to-disposable-income burden ratios).
+An assessment tool could predict consumption with statistical precision yet generate a tariff that is unaffordable for an informal household managing volatile cash flows. These two dimensions must be evaluated through separate metrics.
+
+### 4. Current AGI Models Are Research Hypotheses
+The two candidate engines in this repository:
+- **Original Asset- and Liquidity-Aware AGI v2.1** (`src/lib/AlgorithmSimulation.original-agi-v2.1.js`)
+- **Declared-Income AGI v1 Experiment** (`src/lib/household-income.js` & `src/lib/AlgorithmSimulation.js`)
+are structured policy and software prototypes. They represent competing research hypotheses about how to assess informal-sector means fairly. They have not undergone national empirical validation and are not official SHA determinations.
+
+### 5. The Illustrative PMT Comparator Is NOT SHA's Deployed Model
+The baseline comparator in `src/lib/AlgorithmSimulation.js` is a simplified, illustrative 2-variable proxy regression constructed for demonstration. It is **not** a reconstruction of SHA's proprietary 43-variable regression model, and it does not contain SHA's actual empirical coefficients, categorical transformations, or calibration offsets. It cannot be used to benchmark or criticize the performance of SHA's live system.
+
+### 6. Official SHA Baseline Parameters and KNBS Microdata Are Required
+Comparative empirical evaluation of means-testing reform is strictly **BLOCKED** until two external dependencies are formally provided:
+1. **Official SHA Model Disclosure:** Full regression coefficients, dummy encodings, regional intercepts, and statutory lookup tables under Section 27 and Regulations 18, 19, and 21(6). *(Note: Under the Social Health Insurance Regulations, 2024, Regulation 21(6) designates the Fifth Schedule, titled 'Means Testing', as the statutory formula; however, the complete operational model, variable encodings, and implementation parameters remain undisclosed by SHA; Regulation 62 is titled 'Zones').*
+2. **Approved Survey Microdata:** Lawfully accessible, anonymised national household budget microdata (e.g. KNBS KIHBS) with verified sampling weights, cluster identifiers, and strata.
+
+### 7. What Can and Cannot Be Concluded from Synthetic Demonstrations
+- **What synthetic demonstrations can establish:** Software correctness, edge-case resilience, user-flow usability, input validation integrity, and calculation reproducibility across simulated scenarios.
+- **What synthetic demonstrations CANNOT establish:** National accuracy, poverty targeting efficiency, demographic fairness, fiscal neutrality, or compliance with Article 27 of the Constitution. All synthetic evaluation runs are marked `DEMO_ONLY`.
 
 ---
 

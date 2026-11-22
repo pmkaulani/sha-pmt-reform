@@ -329,6 +329,12 @@ export function createNormalizedChallengeDraft(data = {}, householdContext = nul
       activeScenario: householdContext.activeScenario || "Custom"
     } : null,
     assessmentInputSnapshot,
+    modelVersionId: String(data.modelVersionId || data.prototypeComparisonSnapshot?.modelVersionId || "declared-income-agi-v1"),
+    modelParameterSnapshot: data.modelParameterSnapshot && typeof data.modelParameterSnapshot === "object"
+      ? JSON.parse(JSON.stringify(data.modelParameterSnapshot))
+      : (data.prototypeComparisonSnapshot?.modelParameterSnapshot && typeof data.prototypeComparisonSnapshot.modelParameterSnapshot === "object"
+        ? JSON.parse(JSON.stringify(data.prototypeComparisonSnapshot.modelParameterSnapshot))
+        : {}),
     assessment: {
       officialAssessmentReference: String(assessment.officialAssessmentReference || "").trim(),
       receivedDate: String(assessment.receivedDate || "").trim(),

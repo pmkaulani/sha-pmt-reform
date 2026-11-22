@@ -131,16 +131,16 @@ export default function AppealPreparationTab({
 }) {
   // Assessment Details (member-entered)
   const [officialAssessmentRef, setOfficialAssessmentRef] = useState(
-    results?.auditRecord?.assessmentId || ""
+    ""
   );
   const [receivedDate, setReceivedDate] = useState(new Date().toISOString().slice(0, 10));
   const [periodStart, setPeriodStart] = useState("2026-01-01");
   const [periodEnd, setPeriodEnd] = useState("2026-12-31");
   const [assessedMonthly, setAssessedMonthly] = useState(
-    results?.current?.monthly ? String(results.current.monthly) : ""
+    ""
   );
   const [requestedMonthly, setRequestedMonthly] = useState(
-    results?.next?.monthlyContribution ? String(results.next.monthlyContribution) : ""
+    ""
   );
 
   // Grounds
@@ -264,7 +264,11 @@ export default function AppealPreparationTab({
       attachmentMetadata: attachments,
       requestedResolution: requestedAction,
       generalExplanation: generalExplanation.trim(),
+      modelVersionId: results?.next?.modelVersion || results?.modelVersions?.declaredIncome?.id || "declared-income-agi-v1",
+      modelParameterSnapshot: results?.adminParamsSnapshot || {},
       prototypeComparisonSnapshot: {
+        modelVersionId: results?.next?.modelVersion || results?.modelVersions?.declaredIncome?.id || "declared-income-agi-v1",
+        modelParameterSnapshot: results?.adminParamsSnapshot || {},
         county: results?.d?.county || null,
         householdSize: results?.d?.householdSize ?? null,
         headAge: results?.d?.headAge ?? null,
