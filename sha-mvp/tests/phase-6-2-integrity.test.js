@@ -562,7 +562,7 @@ test("Phase 6.2 — Legal & Governance: Data Access Register & Request Pack use 
 
   // Check SHA Request Pack
   const requestPack = buildShaRequestPackJson();
-  assert.ok(requestPack.statutoryBasis.some(b => b.includes("Sections 25, 30(1)(b)(viii), 30(1)(e), 35, 53")));
+  assert.ok(requestPack.statutoryBasis.some(b => b.includes("Sections 25, 30(1)(b)(iv), 30(1)(b)(v), 30(1)(b)(viii), 35, 53")));
   assert.ok(requestPack.statutoryBasis.some(b => b.includes("Regulation 22")));
   assert.ok(requestPack.statutoryBasis.some(b => b.includes("Regulations 18, 19, and 21(6)")));
   assert.ok(requestPack.statutoryBasis.some(b => b.includes("Fifth Schedule 'Means Testing'")));

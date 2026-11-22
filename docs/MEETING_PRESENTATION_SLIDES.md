@@ -64,15 +64,15 @@
    - *Core Construct:* Adjusts self-declared earnings by evaluating retained liquid balances, seasonal mobile-money velocity, capital depreciation, and contextual wealth amortizations.
    - *Status:* Preserved as an immutable historical research baseline (`Git blob 61537188d...`).
 2. **Model B: Declared-Income AGI with Structured Ledgers (`household-income.js`):**
-   - *Core Construct:* Reconstructs net earned livelihood income by deducting verified operating expenses (stock, transport, commercial costs) from gross receipts across a standard 12-month rolling window.
+   - *Core Construct:* Reconstructs net earned livelihood income by deducting member-reported, itemised operating expenses, subject to verification (stock, transport, commercial costs) from gross receipts across a standard 12-month rolling window.
    - *Status:* Implemented in the interactive application wizard and dispute-review queues.
 - **Illustrative Comparator:** The baseline in the software is an author-created illustrative benchmark, not SHA's operational instrument.
 
 ---
 
 ## Slide 6: Procedural Fairness & Meaningful Human Review
-### Complying with Kenya Data Protection Act 2019 & General Regulations 2021
-- **Statutory Mandate (DPA Section 31, Section 35 & Regulation 22):**
+### Proposed Procedural Safeguards Workflow (DPA 2019 & General Regulations 2021)
+- **Statutory Mandate (DPA Section 35 & General Regulations 2021 Regulation 22):**
   - Automated profiling or algorithmic scoring must not deny social security rights without substantive, meaningful human intervention.
   - Perfunctory or automated checkbox "approvals" do not satisfy statutory standards.
 - **Prototype Implementation:**
@@ -115,7 +115,7 @@
 ## Slide 9: What the Prototype Software Delivers Today
 ### Ready-to-Inspect Enterprise Artifacts
 - **15 Integrated Application Tabs:** Full wizard from household profile to income ledgers, comparative charts, model divergence views, and pilot controls.
-- **14 Automated Test Suites (238 Passing Tests):** 100% pass rate covering numerical precision, boundary checks, and fail-closed security guards.
+- **14 Automated Test Suites (241 Passing Tests):** 100% pass rate covering numerical precision, boundary checks, and fail-closed security guards.
 - **Data Protection Compliance:** Fail-closed runner blocking empirical runs on synthetic data; zero live citizen data written to browser storage.
 - **Complete Institutional Handover Package:** 12 structured governance, data privacy, and architecture documents in `docs/institutional-handover/`.
 

@@ -97,7 +97,8 @@ test("Criterion 2: a household can continue with no earned income", () => {
   // D. Proposed rules engine applies the KSh 300 statutory minimum floor
   const contribution = calculateCurrentModelContribution(0);
   assert.equal(contribution.monthly, 300);
-  assert.equal(contribution.isIndigent, true);
+  assert.equal(contribution.minimumContributionApplied, true);
+  assert.equal(contribution.indigenceStatus, "NOT_DETERMINED");
 });
 
 // ─── 3. MULTIPLE INCOME SOURCES REPRESENTATION ───────────────────────────────

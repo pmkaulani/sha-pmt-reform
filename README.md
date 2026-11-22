@@ -44,17 +44,25 @@ The model's inequities were documented before rollout:
 
 ## The Solution — Declared-income AGI v1 & Original AGI v2.1
 
-The two prototype models propose **7 research-informed deduction rules** applied to the declared income base prior to calculating the statutory 2.75% contribution rate. These deductions are **candidate research methodology** — their categories and allowance rules require validation against SHA's official means-testing instrument and are not an established entitlement under Regulation 18. The declared-income variant (AGI v1) adjusts the assessment base rather than the rate:
+The prototype explores alternative computational methods for assessing non-salaried households under Regulation 18(1)–(2). Rather than assessing gross presumed expenditure from unadjusted asset proxies, the candidate models evaluate **candidate research-informed adjustments** applied to the assessment base prior to calculating the statutory 2.75% contribution rate.
 
-| Deduction | Description |
-|---|---|
-| ASAL Land Discount | 85% valuation reduction for arid and semi-arid land holdings |
-| Dependency Allowance | 8% reduction per dependent, capped at 35–40% |
-| CHE Exemption | Catastrophic health expenditure protection for households managing chronic illness |
-| Digital Debt Exclusion | Mobile credit defaults (e.g. Fuliza, M-Shwari) deducted from asset calculations |
-| Household Expense Float | County-level cost-of-living adjustments |
-| Tools of Trade | Productive income-generating assets depreciated rather than penalised as luxury wealth |
-| Fiduciary Exemption | Community group and chama savings excluded from personal income |
+> [!IMPORTANT]
+> **Candidate Research Methodology:** These deduction rules and contextual adjustments are research hypotheses formulated to test equity and affordability impacts. They require empirical validation against KNBS microdata and SHA's official means-testing instrument, and are **not** established statutory entitlements under Regulation 18.
+
+### Engine Architecture & Deduction Rule Assignment
+
+The repository preserves two distinct proposed calculation models representing alternative accounting and econometric hypotheses, not sequential versions of a single formula:
+
+| Deduction / Adjustment Rule | Model Assignment | Mechanism & Methodological Hypothesis |
+|---|---|---|
+| **Cost of Living / Household Expense Float** | **Declared-Income AGI v1** (`AlgorithmSimulation.js`) | Tiered urban/rural basic subsistence deduction (Nairobi/Mombasa Tier 1: KSh 12,000/mo; Tier 2: KSh 7,000/mo; Rural: KSh 3,500/mo) or capped verified rent. Deducted directly from annual declared earned income. |
+| **Dependency Allowance** | **Declared-Income AGI v1** & **Original AGI v2.1** | Dynamic per-capita scaling: 8% reduction per dependent, capped at 35% (40% in ASAL counties) of remaining disposable income. |
+| **Chronic Health Expenditure (CHE) / Chronic Illness** | **Declared-Income AGI v1** & **Original AGI v2.1** | Disposable income protection (40% adjustment assumption) for households managing documented chronic illness burdens. |
+| **Registered Disability Adjustment** | **Declared-Income AGI v1** (`AlgorithmSimulation.js`) | Disposable income protection (30% adjustment assumption) for households with a registered person with disability. |
+| **ASAL Land Valuation Discount** | **Original AGI v2.1** (`AlgorithmSimulation.original-agi-v2.1.js`) | 85% discount for arid counties (multiplier 0.15) and 50% for semi-arid counties applied to land and livestock valuations when constructing the asset wealth base. *(In AGI v1, ASAL land is evaluated as an immovable asset for contextual verification only, not added to earned income).* |
+| **Digital Debt Default Exclusion** | **Original AGI v2.1** (`AlgorithmSimulation.original-agi-v2.1.js`) | Active mobile credit defaults (e.g. Fuliza, M-Shwari) deducted from constructed liquid balances to reflect actual financial distress. *(In AGI v1, digital debt is flagged as a contextual distress signal).* |
+| **Tools of Trade & Commercial Fleet Depreciation** | **Original AGI v2.1** (`AlgorithmSimulation.original-agi-v2.1.js`) | Productive income-generating assets (e.g., boda bodas, tools) depreciated and discounted rather than penalised as luxury wealth. *(In AGI v1, commercial vehicle fleets generate target earnings for verification).* |
+| **Fiduciary & Chama Savings Exemption** | **Original AGI v2.1** (`AlgorithmSimulation.original-agi-v2.1.js`) | Community group, merry-go-round, and chama savings held in trust excluded from individual personal liquidity. *(In AGI v1, chama savings and SACCO share capital are treated as contextual wealth indicators).* |
 
 ### Model version lineage and recovery
 

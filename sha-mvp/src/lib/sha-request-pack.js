@@ -110,7 +110,7 @@ export function buildShaRequestPackJson() {
     generatedAt: new Date().toISOString(),
     recipient: "Social Health Authority (SHA) / Ministry of Health, Kenya",
     statutoryBasis: [
-      "Kenya Data Protection Act, 2019 (Sections 25, 30(1)(b)(viii), 30(1)(e), 35, 53)",
+      "Kenya Data Protection Act, 2019 (Sections 25, 30(1)(b)(iv), 30(1)(b)(v), 30(1)(b)(viii), 35, 53)",
       "Kenya Data Protection Act, 2019 Section 31 (Data Protection Impact Assessment — required before high-risk processing)",
       "Kenya Data Protection Act, 2019 Section 32 (conditions for consent, including right to withhold or withdraw consent)",
       "Data Protection (General) Regulations, 2021 (Regulation 22)",
@@ -141,7 +141,7 @@ export function generateShaRequestPackMarkdown() {
 This technical inquiry schedule outlines the specific econometric parameters, operational codebooks, and verification data required to conduct an independent, evidence-based assessment of the Social Health Authority's (SHA) Means Testing Instrument (MTI) established under **Regulation 21(6) and the Fifth Schedule of the Social Health Insurance Regulations, 2024**.
 
 All inquiries are formulated in accordance with:
-- **Kenya Data Protection Act, 2019** (Sections 25, 30(1)(b)(viii), 30(1)(e), 35, and 53 regarding research processing, automated decision safeguards, and lawful disclosure);
+- **Kenya Data Protection Act, 2019** (Sections 25, 30(1)(b)(iv), 30(1)(b)(v), 30(1)(b)(viii), 35, and 53 regarding research processing, automated decision safeguards, and lawful disclosure);
 - **Data Protection (General) Regulations, 2021** (Regulation 22 regarding substantive human intervention in automated decision-making);
 - **Office of the Data Protection Commissioner (ODPC) Guidance Notes on Processing for Research Purposes (2025)**;
 - **Article 35 of the Constitution of Kenya** (Access to Public Information).

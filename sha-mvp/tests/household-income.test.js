@@ -405,7 +405,7 @@ test("12. Historical AGI v2.1 output preservation and confidence interval remova
 
 // ─── ZERO-INCOME REPRODUCIBILITY REGRESSION ─────────────────────────────────
 
-test("32. Zero-earned-income assessment reproduces correctly via snapshot — regression guard", () => {
+test("32. Zero-earned-income assessment reproduces key semantic fields via snapshot — regression guard", () => {
   // Create the initial zero-income assessment
   const original = createZeroEarnedIncomeAssessment();
 
@@ -418,7 +418,7 @@ test("32. Zero-earned-income assessment reproduces correctly via snapshot — re
   assert.ok(Array.isArray(original.lines), "lines must be an array");
   assert.equal(original.lines.length, 0, "Zero-income lines must be empty");
 
-  // Test reproduction via the reproducibleInputSnapshot property
+  // Test reproduction of key semantic fields via the reproducibleInputSnapshot property
   const reproducedFromSnapshot = reproduceHouseholdIncome(original.reproducibleInputSnapshot);
   assert.equal(reproducedFromSnapshot.isValid, original.isValid, "Reproduced from snapshot isValid must match");
   assert.equal(reproducedFromSnapshot.hasDeclaredNoEarnedIncome, true, "hasDeclaredNoEarnedIncome must be true");
@@ -428,7 +428,7 @@ test("32. Zero-earned-income assessment reproduces correctly via snapshot — re
   // Also test reproduction via the full assessment object
   const reproduced = reproduceHouseholdIncome(original);
 
-  // Reproduced result must match the original on all key fields
+  // Reproduced result must match the original on all key semantic fields
   assert.equal(reproduced.isValid, original.isValid, "Reproduced isValid must match");
   assert.equal(reproduced.hasDeclaredNoEarnedIncome, original.hasDeclaredNoEarnedIncome, "Reproduced hasDeclaredNoEarnedIncome must match");
   assert.equal(reproduced.calculationStatus, original.calculationStatus, "Reproduced calculationStatus must match");
@@ -437,4 +437,20 @@ test("32. Zero-earned-income assessment reproduces correctly via snapshot — re
   assert.equal(reproduced.canPopulatePrototypeEarnedIncomeBase, original.canPopulatePrototypeEarnedIncomeBase);
   assert.ok(reproduced.disclaimer.includes("Regulation 18(2)"), "Reproduced disclaimer must reference Regulation 18(2)");
   assert.ok(reproduced.disclaimer.includes("Regulation 19"), "Reproduced disclaimer must reference Regulation 19 non-indigence notice");
+});
+
+test("33. An empty unmarked array is rejected as invalid, while an explicit zero-income sentinel reproduces key semantic fields", () => {
+  // An empty array without the explicit sentinel marker represents missing or invalid input data
+  const emptyArrayResult = reproduceHouseholdIncome([]);
+  assert.equal(emptyArrayResult.isValid, false, "Empty unmarked array must not produce a valid zero-income assessment");
+  assert.ok(emptyArrayResult.errors.some(e => e.includes("At least one income or financial-flow source is required")));
+
+  // An explicit sentinel object with hasDeclaredNoEarnedIncome: true reproduces key semantic fields
+  const sentinel = { hasDeclaredNoEarnedIncome: true, sources: [] };
+  const reproduced = reproduceHouseholdIncome(sentinel);
+  assert.equal(reproduced.isValid, true, "Sentinel must produce a valid assessment");
+  assert.equal(reproduced.hasDeclaredNoEarnedIncome, true);
+  assert.equal(reproduced.calculationStatus, "CALCULATED_EXPLICIT_ZERO_EARNED");
+  assert.equal(reproduced.monthlyEarnedNetKsh, 0);
+  assert.equal(reproduced.annualisedEarnedNetKsh, 0);
 });

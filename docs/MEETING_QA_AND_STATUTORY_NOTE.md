@@ -54,12 +54,13 @@ In *Okoiti & 2 others v Cabinet Secretary, Ministry of Health & 20 others [2026]
 2. Crucially, the Court directed corrective action that includes implementing fair and effective means-testing mechanisms for non-salaried persons.
 3. *Important Boundary:* The judgment confirms statutory validity; it does *not* constitute judicial endorsement of SHA's algorithmic accuracy, fairness, or predictive performance. Furthermore, any unverified appellate or stay status must be confirmed with the Legal Directorate.
 
-### Q1.5: How does your prototype address the Kenya Data Protection Act, 2019?
+### Q1.5: How does your research framework address the Kenya Data Protection Act, 2019?
 **Authoritative Answer:**  
-1. **Section 30 (Lawful Basis):** We operate strictly within public interest research and statutory evaluation provisions (Section 30(1)(e) and 30(1)(b)(viii)).
-2. **Section 35 & General Regulations 2021 Regulation 22 (Automated Decision-Making):** Citizens subjected to automated profiling have the right to substantive, meaningful human review. Our prototype implements structured challenge drafts, itemized ledger appeals, and documented caseworker review tools that reject rubber-stamp automated decisions.
-3. **Section 53 (Research & Statistics):** Section 53 provides research exemptions, but we recognize it is not a blanket authorization. Processing microdata requires a signed Data Sharing Agreement (DSA) and an approved Data Protection Impact Assessment (DPIA) under Section 31.
-4. **Data Isolation:** The client prototype strictly forbids ingesting real member records.
+1. **Section 30 (Lawful Basis for Processing):** The prototype does not collect, process, or persist live member records. Any future data processing or evaluation involving actual citizen data must be formally authorized under a recognized statutory ground under Section 30(1) (such as Section 30(1)(b)(iv) for public interest / official authority, Section 30(1)(b)(v) for public authority tasks, or Section 30(1)(b)(viii) for research purposes). The applicable legal basis must be formally determined by SHA's data controller and legal counsel, not assumed by the research team.
+2. **Section 35 & General Regulations 2021 Regulation 22 (Automated Decision-Making Safeguards):** Persons subjected to automated profiling affecting their rights are entitled to meaningful human intervention, explanation of decisions, and mechanisms to challenge determinations. The prototype demonstrates candidate workflows (non-binding challenge drafts, itemized ledger reviews, and caseworker adjudication notes) to illustrate how substantive human review could operate in practice.
+3. **Data Sharing & Risk Governance (Sections 31, 53 & Regulation 21):** Section 53 recognizes research processing exemptions, but does not serve as a blanket authorization for data disclosure. Routine institutional data sharing requires a formal Data Sharing Agreement under Regulation 21. Where processing operations present high risk to citizen rights (such as large-scale algorithmic means testing), a Data Protection Impact Assessment (DPIA) must be conducted pursuant to Section 31.
+4. **Member Rights (Sections 32, 34, 36 & Regulation 4):** The framework recognizes data subject rights regarding withdrawal of consent (Section 32 / Regulation 4(1)(h)), restriction of processing (Section 34), and objection to processing (Section 36).
+5. **Data Isolation:** The demonstration prototype runs client-side with zero connection to production databases, and enters no live member records into browser storage.
 
 ---
 
@@ -81,7 +82,7 @@ No, for three distinct architectural reasons:
 
 ### Q2.2: How do you verify the integrity of your code?
 **Authoritative Answer:**  
-- The codebase contains **14 automated test suites comprising 238 unit and integration tests** with a 100% pass rate.
+- The codebase contains **14 automated test suites comprising 241 unit and integration tests** with a 100% pass rate.
 - Automated tests enforce fail-closed security: the empirical runner immediately blocks execution if synthetic fixtures are paired with real survey manifests (`BLOCKED_PROVENANCE_MISMATCH`) or if evaluation protocols are not frozen (`BLOCKED_PROTOCOL_NOT_APPROVED`).
 - The production Vite bundle builds with zero errors, and `npm audit` reports zero dependency vulnerabilities.
 - Historical AGI engine logic is locked by immutable Git blob hashes (`61537188d9727e9b01ef4a2c0fadc1c633abaa10`).

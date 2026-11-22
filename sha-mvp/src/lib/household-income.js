@@ -787,12 +787,14 @@ export function createZeroEarnedIncomeAssessment(commonAssessmentPeriod = null) 
 
 /**
  * Reproduces the exact household income calculation from a saved snapshot.
+ *
+ * NOTE: Only an explicit snapshot object carrying hasDeclaredNoEarnedIncome: true
+ * triggers the explicit zero-income assessment. An empty array ([]) without the sentinel
+ * marker represents missing or invalid data and is evaluated via calculateHouseholdIncome(),
+ * which returns validation errors.
  */
 export function reproduceHouseholdIncome(snapshot, commonAssessmentPeriod = null) {
-  if (
-    (snapshot && typeof snapshot === "object" && snapshot.hasDeclaredNoEarnedIncome === true) ||
-    (Array.isArray(snapshot) && snapshot.length === 0)
-  ) {
+  if (snapshot && typeof snapshot === "object" && !Array.isArray(snapshot) && snapshot.hasDeclaredNoEarnedIncome === true) {
     return createZeroEarnedIncomeAssessment(commonAssessmentPeriod);
   }
   return calculateHouseholdIncome(snapshot, commonAssessmentPeriod);

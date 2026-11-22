@@ -597,7 +597,8 @@ test("28. Original prototype output equals a direct calculation on the original 
     assert.strictEqual(snapshotCalc.monthlyContribution, directCalc.monthlyContribution);
     assert.strictEqual(snapshotCalc.adjustedGrossIncome, directCalc.adjustedGrossIncome);
     assert.strictEqual(snapshotCalc.tier, directCalc.tier);
-    assert.strictEqual(snapshotCalc.isIndigent, directCalc.isIndigent);
+    assert.strictEqual(snapshotCalc.minimumContributionApplied, directCalc.minimumContributionApplied);
+    assert.strictEqual(snapshotCalc.indigenceStatus, "NOT_DETERMINED");
   }
 });
 
@@ -627,7 +628,8 @@ test("29. Corrected prototype output equals a direct calculation on an independe
   assert.strictEqual(sim.prototypeCorrectedMonthlyKsh, independentCalc.monthlyContribution);
   assert.strictEqual(sim.correctedAGIKsh, independentCalc.adjustedGrossIncome);
   assert.strictEqual(sim.correctedTier, independentCalc.tier);
-  assert.strictEqual(sim.correctedIsIndigent, independentCalc.isIndigent);
+  assert.strictEqual(sim.correctedMinimumContributionApplied, independentCalc.minimumContributionApplied);
+  assert.strictEqual(sim.correctedIndigenceStatus, "NOT_DETERMINED");
 });
 
 test("30. Calculating the correction does not mutate the original snapshot", () => {

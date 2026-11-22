@@ -38,10 +38,19 @@ export function calculateProposedModelVersions(inputs, adminParams = {}) {
   const originalResult = calculateOriginalAssetLiquidityAgi(inputs, adminParams);
   const declaredIncomeResult = calculateDeclaredIncomeAgi(inputs, adminParams);
 
+  // Model A (Original AGI v2.1) historical adapter: maps legacy isIndigent property
+  // to explicit semantic fields without modifying the frozen historical file.
+  const adaptedOriginalResult = {
+    ...originalResult,
+    minimumContributionApplied: originalResult.isIndigent ?? (originalResult.monthlyContribution === 300),
+    researchIncomeBand: (originalResult.adjustedGrossIncome <= 131000) ? 'LOW_INCOME_BAND' : 'STANDARD_BAND',
+    indigenceStatus: 'NOT_DETERMINED'
+  };
+
   return {
     originalAgi: {
       ...MODEL_VERSION_METADATA.originalAgi,
-      result: originalResult
+      result: adaptedOriginalResult
     },
     declaredIncome: {
       ...MODEL_VERSION_METADATA.declaredIncome,

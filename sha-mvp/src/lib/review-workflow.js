@@ -351,8 +351,10 @@ export function getIllustrativeImpactSimulation(draft) {
       correctedAGIKsh: correctedModelResult.adjustedGrossIncome,
       originalTier: originalModelResult.tier,
       correctedTier: correctedModelResult.tier,
-      originalIsIndigent: originalModelResult.isIndigent,
-      correctedIsIndigent: correctedModelResult.isIndigent
+      originalMinimumContributionApplied: originalModelResult.minimumContributionApplied ?? (originalModelResult.monthlyContribution === 300),
+      correctedMinimumContributionApplied: correctedModelResult.minimumContributionApplied ?? (correctedModelResult.monthlyContribution === 300),
+      originalIndigenceStatus: 'NOT_DETERMINED',
+      correctedIndigenceStatus: 'NOT_DETERMINED'
     };
   } catch (err) {
     return {

@@ -55,7 +55,8 @@ test("an elderly household with a vehicle declaration routes to manual review wi
   assert.equal(result.requiresChpVerification, true, "vehicle ownership for elderly household requires CHP verification");
   assert.equal(result.estimatedAnnualIncome, 0, "luxury vehicle must not be added into earned income base");
   assert.equal(result.adjustedGrossIncome, 0, "AGI remains at zero floor after deductions");
-  assert.equal(result.isIndigent, true, "low earned income qualifies for subsidized band pending verification");
+  assert.equal(result.minimumContributionApplied, true, "low earned income triggers minimum contribution floor");
+  assert.equal(result.indigenceStatus, "NOT_DETERMINED", "indigence is never determined by prototype");
 });
 
 test("zero low-season balance follows the CHP review path without crashing", () => {
@@ -130,4 +131,56 @@ test("declared monthly income rejects blank, non-finite and negative financial v
 
   assert.equal(validateAssessmentInputs({ monthlyNetEarnedIncome: 0 }).isValid, true);
   assert.equal(validateAssessmentInputs({ monthlyNetEarnedIncome: "12500" }).isValid, true);
+});
+
+test("high-income households triggering candidate policy overrides are distinguished from statutory floor", () => {
+  const baseHighIncome = {
+    monthlyNetEarnedIncome: 100000, // KSh 1.2M annual earned income -> 2.75% / 12 = KSh 2,750/mo
+    county: "Nairobi",
+    householdSize: 4,
+    headAge: 40,
+    headGender: "FEMALE",
+    assets: [],
+    vehicles: [],
+    receivesAid: false,
+    isRefugee: false,
+    avgRetainedBalance: 50000
+  };
+
+  // 1. Normal high-income household: no override, mathematical calculation applies
+  const normalResult = calculateProposedModel(baseHighIncome);
+  assert.equal(normalResult.statutoryMinimumFloorApplied, false);
+  assert.equal(normalResult.policyOverrideApplied, false);
+  assert.equal(normalResult.minimumContributionApplied, false);
+  assert.equal(normalResult.monthlyContribution, 1714); // Evaluated after Nairobi cost-of-living and dependency deductions
+  assert.ok(normalResult.monthlyContribution > 300);
+  assert.equal(normalResult.indigenceStatus, "NOT_DETERMINED");
+
+  // 2. High-income household receiving aid: candidate policy override applies floor, flagged as unapproved assumption
+  const aidResult = calculateProposedModel({ ...baseHighIncome, receivesAid: true });
+  assert.equal(aidResult.statutoryMinimumFloorApplied, false, "Statutory mathematical floor does not apply to 100k/mo income");
+  assert.equal(aidResult.policyOverrideApplied, true, "Candidate policy override must be flagged");
+  assert.equal(aidResult.policyOverrideType, "AID_RECIPIENT_OVERRIDE");
+  assert.equal(aidResult.minimumContributionApplied, true, "Minimum contribution applied via override");
+  assert.equal(aidResult.monthlyContribution, 300);
+  assert.equal(aidResult.indigenceStatus, "NOT_DETERMINED", "Does not constitute a statutory indigence determination");
+
+  // 3. High-income refugee household: refugee protection candidate override applies
+  const refugeeResult = calculateProposedModel({ ...baseHighIncome, isRefugee: true });
+  assert.equal(refugeeResult.policyOverrideApplied, true);
+  assert.equal(refugeeResult.policyOverrideType, "REFUGEE_PROTECTION_OVERRIDE");
+  assert.equal(refugeeResult.monthlyContribution, 300);
+  assert.equal(refugeeResult.indigenceStatus, "NOT_DETERMINED");
+
+  // 4. High-income elderly head with low retained liquidity (<5000): elderly override applies
+  const elderlyResult = calculateProposedModel({ ...baseHighIncome, headAge: 68, avgRetainedBalance: 2000 });
+  assert.equal(elderlyResult.policyOverrideApplied, true);
+  assert.equal(elderlyResult.policyOverrideType, "ELDERLY_LOW_LIQUIDITY_OVERRIDE");
+  assert.equal(elderlyResult.monthlyContribution, 300);
+
+  // 5. Child-headed household override
+  const childHeadedResult = calculateProposedModel({ ...baseHighIncome, headAge: 19, householdSize: 3 });
+  assert.equal(childHeadedResult.policyOverrideApplied, true);
+  assert.equal(childHeadedResult.policyOverrideType, "CHILD_HEADED_HOUSEHOLD_OVERRIDE");
+  assert.equal(childHeadedResult.monthlyContribution, 300);
 });

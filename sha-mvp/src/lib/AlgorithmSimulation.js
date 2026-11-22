@@ -171,9 +171,13 @@ export function calculateCurrentModelContribution(lassoAnnual) {
   const band = BANDS.find(b => lassoAnnual <= b.max) ?? BANDS[BANDS.length - 1];
   const minimumContributionApplied = band.minimumContributionApplied === true;
   const monthly = minimumContributionApplied ? band.monthly : Math.max(300, Math.round((lassoAnnual * 0.0275) / 12));
-  // Legacy field name preserved for existing audit-record consumers and tests that read isIndigent from currentResult.
-  // The correct interpretation is "minimum contribution rule applied" (Reg. 18(2)), NOT an indigence determination.
-  return { annualIncome: lassoAnnual, monthly, isIndigent: minimumContributionApplied, minimumContributionApplied, tier: band.tier };
+  return {
+    annualIncome: lassoAnnual,
+    monthly,
+    minimumContributionApplied,
+    indigenceStatus: 'NOT_DETERMINED',
+    tier: band.tier
+  };
 }
 
 /**
@@ -557,12 +561,24 @@ export function calculateProposedModel(d, adminParams = {}) {
   };
 
   // --- OVERRIDES & POLICY CONSTRAINTS ---
-  // NOTE: This block determines whether the KSh 300 minimum contribution rule applies
-  // (Regulation 18(2)). It does NOT determine indigence. Indigence (financial assistance
-  // eligibility under Regulation 19) requires statutory verification; this prototype never
-  // issues such a determination. Use indigenceStatus: "NOT_DETERMINED" in all outputs.
-  let minimumContributionApplied = false;
-  if (d.receivesAid || d.isRefugee) minimumContributionApplied = true;
+  // NOTE: This block distinguishes between:
+  //   1) Mathematical statutory minimum floor under Regulation 18(2) (KSh 300/mo minimum), and
+  //   2) Candidate prototype policy overrides (unapproved prototype assumptions requiring SHA validation).
+  // Neither of these constitutes a determination of indigence or financial assistance under Regulation 19.
+  // The prototype output strictly returns indigenceStatus: "NOT_DETERMINED".
+  let statutoryMinimumFloorApplied = false;
+  let policyOverrideApplied = false;
+  let policyOverrideType = null;
+  let policyOverrideDescription = null;
+
+  // Candidate prototype policy overrides (unapproved prototype policy hypotheses)
+  if (d.receivesAid || d.isRefugee) {
+    policyOverrideApplied = true;
+    policyOverrideType = d.isRefugee ? 'REFUGEE_PROTECTION_OVERRIDE' : 'AID_RECIPIENT_OVERRIDE';
+    policyOverrideDescription = 'Candidate policy override: household receives aid or has refugee status (unapproved prototype assumption; requires SHA policy confirmation).';
+    factors.push({ name: 'Vulnerability Policy Override', impact: 'High', direction: 'down', description: policyOverrideDescription, isFlaw: false });
+  }
+
   if (d.headAge >= 65) {
     if (deriveVehicleList(d).length > 0) {
       requiresChpVerification = true;
@@ -575,31 +591,44 @@ export function calculateProposedModel(d, adminParams = {}) {
       });
     }
     if (effectiveBalance < 5000) {
-      minimumContributionApplied = true;
-      factors.push({ name: 'Age Override', impact: 'High', direction: 'down', description: 'Pensioner Trap bypass', isFlaw: false });
+      policyOverrideApplied = true;
+      policyOverrideType = 'ELDERLY_LOW_LIQUIDITY_OVERRIDE';
+      policyOverrideDescription = 'Candidate policy override: elderly head with low retained liquidity (Pensioner Trap bypass; unapproved prototype assumption).';
+      factors.push({ name: 'Elderly Liquidity Override', impact: 'High', direction: 'down', description: policyOverrideDescription, isFlaw: false });
     }
   }
+
   if (d.headAge < 21 && d.householdSize > 1) {
-    minimumContributionApplied = true;
-    factors.push({ name: 'Child-Headed Household', impact: 'High', direction: 'down', description: 'Minor override', isFlaw: false });
+    policyOverrideApplied = true;
+    policyOverrideType = 'CHILD_HEADED_HOUSEHOLD_OVERRIDE';
+    policyOverrideDescription = 'Candidate policy override: minor head of household with dependants (unapproved prototype assumption).';
+    factors.push({ name: 'Child-Headed Household Override', impact: 'High', direction: 'down', description: policyOverrideDescription, isFlaw: false });
   }
 
-  // Research income band for classification reporting only (not an indigence determination)
+  // Research income band for classification reporting only (illustrative benchmark; NOT an official poverty or indigence threshold)
   const LOW_INCOME_RESEARCH_THRESHOLD = 131000;
   let researchIncomeBand = adjustedGrossIncome <= LOW_INCOME_RESEARCH_THRESHOLD ? 'LOW_INCOME_BAND' : 'STANDARD_BAND';
-  if (!minimumContributionApplied && adjustedGrossIncome <= LOW_INCOME_RESEARCH_THRESHOLD) {
-    minimumContributionApplied = true;
-    factors.push({ name: 'Pro-Poor Constraint', impact: 'Medium', direction: 'down', description: 'AGI below illustrative low-income research threshold (KSh 131,000) — minimum contribution rule applied under Regulation 18(2)', isFlaw: false });
+
+  // Mathematical statutory minimum floor under Regulation 18(2) (2.75% of income with KSh 300/mo floor)
+  const calculatedStatutoryContribution = Math.round((adjustedGrossIncome * 0.0275) / 12);
+  if (calculatedStatutoryContribution <= 300) {
+    statutoryMinimumFloorApplied = true;
+    if (!policyOverrideApplied && adjustedGrossIncome <= LOW_INCOME_RESEARCH_THRESHOLD) {
+      factors.push({ name: 'Pro-Poor Constraint', impact: 'Medium', direction: 'down', description: 'AGI below illustrative low-income research threshold (KSh 131,000) — statutory minimum contribution floor applied under Regulation 18(2)', isFlaw: false });
+    }
   }
 
-  // Meta-Flaw 30: 2.75% Rate Assumption
+  // Minimum contribution applies if either the statutory floor is reached or a candidate policy override fires
+  const minimumContributionApplied = statutoryMinimumFloorApplied || policyOverrideApplied;
+
+  // Monthly contribution calculation
   let monthlyContribution = 0;
   let tier = "LOW";
   
   if (minimumContributionApplied) {
     monthlyContribution = 300; // Minimum contribution rule under Regulation 18(2) (KSh 300/mo floor)
   } else {
-    monthlyContribution = Math.max(300, Math.round((adjustedGrossIncome * 0.0275) / 12));
+    monthlyContribution = calculatedStatutoryContribution;
     if (adjustedGrossIncome > 450000) tier = "HIGH";
     else tier = "MIDDLE";
   }
@@ -616,10 +645,10 @@ export function calculateProposedModel(d, adminParams = {}) {
     factors.push({ name: 'Low Digital Footprint / CHP Referral Recommended', impact: 'High', direction: 'neutral', description: 'Zero digital footprint with low declared income. Minimum contribution rule applied. CHP in-person verification is recommended — no indigence determination is made by this prototype.', isFlaw: false });
   }
 
-  // Consent Withheld Pathway (DPA 2019 compliance)
+  // Consent Withheld / Processing Objection Pathway (DPA 2019 / General Regulations 2021)
   if (d.consentWithheld && !isDigitalGhost) {
     requiresChpVerification = true;
-    factors.push({ name: 'Consent Withheld — Manual Review', impact: 'High', direction: 'neutral', description: 'Citizen exercised DPA §32 right to withhold data consent. Routed to CHP manual verification. No algorithmic penalty applied.', isFlaw: false });
+    factors.push({ name: 'Consent Withheld / Manual Review Pathway', impact: 'High', direction: 'neutral', description: 'Data subject exercised rights regarding consent (DPA §32 / General Reg. 4(1)(h)), objection to processing (DPA §36), or restriction (DPA §34). Routed to in-person review pathway. No automated penalty applied.', isFlaw: false });
   }
 
   const evidenceCoverage = {
@@ -651,17 +680,16 @@ export function calculateProposedModel(d, adminParams = {}) {
     monthlyContribution: monthlyContribution,
     band: minimumContributionApplied ? 1 : 2,
     tier: tier,
-    // isIndigent is preserved as a field name for backward compatibility with existing consumers
-    // (ModelVersionsTab, createAuditRecord, calculatePopulationErrorRates, tests). Its value
-    // means "minimum contribution rule applied under Reg. 18(2)", NOT an indigence determination
-    // under Regulation 19. See indigenceStatus field for the authoritative prototype stance.
-    isIndigent: minimumContributionApplied,
-    minimumContributionApplied: minimumContributionApplied,
-    researchIncomeBand: researchIncomeBand,
+    minimumContributionApplied,
+    statutoryMinimumFloorApplied,
+    policyOverrideApplied,
+    policyOverrideType,
+    policyOverrideDescription,
+    researchIncomeBand,
     indigenceStatus: 'NOT_DETERMINED', // Prototype never determines indigence — Reg. 19 requires statutory verification
-    isDigitalGhost: isDigitalGhost,
-    requiresChpVerification: requiresChpVerification,
-    factors: factors,
+    isDigitalGhost,
+    requiresChpVerification,
+    factors,
     modelName: 'SHA PMT — Declared-income AGI v1',
     deductions: postBaseDeductions,
     calculationBreakdown: calculationBreakdown,
@@ -1776,12 +1804,12 @@ export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'co
     const key = a.inputs[groupingKey] || 'UNKNOWN';
     if (!groups[key]) groups[key] = { total: 0, falsePositives: 0 };
     groups[key].total++;
-    // A "false positive" here means: proposed model says indigent, current
-    // (Lasso) model said non-indigent. See docstring — this is disparity in
-    // the old model's overcharging pattern, not a ground-truth FPR.
-    const shouldBeIndigent = a.proposedResult?.isIndigent === true;
-    const wasChargedAsNonIndigent = a.currentResult?.isIndigent === false;
-    if (shouldBeIndigent && wasChargedAsNonIndigent) {
+    // A "disagreement case" here means: proposed model applies the KSh 300 minimum contribution floor (Reg. 18(2)),
+    // while the current (Lasso) model charged as non-minimum. This measures disparity in the comparator's
+    // overcharging pattern, not an empirical indigence or ground-truth FPR.
+    const proposedMinRule = (a.proposedResult?.minimumContributionApplied ?? a.proposedResult?.isIndigent ?? (a.proposedResult?.monthlyContribution === 300)) === true;
+    const currentNonMin = (a.currentResult?.minimumContributionApplied ?? a.currentResult?.isIndigent ?? (a.currentResult?.monthly === 300)) === false;
+    if (proposedMinRule && currentNonMin) {
       groups[key].falsePositives++;
     }
   });
@@ -1829,12 +1857,17 @@ export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'co
 }
 
 /**
- * P-47 (CAJ BLOCKER): Generates revenue sensitivity analysis across compliance scenarios.
- * Shows projected monthly national revenue at varying compliance rates.
- * Data sources cited: NHIF, ILO, Rwanda CBHI, Ethiopia CBHI.
+ * SUPERSEDED / ARCHIVED RESEARCH ARTIFACT (Not for policy or institutional presentation use)
+ *
+ * NOTE: This revenue sensitivity analysis is a legacy exploratory simulation.
+ * It uses static unverified assumptions (15.5M informal earners, KSh 520 avg contribution,
+ * 60% compliance benchmark based on Rwanda CBHI parity, and static KSh 3.2B/month subsidy cost).
+ * These figures have been superseded and retired from institutional presentation (see docs/archive/SUPERSEDED_NOTICE.md).
+ * Actuarial revenue forecasting requires empirical KNBS microdata and official administrative collection curves.
+ *
  * @param {number} totalPopulation - Total eligible informal population (default: ~15.5M informal earners)
  * @param {number} avgContribution - Average monthly contribution in KSh (default: 520)
- * @returns {Object} { scenarios: Array, breakeven: Object, summary: string }
+ * @returns {Object} { scenarios: Array, breakeven: Object, summary: string, isSuperseded: boolean }
  */
 export function generateRevenueStressTest(totalPopulation = 15500000, avgContribution = 520) {
   const scenarios = [
@@ -1951,14 +1984,20 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
       currentModel: {
         annualIncome: currentResult.annualIncome || currentResult,
         monthlyContribution: currentResult.monthly || currentResult.monthlyContribution,
-        isIndigent: currentResult.isIndigent,
+        minimumContributionApplied: currentResult.minimumContributionApplied ?? ((currentResult.monthly || currentResult.monthlyContribution) === 300),
+        indigenceStatus: 'NOT_DETERMINED',
         tier: currentResult.tier
       },
       proposedModel: {
         version: modelVersions?.declaredIncome?.id || proposedResult?.modelVersion || 'declared-income-agi-v1',
         adjustedGrossIncome: proposedResult.adjustedGrossIncome,
         monthlyContribution: proposedResult.monthly || proposedResult.monthlyContribution,
-        isIndigent: proposedResult.isIndigent,
+        minimumContributionApplied: proposedResult.minimumContributionApplied ?? ((proposedResult.monthly || proposedResult.monthlyContribution) === 300),
+        statutoryMinimumFloorApplied: proposedResult.statutoryMinimumFloorApplied ?? false,
+        policyOverrideApplied: proposedResult.policyOverrideApplied ?? false,
+        policyOverrideType: proposedResult.policyOverrideType ?? null,
+        researchIncomeBand: proposedResult.researchIncomeBand ?? 'STANDARD_BAND',
+        indigenceStatus: 'NOT_DETERMINED',
         tier: proposedResult.tier
       },
       proposedModelVersions: modelVersions ? {
@@ -1969,7 +2008,8 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
           estimatedAnnualIncome: modelVersions.originalAgi.result.estimatedAnnualIncome,
           adjustedGrossIncome: modelVersions.originalAgi.result.adjustedGrossIncome,
           monthlyContribution: modelVersions.originalAgi.result.monthlyContribution,
-          isIndigent: modelVersions.originalAgi.result.isIndigent
+          minimumContributionApplied: modelVersions.originalAgi.result.minimumContributionApplied ?? (modelVersions.originalAgi.result.isIndigent ?? (modelVersions.originalAgi.result.monthlyContribution === 300)),
+          indigenceStatus: 'NOT_DETERMINED'
         },
         declaredIncome: {
           id: modelVersions.declaredIncome.id,
@@ -1978,7 +2018,12 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
           estimatedAnnualIncome: modelVersions.declaredIncome.result.estimatedAnnualIncome,
           adjustedGrossIncome: modelVersions.declaredIncome.result.adjustedGrossIncome,
           monthlyContribution: modelVersions.declaredIncome.result.monthlyContribution,
-          isIndigent: modelVersions.declaredIncome.result.isIndigent
+          minimumContributionApplied: modelVersions.declaredIncome.result.minimumContributionApplied ?? (modelVersions.declaredIncome.result.monthlyContribution === 300),
+          statutoryMinimumFloorApplied: modelVersions.declaredIncome.result.statutoryMinimumFloorApplied ?? false,
+          policyOverrideApplied: modelVersions.declaredIncome.result.policyOverrideApplied ?? false,
+          policyOverrideType: modelVersions.declaredIncome.result.policyOverrideType ?? null,
+          researchIncomeBand: modelVersions.declaredIncome.result.researchIncomeBand ?? 'STANDARD_BAND',
+          indigenceStatus: 'NOT_DETERMINED'
         }
       } : null
     },
@@ -2143,8 +2188,8 @@ export function calculatePopulationErrorRates(n = 500) {
   let totalPayouts = 0;
 
   for (const { currentResult, proposedResult } of pop) {
-    const curMin = currentResult.isIndigent;
-    const propMin = proposedResult.isIndigent;
+    const curMin = (currentResult.minimumContributionApplied ?? (currentResult.monthly === 300)) === true;
+    const propMin = (proposedResult.minimumContributionApplied ?? (proposedResult.monthlyContribution === 300)) === true;
     if (propMin && !curMin) excluded++;
     if (!propMin && curMin) included++;
     totalContributions += currentResult.monthly;
