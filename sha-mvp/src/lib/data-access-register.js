@@ -46,7 +46,7 @@ export const DATA_ACCESS_REGISTER = [
     requestDate: null,
     status: ACCESS_STATUSES.NOT_REQUESTED,
     dataOwnerContact: "Data Protection Officer / Director General, Social Health Authority",
-    provenanceReference: "Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule)",
+    provenanceReference: "Social Health Insurance Regulations, 2024 (Regulations 17, 18, 19, 20, and 21(6), Fifth Schedule 'Means Testing')",
     restrictionsAndLimitations: "Confidential government technical document; requires formal inter-agency disclosure request.",
     notesAndNextAction: "Prepare formal technical inquiry package to SHA under Kenya Data Protection Act 2019 research provisions (Sections 30 and 53)."
   },
@@ -88,7 +88,7 @@ export const DATA_ACCESS_REGISTER = [
     requestDate: null,
     status: ACCESS_STATUSES.PARTIALLY_RECEIVED,
     dataOwnerContact: "Policy & Planning Directorate, Ministry of Health",
-    provenanceReference: "Regulation 18(1) & (2) (specifies 2.75% annual rate and KSh 300/mo minimum for non-salaried households; Regulation 19 governs financial assistance; Fifth Schedule sets out means testing equation)",
+    provenanceReference: "Regulation 18(1) & (2) (specifies 2.75% annual rate and KSh 300/mo minimum for non-salaried households; cf. Reg 17(1)–(2) for salaried; Regulation 19 governs financial assistance; Regulation 20 covers lawful custody; Fifth Schedule sets out means testing equation)",
     restrictionsAndLimitations: "Published regulations state minimums but omit intermediate bracket mappings.",
     notesAndNextAction: "Request formal score band schedule."
   },

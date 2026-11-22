@@ -76,20 +76,20 @@ All legal and data governance documents have been audited and corrected:
 * **Section 53:** Correctly cited as **Processing for Research, Statistical, and Historical Purposes** alongside the **ODPC 2025 Guidance Notes on Processing for Research Purposes**.
 
 ### Social Health Insurance Statutory & Regulatory Alignment:
-* **Legal Notice No. 49 of 2024 (Social Health Insurance Regulations, 2024; Gazette Supplement No. 60, Leg. Supp. No. 28, 8 March 2024):**
-  * **Regulation 17:** Governs contributions for persons in salaried employment (statutory payroll deductions).
-  * **Regulation 18(1):** Establishes the annual contribution rate of 2.75% of household income determined through the means-testing instrument for households whose income is not derived from salaried employment.
-  * **Regulation 18(2):** Establishes the statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually).
-  * **Regulation 18(3)–(6):** Governs payment timing and authorizes third-party commercial bank/SACCO premium financing arrangements.
-  * **Regulation 19:** Governs households in need of financial assistance (indigent households). Administrative application of the KSh 300 floor under Reg 18(2) does NOT constitute a statutory indigent determination.
-  * **Regulation 21(2):** Mandates that the means-testing instrument be developed by the Cabinet Secretary for Health in collaboration with the Cabinet Secretary responsible for social protection.
-  * **Regulation 21(3):** Sets out broad socioeconomic data domains collected for means testing: housing characteristics, access to basic services, and household composition and characteristics.
+* **Legal Notice No. 49 of 2024 (Social Health Insurance Regulations, 2024; Gazette Supplement No. 60, Leg. Supp. No. 28, 8 March 2024; Parliament of Kenya Repository, pp. 746–749 & 798):**
+  * **Regulation 17(1)–(2) (Salaried households):** Fixed at 2.75% of gross salary or wage payable monthly under 17(1); Regulation 17(2) establishes the statutory minimum contribution floor of KSh 300 per month for salaried employees.
+  * **Regulation 18(1)–(2) (Non-salaried households):** Annual contribution of 2.75% of household income determined through the means-testing instrument prescribed under Regulation 21; Regulation 18(2) establishes the statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually) for non-salaried households.
+  * **Regulation 18(3):** Governs annual contribution payment timing (payable 14 days before the lapse of annual coverage).
+  * **Regulation 18(4)–(6):** Governs premium financing arrangements: 18(4) enables approved commercial bank/SACCO premium financing arrangements; 18(5) financing proceeds remitted directly to the Authority; 18(6) Authority informs members about available financing products.
+  * **Regulation 19(1)–(4):** Governs households in need of financial assistance (indigent households): 19(1) identification via means testing; 19(2)–(3) responsible national and county government officials; 19(4) base premium calculated using statistical data and actuarial models guided by benefits schedules. Administrative application of the KSh 300 floor under Reg 18(2) does NOT constitute a statutory indigent determination.
+  * **Regulation 20:** Governs contributions for persons under lawful custody (state responsibility).
+  * **Regulation 21(1)–(5):** Governs means-testing administration & data: 21(1) Authority collects household data; 21(2) instrument developed by CS Health & CS Social Protection; 21(3) socioeconomic data domains (housing characteristics, access to basic services, household composition and characteristics); 21(4) data used to determine and estimate household income for contributions under Regulations 18 and 19; 21(5) periodic reviews.
   * **Regulation 21(6):** Explicitly prescribes that means testing is conducted using the formula set out in the Fifth Schedule.
-  * **Fifth Schedule ('Means Testing', Gazette p. 798):** Specifies the econometric formula:
+  * **Fifth Schedule ('MEANS TESTING', Gazette p. 798):** Titled **"MEANS TESTING"** marked `(r. 21(6))`. Specifies the econometric formula:
     $$\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$$
     estimating log per-capita income across urban and rural strata ($u$). *(Note: The schedule itself does not enumerate 43 specific variables. While investigative reporting by Lighthouse Reports in May 2026 notes that SHA disclosed in a Nov 2025 ATI response that its operational model uses 43 variables from 2021 KCHS predicting log per-capita consumption, numerical coefficients and cutoff thresholds remain undisclosed in the Gazette).*
-  * **Regulation 62 ('Zones'):** Regulation 62 is titled **"Zones"**, designating regional geographic county groupings for health facility tariffs (separate from Means Testing).
-* **Revocation of LN 147/2024 by LN 55/2025:** Legal Notice 55 of 2025 expressly revokes Legal Notice 147 of 2024 in Clause 9 (without revoking principal LN 49 of 2024).
+  * **Regulation 62 ('Zones'):** Regulation 62 is titled **"Zones"**, under Part VIII (Claims Settlement); designates regional geographic county groupings for health facility reimbursement tariffs (completely unrelated to the Fifth Schedule or Means Testing).
+* **Scope and Revocation of LN 147/2024:** The 2024 Amendment Regulations (LN 147/2024) amended Regulations 2, 11, 12, 13, 15, 59, and 63; they did not amend Regulations 17–21. Legal Notice 55 of 2025 expressly revokes Legal Notice 147 of 2024 in Clause 9 (leaving principal LN 49 of 2024 fully intact).
 * **Judicial Context (March 2026):** In *Okoiti & 2 others v Cabinet Secretary, Ministry of Health & 20 others [2026] KEHC 3972 (KLR)* (19 March 2026), the High Court declared Legal Notices 48, 49, 146, and 147 of 2024 validly made, while ordering corrective action that includes implementing fair and effective means testing for non-salaried persons. (Does not evaluate algorithmic accuracy; appeal status subject to confirmation).
 * **Statutory Reconciliation:** The documentation explicitly presents whether the structured income ledger can be introduced administratively under Regulation 21(2) or requires an amendment to the Regulations as an **unresolved legal question requiring formal advice from the Attorney General and SHA Legal Counsel**.
 

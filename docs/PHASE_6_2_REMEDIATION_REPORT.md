@@ -40,13 +40,16 @@ Phase 6.2 was initiated to address critical legal, methodological, and architect
 * **Judicial Context (March 2026):** In *Okoiti & 2 others v Cabinet Secretary, Ministry of Health & 20 others [2026] KEHC 3972 (KLR)* (19 March 2026), the High Court declared Legal Notices 48, 49, 146, and 147 of 2024 validly made, while ordering corrective action that includes implementing fair and effective means testing for non-salaried persons. (Does not evaluate algorithmic accuracy or fairness; appeal status subject to confirmation).
 * **Remediation Action:** Clarified that while the Fifth Schedule sets out the statutory formula structure under Regulation 21(6), SHA's operational 43-variable calibration, variable codebook, and cutoff parameters remain undisclosed in the Gazette. According to Lighthouse Reports (4 May 2026), SHA disclosed in an ATI response (Nov 2025) that its operational model uses the 2021 KCHS predicting log per-capita *consumption*. The relationship between predicted consumption and the Fifth Schedule's per-capita income specification forms a key research question.
 
-### Legal Finding 3: Statutory Contribution Rate and Minimum Floor
-* **Salaried Employment:** Regulation 17(1)–(2) establishes contributions for salaried households at 2.75% of gross salary or wage, with a statutory minimum of KSh 300 per month.
-* **Non-Salaried Contribution Rate:** Regulation 18(1) establishes the annual contribution for non-salaried households at 2.75% of household income determined through the means-testing instrument.
-* **Non-Salaried Minimum Floor:** Regulation 18(2) establishes the minimum contribution floor of KSh 300 per month (KSh 3,600 annually).
-* **Payment Timing & Financing:** Regulation 18(3)–(6) governs payment timing and premium financing.
+### Legal Finding 3: Statutory Contribution Rate, Minimum Floor & Definitive Crosswalk
+* **Salaried Employment:** Regulation 17(1)–(2) establishes contributions for salaried households at 2.75% of gross salary or wage, with Regulation 17(2) prescribing the statutory minimum of KSh 300 per month.
+* **Non-Salaried Contribution Rate & Floor:** Regulation 18(1) establishes the annual contribution for non-salaried households at 2.75% of household income determined through the means-testing instrument, with Regulation 18(2) prescribing the statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually).
+* **Payment Timing:** Regulation 18(3) governs annual payment timing before coverage lapses.
+* **Premium Financing:** Regulation 18(4)–(6) governs premium financing arrangements with approved commercial banks, SACCOs, or financial institutions.
 * **Financial Assistance (Indigents):** Regulation 19 governs households in need of financial assistance. Application of the KSh 300 floor under Reg 18(2) does not constitute an indigent determination.
-* **Means-Testing Instrument & Formula:** Regulation 21(1)–(5) governs MTI development and socioeconomic data collection; Regulation 21(6) mandates use of the formula in the Fifth Schedule ('Means Testing').
+* **Lawful Custody:** Regulation 20 establishes contributions for persons under lawful custody as a state responsibility.
+* **Means-Testing Governance:** Regulation 21(1)–(5) governs means-testing data collection, instrument development by CS Health & CS Social Protection, data domains (housing, basic services, household composition), income estimation, and reviews.
+* **Means-Testing Formula:** Regulation 21(6) explicitly mandates use of the formula in the Fifth Schedule ('Means Testing', Gazette p. 798).
+* **Claims Zones:** Regulation 62 designates 'Zones' for health facility reimbursement tariffs (completely unrelated to the Fifth Schedule).
 
 ### Reconstructed Baseline Specification
 In [`sha-mvp/src/lib/sha-baseline-registry.js`](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/lib/sha-baseline-registry.js) and [`sha-mvp/src/lib/evaluation-model-registry.js`](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/lib/evaluation-model-registry.js):

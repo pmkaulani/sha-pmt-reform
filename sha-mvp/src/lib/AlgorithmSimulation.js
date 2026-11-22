@@ -1,13 +1,17 @@
 // SHA Means-Testing Evaluation - v2.1 prototype rules engine
 // The 2.75% contribution rate and KSh 300 monthly floor are statutory reference parameters
-// for non-salaried households under Regulation 18(1) & (2) of the Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024).
-// Means testing is conducted pursuant to Regulation 21(6) using the formula set out in the Fifth Schedule ('Means Testing').
+// for non-salaried households under Regulation 18(1) & (2) of the Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024),
+// with salaried employment governed separately under Regulation 17(1)–(2) (minimum KSh 300/mo under Reg 17(2)).
+// Means testing is conducted pursuant to Regulation 21(6) using the formula set out in the Fifth Schedule ('Means Testing', Gazette p. 798).
 // Note: While the Fifth Schedule sets out an urban/rural means-testing equation, complete operational parameters,
 // coefficients, variable encodings, and production implementation details have not been fully disclosed.
 // Current income estimations, illustrative deductions, and calculation rules are research prototype assumptions
 // that require validation against SHA's official instrument, model parameters, and administrative implementation.
+// Regulation 18(3) governs annual payment timing; Regulation 18(4)–(6) authorizes premium financing arrangements.
 // Regulation 19 governs households in need of financial assistance (indigent households); applying the KSh 300
 // minimum contribution under Regulation 18(2) does not constitute a statutory indigence determination.
+// Regulation 20 governs contributions for persons under lawful custody as a state responsibility.
+// Regulation 62 governs regional health facility reimbursement Zones (unrelated to household means testing).
 //
 // IMPORTANT (audit v2, read before citing this file to a technical reviewer):
 // This entire module is a deterministic rules engine (if/else + fixed

@@ -6,7 +6,7 @@
  *
  * Statutory and Research Context:
  * Aligned with the Kenya Data Protection Act, 2019 (Sections 30 and 53) research provisions,
- * and the Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule 'Means Testing').
+ * and the Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule 'Means Testing'; cf. Reg 17(1)–(2) for salaried and Reg 20 for lawful custody).
  *
  * Boundary Note:
  * This document states what is technically required to perform an independent empirical evaluation.
@@ -112,7 +112,7 @@ export function buildShaRequestPackJson() {
     statutoryBasis: [
       "Kenya Data Protection Act, 2019 (Sections 25, 30(1)(b)(viii), 30(1)(e), 35, 53)",
       "Data Protection (General) Regulations, 2021 (Regulation 22)",
-      "Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule 'Means Testing')",
+      "Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule 'Means Testing'; cf. Reg 17(1)–(2) for salaried and Reg 20 for lawful custody)",
       "ODPC Guidance Notes on Processing for Research Purposes (2025)"
     ],
     researchObjective: "Facilitate an independent, reproducible empirical comparison between the existing proxy means testing instrument (Regulation 21(6) / Fifth Schedule) and candidate cash-flow / liquidity assessment models (Adjusted Gross Income frameworks).",

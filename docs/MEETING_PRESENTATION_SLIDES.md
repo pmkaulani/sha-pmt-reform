@@ -26,17 +26,21 @@
 ---
 
 ## Slide 3: Statutory & Legal Framework (LN 49 of 2024)
-### Clear Reconciliation with Enacted Law
+### Clear Reconciliation with Enacted Law (Parliament of Kenya Repository, pp. 746–749 & 798)
 | Dimension | Gazetted Provision | Operational Function |
 | :--- | :--- | :--- |
-| **Salaried Contributions** | **Regulation 17(1)–(2)** | 2.75% of gross payroll; statutory minimum KSh 300/month. |
-| **Non-Salaried Contributions** | **Regulation 18(1)–(2)** | 2.75% of income via means testing; statutory minimum KSh 300/month. |
-| **Payment Modalities** | **Regulation 18(3)–(6)** | Statutory provisions for payment timing, annual expiry, and premium financing (prototype does not operate a live financing integration). |
-| **Financial Assistance** | **Regulation 19** | Subsidies for indigent households; Reg 18(2) floor is not an automatic indigent grant. |
-| **Means Testing Formula** | **Regulation 21(6) & Fifth Schedule** | Stated econometric model: $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$ (per-capita income; Reg 21(3) sets broad socioeconomic data domains). |
-| **Claims Zones** | **Regulation 62** | Geographic facility reimbursement groupings (distinct from Means Testing). |
-| **Regulatory Amendments** | **LN 55 of 2025 (Clause 9)** | Revokes LN 147 of 2024 (does not revoke principal LN 49 of 2024). |
-| **Automated Decisions** | **DPA 2019 §35 & Reg 22** | Right to substantive, meaningful human review on automated outputs. |
+| **Salaried Contributions** | **Regulation 17(1)–(2)** | Salaried household contribution: 2.75% of gross payroll payable monthly; statutory minimum floor of KSh 300/month under **Reg 17(2)**. |
+| **Non-Salaried Contributions** | **Regulation 18(1)–(2)** | Non-salaried household contribution: 2.75% of income via means testing; statutory minimum floor of KSh 300/month under **Reg 18(2)**. |
+| **Payment Timing** | **Regulation 18(3)** | Annual contribution payment timing (payable 14 days before lapse of annual coverage). |
+| **Premium Financing** | **Regulation 18(4)–(6)** | Statutory provisions enabling approved commercial bank or SACCO premium financing; proceeds remitted to SHA (prototype does not operate a financing gateway). |
+| **Financial Assistance** | **Regulation 19(1)–(4)** | Households in need of financial assistance (indigent households); base premium calculated via actuarial models. Reg 18(2) minimum floor is not an indigent subsidy. |
+| **Lawful Custody** | **Regulation 20** | Contributions for persons under lawful custody (state responsibility). |
+| **Means-Testing Governance** | **Regulation 21(1)–(5)** | Household data collection, joint instrument development by CSs, data domains (housing, services, composition), income estimation, and periodic reviews. |
+| **Means-Testing Formula** | **Regulation 21(6)** | Prescribes that means testing shall be conducted using the formula set out in the Fifth Schedule. |
+| **Fifth Schedule ('Means Testing')** | **Fifth Schedule (p. 798)** | Econometric specification: $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$ (per-capita income; marked `r. 21(6)`; completely distinct from Zones). |
+| **Claims Zones** | **Regulation 62** | Titled "Zones", under Part VIII Claims Settlement (health facility reimbursement groupings; unrelated to Fifth Schedule). |
+| **Regulatory Amendments** | **LN 55/2025 & LN 147/2024** | LN 147/2024 amended Regs 2, 11, 12, 13, 15, 59, 63 (not Regs 17–21); revoked by LN 55/2025 (Clause 9). Principal LN 49 of 2024 remains intact. |
+| **Automated Decisions** | **DPA 2019 §35 & Reg 22** | Right to substantive, meaningful human review on automated profiling/decisions. |
 
 ---
 

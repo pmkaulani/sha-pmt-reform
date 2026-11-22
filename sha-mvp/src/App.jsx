@@ -1571,7 +1571,7 @@ function ComparisonTab({results, adminParams}) {
     <div style={{display:"grid",gap:24}}>
       {/* Comparator Disclosure Banner */}
       <div style={{background:"#F8FAFC",border:"1px solid #CBD5E1",borderRadius:8,padding:"12px 16px",fontSize:12,color:"#475569",lineHeight:1.5}}>
-        <strong>Methodological Disclosure:</strong> The comparator shown below is an <em>author-created illustrative score</em> with invented demonstration weights (e.g. gross M-Pesa volume factor, flat dwelling proxies). It is <strong>not</strong> SHA's production means-testing instrument under Regulation 21(6) and the Fifth Schedule, and is not a reconstruction of SHA's 43-variable regression. A difference between this comparator and the proposed model illustrates methodology divergence, not proof of actual SHA overcharging.
+        <strong>Methodological Disclosure:</strong> The comparator shown below is an <em>author-created illustrative score</em> with invented demonstration weights (e.g. gross M-Pesa volume factor, flat dwelling proxies). It is <strong>not</strong> SHA's production means-testing instrument under Regulation 21(6) and the Fifth Schedule ('Means Testing', Gazette p. 798), and is not a reconstruction of SHA's 43-variable regression. A difference between this comparator and the proposed model illustrates methodology divergence, not proof of actual SHA overcharging.
       </div>
 
       {/* Big numbers */}

@@ -147,7 +147,29 @@ This reform aligns with major policy, judicial, and statistical developments acr
 | High Court (Mwita, June 2025) | Salaried deduction double taxation observation | ℹ️ Judicial observation only; petition struck out as premature; Ministry continues salaried deductions noting tax-deductibility under Tax Laws (Amendment) Act 2024 |
 | High Court (Okoiti, March 19, 2026) | [2026] KEHC 3972 (KLR): Declared LN 48, 49, 146, 147 validly made; ordered corrective action for fair means testing | 📋 Confirms regulatory validity while mandating fair and effective means testing for non-salaried persons; does not assess algorithmic accuracy or fairness |
 | High Court (Mwamuye, March 19, 2026) | 90-day structural interdict on constitutional violations in rollout | 📋 Complementary: Open-source reference addressing means-testing transparency alongside the Ministry's mandated corrective affidavit process |
+| LN 147 of 2024 | Amendments to Regulations 2, 11, 12, 13, 15, 59, 63 | ℹ️ Amended administrative and claims provisions; did not amend Regulations 17–21; subsequently revoked by LN 55 of 2025 (Clause 9) |
 | LN 55 of 2025 (Clause 9) | Revocation of LN 147 of 2024 | ⚖️ Revokes the 2024 Amendment Regulations (LN 147/2024); does not revoke principal LN 49 of 2024 |
+
+### Definitive Statutory Crosswalk (Legal Notice No. 49 of 2024, Parliament of Kenya Repository, pp. 746–749 & 798)
+
+| Gazetted Provision | Definitive Scope & Subject Matter | Operational Context & Research Boundary |
+|---|---|---|
+| **Regulation 17(1)–(2)** | Salaried household contribution: 17(1) fixed at 2.75% of gross salary/wage payable monthly; **17(2)** statutory minimum floor of KSh 300 per month. | Formal payroll deduction; distinct from non-salaried means testing. |
+| **Regulation 18(1)–(2)** | Non-salaried household contribution: 18(1) annual contribution of 2.75% of household income determined via means testing under Reg 21; **18(2)** statutory minimum floor of KSh 300 per month (KSh 3,600/year). | Primary target of this research prototype; Reg 18(2) sets the non-salaried minimum. |
+| **Regulation 18(3)** | Annual contribution payment timing (payable 14 days before annual coverage lapses). | Statutory deadline for non-salaried premium remittance. |
+| **Regulation 18(4)–(6)** | Premium financing arrangements: 18(4) approved commercial bank/SACCO arrangements; 18(5) proceeds remitted directly to Authority; 18(6) Authority informs members about available products. | Third-party financing authorization; prototype does not operate a live financing gateway. |
+| **Regulation 19(1)–(4)** | Households in need of financial assistance: 19(1) identification of indigent households via means testing; 19(2)–(3) responsible national/county officials; 19(4) base premium calculated using statistical data and actuarial models guided by benefits schedules. | Subsidized coverage; applying the KSh 300 floor under Reg 18(2) is not an indigent determination. |
+| **Regulation 20** | Contributions for persons under lawful custody. | State responsibility for persons in correctional custody. |
+| **Regulation 21(1)–(5)** | Means-testing administration & data: 21(1) Authority collects household data; 21(2) instrument developed by CS Health & CS Social Protection; 21(3) socioeconomic domains (housing characteristics, access to basic services, household composition and characteristics); 21(4) data used to estimate household income for Regs 18 & 19; 21(5) periodic reviews. | Administrative and governance framework; Reg 21(3) defines housing, services, and composition domains. |
+| **Regulation 21(6)** | Prescribes: *"Means testing shall be conducted using the formula set out in the Fifth Schedule."* | Statutory mandate for the Fifth Schedule econometric formula. |
+| **Fifth Schedule (p. 798)** | Titled **"MEANS TESTING"** marked `(r. 21(6))`. Econometric regression formula: $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$, estimating log per-capita income across urban and rural strata ($u$). | Titled "Means Testing"; completely distinct from Zones. Coefficients remain undisclosed in Gazette. |
+| **Regulation 62** | Titled **"Zones"**, under Part VIII (Claims Settlement); specifies regional health facility reimbursement groupings. | Health provider reimbursement tariffs; completely unrelated to household means testing or Fifth Schedule. |
+
+> **Statutory Precision Invariants:**  
+> 1. Regulation 17(2) applies strictly to the salaried minimum.  
+> 2. Regulation 18(2) applies strictly to the non-salaried minimum; never attribute the non-salaried minimum to Regulation 17.  
+> 3. The Fifth Schedule is titled "Means Testing" (r. 21(6), Gazette p. 798), not "Zones"; Regulation 62 is "Zones" under Part VIII.  
+> 4. Do not use the pre-gazettement Ministry draft numbering (which had blank LN and numbered provisions 16, 17, 18, 19) in statutory crosswalks. LN 147/2024 amended Regs 2, 11, 12, 13, 15, 59, 63, but did not amend Regs 17–21.
 
 ---
 

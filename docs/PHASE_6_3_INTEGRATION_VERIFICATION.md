@@ -237,16 +237,16 @@ A comprehensive statutory audit reconciled all legal references with the gazette
 
 | Statutory Subject | Gazetted Provision (LN 49/2024) | Statutory Content & Audit Status |
 |-------------------|---------------------------------|----------------------------------|
-| *Salaried Employment* | **Regulation 17** | Contributions for persons in salaried employment (statutory payroll deductions). |
-| *Non-Salaried Contribution Rate* | **Regulation 18(1)** | Annual contribution for non-salaried households: 2.75% of household income determined through means testing. |
-| *Minimum Contribution Floor* | **Regulation 18(2)** | Statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually). |
-| *Payment Timing & Financing* | **Regulation 18(3)–(6)** | Timing of annual contributions; statutory provisions authorizing approved commercial bank/SACCO premium financing (prototype does not operate a live financing integration). |
-| *Financial Assistance (Indigents)* | **Regulation 19** | Households in need of financial assistance. Application of the KSh 300 floor does NOT constitute an automatic indigent determination. |
-| *Means Testing Instrument* | **Regulation 21(2)** | Developed by CS Health in collaboration with CS Social Protection. |
-| *Socioeconomic Data Domains* | **Regulation 21(3)** | Collects housing characteristics, access to basic services, and household composition and characteristics. |
+| *Salaried Employment* | **Regulation 17(1)–(2)** | Salaried household contribution (2.75% of gross salary/wage) and KSh 300 monthly minimum (under Reg 17(2)). |
+| *Non-Salaried Contribution Rate* | **Regulation 18(1)–(2)** | Non-salaried household contribution (2.75% via means testing) and KSh 300 monthly minimum (under Reg 18(2)). |
+| *Annual Payment Timing* | **Regulation 18(3)** | Timing of annual contributions prior to lapse (payable 14 days before lapse). |
+| *Premium Financing* | **Regulation 18(4)–(6)** | Statutory provisions authorizing approved commercial bank or SACCO premium financing arrangements. |
+| *Financial Assistance (Indigents)* | **Regulation 19** | Households in need of financial assistance. Application of the KSh 300 floor under Reg 18(2) does NOT constitute an automatic indigent determination. |
+| *Persons in Lawful Custody* | **Regulation 20** | Contributions for persons under lawful custody (state responsibility). |
+| *Means-Testing Governance & Data* | **Regulation 21(1)–(5)** | Means-testing data collection, instrument development, socioeconomic data domains (housing, basic services, household composition), income estimation, and reviews. |
 | *Means Testing Formula* | **Regulation 21(6)** | Prescribes that means testing shall be conducted using the formula set out in the Fifth Schedule. |
 | *Fifth Schedule ('Means Testing')* | **Fifth Schedule (p. 798)** | Specifies econometric formula: $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$, estimating log per-capita income across urban and rural strata ($u$). *(Note: The schedule itself does not enumerate 43 specific variables. Investigative reporting by Lighthouse Reports in May 2026 notes that SHA disclosed in a Nov 2025 ATI response that its operational model uses 43 variables from 2021 KCHS predicting log per-capita consumption; numerical coefficients remain undisclosed).* |
-| *Zones* | **Regulation 62** | Titled **"Zones"**; designates regional geographic county groupings for health facility reimbursement tariffs (separate from Means Testing). |
+| *Zones* | **Regulation 62** | Titled **"Zones"**, under claims settlement; designates regional geographic county groupings for health facility reimbursement tariffs (completely unrelated to the Fifth Schedule or Means Testing). |
 | *Revocation of LN 147/2024* | **Legal Notice 55 of 2025** | Clause 9 expressly revokes Legal Notice 147 of 2024 (does not revoke principal LN 49 of 2024). |
 | *Judicial Context* | **High Court [2026] KEHC 3972 (KLR)** | *Okoiti v CS Health* (19 March 2026): Declared LN 48, 49, 146, 147 validly made; confirmed Senate annulment threshold failed; ordered corrective action for fair and effective means testing for non-salaried persons. (Does not evaluate algorithmic accuracy; appeal status subject to confirmation). |
 | *Data Protection Citations* | **Kenya DPA 2019 & Reg 22** | Sections 25, 30, 31, 35, 53 of DPA 2019; Regulation 22 of Data Protection (General) Regulations 2021 (substantive human review). |

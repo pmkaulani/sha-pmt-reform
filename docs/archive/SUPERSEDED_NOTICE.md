@@ -61,26 +61,31 @@ Early drafts contained illustrative, exploratory, or advocacy-oriented numerical
 
 ## 4. Statutory Crosswalk: Gazetted Regulations (LN 49/2024) vs. Early Drafts
 
-Some historical working documents referenced pre-gazettement public-participation drafts with differing regulation numbering. For the avoidance of doubt, the definitive statutory citations under the gazetted **Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024, published in Kenya Gazette Supplement No. 60, Legislative Supplement No. 28, on 8 March 2024)** are:
+The pre-gazettement Ministry public-participation draft had a blank Legal Notice number and numbered provisions as Regulation 16 (salaried), Regulation 17 (non-salaried), Regulation 18 (indigent), and Regulation 19 (lawful custody). That draft numbering was superseded upon formal gazettement. For the avoidance of doubt, the definitive statutory citations verified directly against the gazetted **Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024, published in Kenya Gazette Supplement No. 60, Legislative Supplement No. 28, on 8 March 2024, held in the Parliament of Kenya Institutional Repository, pp. 746–749 & 798)** are:
 
-* **Regulation 17:** Contributions for persons in salaried employment (statutory payroll deductions).
-* **Regulation 18(1):** Non-salaried household contribution rate (2.75% of household income determined via means testing).
-* **Regulation 18(2):** Statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually).
-* **Regulation 18(3):** Payment timing and modalities before the annual contribution lapses.
-* **Regulation 18(4)–(6):** Statutory provisions authorizing approved commercial bank or SACCO premium financing arrangements.
-* **Regulation 19:** Households in need of financial assistance (indigent households).
-* **Regulation 21(2):** Means-testing instrument developed by the Cabinet Secretary for Health in collaboration with the Cabinet Secretary responsible for social protection.
-* **Regulation 21(3):** Identifies broad socioeconomic data domains collected for means testing: housing characteristics, access to basic services, and household composition and characteristics.
+* **Regulation 17(1)–(2) (Salaried households):** Fixed at 2.75% of gross salary or wage payable monthly under 17(1); Regulation 17(2) establishes the statutory minimum contribution floor of KSh 300 per month for salaried employees.
+* **Regulation 18(1)–(2) (Non-salaried households):** Annual contribution of 2.75% of household income determined via means testing under Regulation 21; Regulation 18(2) establishes the statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually) for non-salaried households.
+* **Regulation 18(3):** Annual payment timing (contributions payable 14 days before the lapse of annual coverage).
+* **Regulation 18(4)–(6):** Premium financing arrangements: 18(4) enables approved commercial bank/SACCO premium financing arrangements; 18(5) financing proceeds remitted directly to the Authority; 18(6) Authority informs members about available financing products.
+* **Regulation 19(1)–(4):** Households in need of financial assistance (indigent households): 19(1) identification via means testing; 19(2)–(3) responsible national and county government officials; 19(4) base premium calculated using statistical data and actuarial models guided by benefits schedules.
+* **Regulation 20:** Contributions for persons under lawful custody (state responsibility).
+* **Regulation 21(1)–(5):** Means-testing administration & data: 21(1) Authority collects household data; 21(2) instrument developed by CS Health & CS Social Protection; 21(3) socioeconomic data domains (housing characteristics, access to basic services, household composition and characteristics); 21(4) data used to determine and estimate household income for contributions under Regulations 18 and 19; 21(5) periodic reviews.
 * **Regulation 21(6):** Prescribes that means testing shall be conducted using the formula set out in the Fifth Schedule.
-* **Fifth Schedule (Gazette p. 798):** Titled **"Means Testing"** and expressly referenced by Regulation 21(6). It sets out the econometric regression specification:
+* **Fifth Schedule (Gazette p. 798):** Titled **"MEANS TESTING"** (expressly marked `r. 21(6)`). It sets out the econometric regression specification:
   $$\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$$
   for urban and rural strata ($u$), where $\log(y)^u$ is log of per-capita income, $a^u$ is a structural parameter, $b^uX_h^u$ are household-specific indicators, $c^uZ_{hi}^u$ are individual-specific indicators, and $\varepsilon_h^u$ are estimation errors.  
   *Fidelity Note:* The Fifth Schedule itself does not enumerate 43 specific variables. While investigative reporting (Lighthouse Reports, May 2026) indicates SHA disclosed in an Access to Information response that its operational model uses 43 variables from the 2021 KCHS predicting log per-capita *consumption*, the exact numerical coefficients, intercepts, and score-to-tariff cutoffs remain undisclosed and have not been independently obtained by this project.
-* **Regulation 62:** Titled **"Zones"** (designates regional geographic groupings for health facility reimbursement tariffs).
-* **Legal Notice 55 of 2025:** Clause 9 expressly revokes Legal Notice 147 of 2024 (does not revoke principal LN 49 of 2024).
+* **Regulation 62:** Titled **"Zones"**, under Part VIII (Claims Settlement; designates regional geographic groupings for health facility reimbursement tariffs; completely unrelated to the Fifth Schedule or Means Testing).
+* **Scope and Revocation of LN 147/2024:** The 2024 Amendment Regulations (LN 147/2024) amended Regulations 2, 11, 12, 13, 15, 59, and 63; they did not amend Regulations 17–21. Legal Notice 55 of 2025 (Clause 9) expressly revokes Legal Notice 147 of 2024 (leaving principal LN 49 of 2024 fully intact).
 * **Judicial Context (March 2026):** In *Okoiti & 2 others v Cabinet Secretary, Ministry of Health & 20 others [2026] KEHC 3972 (KLR)* (19 March 2026), the High Court declared Legal Notices 48, 49, 146, and 147 of 2024 validly made, while ordering corrective action that includes implementing fair and effective means testing for non-salaried persons. (Does not evaluate algorithmic accuracy or fairness; appeal status subject to confirmation).
 * **Kenya Data Protection Act, 2019:** Sections 25 (Principles), 28–30 (Lawful Processing), 31 (DPIA), 35 (Automated Decision-Making), and 53 (Research & Statistics). Section 53 requires a lawful basis under Section 30 and DPIA safeguards under Section 31; it is NOT an automatic disclosure permit.
 * **Data Protection (General) Regulations, 2021:** Regulation 22 (Enforces substantive, meaningful human intervention in automated individual decision-making).
+
+> **Statutory Precision Rules:**  
+> 1. Regulation 17(2) applies strictly to the salaried minimum.  
+> 2. Regulation 18(2) applies strictly to the non-salaried minimum; never attribute the non-salaried minimum to Regulation 17.  
+> 3. The Fifth Schedule is titled "Means Testing", not "Zones"; Regulation 62 is "Zones" under Part VIII.  
+> 4. Do not use the pre-gazettement Ministry draft numbering in statutory crosswalks.
 
 ---
 

@@ -11,10 +11,17 @@
  * 3. Status strictly enforced: Remains NOT_CONFIGURED or PARTIALLY_DOCUMENTED until official
  *    government documentation is released, independently reviewed, and verified against reference tests.
  * 4. Transparent gaps: Every missing parameter, transformation, and bracket is explicitly cataloged.
- * 5. STATUTORY ACCURACY: Regulation 18(1) & (2) establish non-salaried household contribution rates (2.75% annual
- *    of income determined via means testing under Regulation 21(6), minimum KSh 300/mo). The Fifth Schedule is titled
- *    'Means Testing' and contains a stated means-testing equation. Regulation 19 governs financial assistance (indigents).
- *    Regulation 62 governs Zones. Legal Notice 55 of 2025 revokes Legal Notice 147 of 2024 (clause 9).
+ * 5. STATUTORY ACCURACY (Legal Notice No. 49 of 2024, Parliament of Kenya Repository):
+ *    - Regulation 17(1)–(2) establishes salaried household contribution rates (2.75% of gross payroll) and KSh 300/mo minimum (under Reg 17(2)).
+ *    - Regulation 18(1)–(2) establishes non-salaried household contribution rates (2.75% annual of income determined via means testing under Regulation 21(6), minimum KSh 300/mo under Reg 18(2)).
+ *    - Regulation 18(3) governs annual contribution payment timing (payable 14 days before lapse of coverage).
+ *    - Regulation 18(4)–(6) authorizes premium financing arrangements with approved financial institutions.
+ *    - Regulation 19 governs identification and financial assistance for households in need (indigent households).
+ *    - Regulation 20 governs contributions for persons under lawful custody (state responsibility).
+ *    - Regulation 21(1)–(5) governs means-testing data collection, instrument development, and socioeconomic domains.
+ *    - Regulation 21(6) prescribes that means testing is conducted using the formula in the Fifth Schedule ('Means Testing', Gazette p. 798).
+ *    - Regulation 62 governs regional health facility reimbursement Zones (completely unrelated to Fifth Schedule).
+ *    - Legal Notice 55 of 2025 revokes Legal Notice 147 of 2024 (clause 9).
  */
 
 export const SHA_BASELINE_STATUSES = Object.freeze({
@@ -91,7 +98,7 @@ export const SHA_REG21_PROXY_VARIABLES = Object.freeze([
 export const OFFICIAL_SHA_BASELINE_SPECIFICATION = Object.freeze({
   specId: "SHA-BASELINE-REG21-PROVISIONAL",
   officialModelName: "Official SHA Means-Testing Instrument — Implementation Details Pending Verification",
-  legalBasis: "Social Health Insurance Act, 2023 (Section 27); Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule)",
+  legalBasis: "Social Health Insurance Act, 2023 (Section 27); Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule; with salaried under Reg 17(1)–(2) and lawful custody under Reg 20)",
   status: SHA_BASELINE_STATUSES.NOT_CONFIGURED,
   effectivePeriod: {
     startDate: "2024-10-01",
