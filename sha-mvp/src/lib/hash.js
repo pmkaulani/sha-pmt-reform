@@ -63,6 +63,8 @@ export function sha256Hex(message) {
  * key held outside the client. Before this touches real MSISDNs in
  * production, move hashing to the backend and drop this constant.
  */
+// DEMO ONLY: this is not a security control. A real deployment must use a
+// server-side secret and a keyed hash (HMAC-SHA-256) held in a key store.
 const CLIENT_SIDE_PEPPER = 'SHA-PMT-v2.1-mvp-demo-pepper-replace-server-side';
 
 export function hashMsisdn(msisdn) {

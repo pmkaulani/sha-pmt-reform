@@ -125,12 +125,33 @@ test("subletting income already represented in declared net earnings is not coun
 
 test("declared monthly income rejects blank, non-finite and negative financial values", () => {
   for (const value of ["   ", Infinity, -Infinity, NaN, "NaN", "Infinity", -1, "-250"]) {
-    const result = validateAssessmentInputs({ monthlyNetEarnedIncome: value });
+    const result = validateAssessmentInputs({ monthlyNetEarnedIncome: value, householdSize: 1, county: "Nairobi" });
     assert.equal(result.isValid, false, `Expected ${String(value)} to be rejected`);
   }
 
-  assert.equal(validateAssessmentInputs({ monthlyNetEarnedIncome: 0 }).isValid, true);
-  assert.equal(validateAssessmentInputs({ monthlyNetEarnedIncome: "12500" }).isValid, true);
+  assert.equal(validateAssessmentInputs({ monthlyNetEarnedIncome: 0, householdSize: 1, county: "Nairobi" }).isValid, true);
+  assert.equal(validateAssessmentInputs({ monthlyNetEarnedIncome: "12500", householdSize: 1, county: "Nairobi" }).isValid, true);
+});
+
+test("household size and county validation rejects 0, non-integers, and unrecognized counties", () => {
+  // Household size validation
+  for (const size of [0, -1, 1.5, "NaN", null, undefined, ""]) {
+    const res = validateAssessmentInputs({ monthlyNetEarnedIncome: 10000, householdSize: size, county: "Nairobi" });
+    assert.equal(res.isValid, false, `Expected householdSize ${String(size)} to be rejected`);
+    assert.ok(res.errors.some(e => e.includes("Household size")));
+  }
+
+  // County validation
+  for (const c of ["Atlantis", "UnknownCounty", "", null, undefined]) {
+    const res = validateAssessmentInputs({ monthlyNetEarnedIncome: 10000, householdSize: 2, county: c });
+    assert.equal(res.isValid, false, `Expected county ${String(c)} to be rejected`);
+    assert.ok(res.errors.some(e => e.includes("County")));
+  }
+
+  // Valid combination passes
+  const valid = validateAssessmentInputs({ monthlyNetEarnedIncome: 10000, householdSize: 4, county: "Mombasa" });
+  assert.equal(valid.isValid, true);
+  assert.equal(valid.errors.length, 0);
 });
 
 test("high-income households triggering candidate policy overrides are distinguished from statutory floor", () => {

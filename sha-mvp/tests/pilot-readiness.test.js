@@ -374,6 +374,7 @@ test("Phase 6 Criterion 14: AlgorithmSimulation.original-agi-v2.1.js remains byt
 test("Phase 6 Criterion 15: Existing model-versioning and assessment tests continue passing", () => {
   const testHousehold = {
     monthlyNetEarnedIncome: 32000,
+    county: "Nairobi",
     housingType: "Rented",
     monthlyRentPaid: 6000,
     electricityBillMonthly: 800,

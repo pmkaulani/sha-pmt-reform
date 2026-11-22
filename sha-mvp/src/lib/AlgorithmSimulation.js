@@ -37,9 +37,20 @@ export function deriveVehicleList(d) {
   return d.assets.includes('CAR') ? [{ type: d.vehicleType || 'STANDARD_OLD' }] : [];
 }
 
+export const KNOWN_COUNTIES = [
+  "Baringo", "Bomet", "Bungoma", "Busia", "Elgeyo Marakwet", "Embu", "Garissa",
+  "Homa Bay", "Isiolo", "Kajiado", "Kakamega", "Kericho", "Kiambu", "Kilifi",
+  "Kirinyaga", "Kisii", "Kisumu", "Kitui", "Kwale", "Laikipia", "Lamu",
+  "Machakos", "Makueni", "Mandera", "Marsabit", "Meru", "Migori", "Mombasa",
+  "Murang'a", "Nairobi", "Nakuru", "Nandi", "Narok", "Nyandarua", "Nyamira",
+  "Nyeri", "Samburu", "Siaya", "Taita Taveta", "Tana River", "Tharaka-Nithi",
+  "Trans Nzoia", "Turkana", "Uasin Gishu", "Vihiga", "Wajir", "West Pokot"
+];
+
 /**
  * Validates household assessment inputs.
- * Ensures the authoritative declared net earned income is present and non-negative.
+ * Ensures the authoritative declared net earned income is present and non-negative,
+ * household size is a whole number of at least 1, and county is recognized.
  */
 export function validateAssessmentInputs(d) {
   const errors = [];
@@ -57,21 +68,34 @@ export function validateAssessmentInputs(d) {
       errors.push("Declared monthly net earned income cannot be negative.");
     }
   }
+
+  const size = Number(d.householdSize);
+  if (!Number.isInteger(size) || size < 1) {
+    errors.push("Household size must be a whole number of at least 1.");
+  }
+
+  if (!d.county || !KNOWN_COUNTIES.includes(d.county)) {
+    errors.push("County must be one of the 47 recognised counties.");
+  }
+
   return {
     isValid: errors.length === 0,
     errors
   };
 }
 
+// Statutory reference parameters (SHA General Regulations, 2024): the 2.75% rate for
+// non-salaried households and the KSh 300 monthly minimum. Regulation numbers to be
+// confirmed against the gazetted LN 49/2024 text before citing.
 export const BANDS = [
-  { min: 0, max: 131000, monthly: 300, minimumContributionApplied: true, tier: 'Low-Income (Reg. 18(2) Minimum Contribution Rule: KSh 300 Floor)' },
-  { min: 131001, max: 450000, minimumContributionApplied: false, tier: 'Standard' }, // Reg. 18(1) 2.75% reference parameter
-  { min: 450001, max: Infinity, minimumContributionApplied: false, tier: 'Upper' }, // Reg. 18(1) 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
+  { min: 0, max: 131000, monthly: 300, isAtMinimumContribution: true, minimumContributionApplied: true, isIndigent: false /* never determined here */, tier: 'Low-Income (KSh 300 minimum contribution rule)' },
+  { min: 131001, max: 450000, isAtMinimumContribution: false, minimumContributionApplied: false, isIndigent: false, tier: 'Standard' },
+  { min: 450001, max: Infinity, isAtMinimumContribution: false, minimumContributionApplied: false, isIndigent: false, tier: 'Upper' },
 ];
 
 export const PROPOSED_BANDS = [
-  { min: 0, max: 131000, monthly: 300, minimumContributionApplied: true }, // Reg. 18(2) reference minimum contribution (KSh 300 floor for non-salaried households)
-  { min: 131001, max: Infinity, minimumContributionApplied: false }, // Reg. 18(1) 2.75% rate applied to evaluated AGI (prototype policy model; requires validation against Regulation 21(6) Fifth Schedule means-testing instrument)
+  { min: 0, max: 131000, monthly: 300, isAtMinimumContribution: true, minimumContributionApplied: true, isIndigent: false /* never determined here */ },
+  { min: 131001, max: Infinity, isAtMinimumContribution: false, minimumContributionApplied: false, isIndigent: false },
 ];
 
 const ASAL_COUNTIES = {
@@ -169,12 +193,14 @@ export function calculateCurrentModel(d) {
  */
 export function calculateCurrentModelContribution(lassoAnnual) {
   const band = BANDS.find(b => lassoAnnual <= b.max) ?? BANDS[BANDS.length - 1];
-  const minimumContributionApplied = band.minimumContributionApplied === true;
-  const monthly = minimumContributionApplied ? band.monthly : Math.max(300, Math.round((lassoAnnual * 0.0275) / 12));
+  const isAtMinimumContribution = band.isAtMinimumContribution === true || band.minimumContributionApplied === true;
+  const monthly = isAtMinimumContribution ? band.monthly : Math.max(300, Math.round((lassoAnnual * 0.0275) / 12));
   return {
     annualIncome: lassoAnnual,
     monthly,
-    minimumContributionApplied,
+    isAtMinimumContribution,
+    minimumContributionApplied: isAtMinimumContribution,
+    isIndigent: false, /* never determined here */
     indigenceStatus: 'NOT_DETERMINED',
     tier: band.tier
   };
@@ -680,13 +706,15 @@ export function calculateProposedModel(d, adminParams = {}) {
     monthlyContribution: monthlyContribution,
     band: minimumContributionApplied ? 1 : 2,
     tier: tier,
+    isAtMinimumContribution: minimumContributionApplied,
     minimumContributionApplied,
+    isIndigent: false, /* never determined here */
     statutoryMinimumFloorApplied,
     policyOverrideApplied,
     policyOverrideType,
     policyOverrideDescription,
     researchIncomeBand,
-    indigenceStatus: 'NOT_DETERMINED', // Prototype never determines indigence — Reg. 19 requires statutory verification
+    indigenceStatus: 'NOT_DETERMINED', // Prototype never determines indigence — statutory verification required
     isDigitalGhost,
     requiresChpVerification,
     factors,
@@ -2060,16 +2088,26 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
  */
 const SYNTHETIC_COUNTIES = ["Baringo","Bomet","Bungoma","Busia","Elgeyo Marakwet","Embu","Garissa","Homa Bay","Isiolo","Kajiado","Kakamega","Kericho","Kiambu","Kilifi","Kirinyaga","Kisii","Kisumu","Kitui","Kwale","Laikipia","Lamu","Machakos","Makueni","Mandera","Marsabit","Meru","Migori","Mombasa","Murang'a","Nairobi","Nakuru","Nandi","Narok","Nyandarua","Nyamira","Nyeri","Samburu","Siaya","Taita Taveta","Tana River","Tharaka-Nithi","Trans Nzoia","Turkana","Uasin Gishu","Vihiga","Wajir","West Pokot"];
 
-function randChoice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-function randInt(min, max) { return Math.floor(min + Math.random() * (max - min + 1)); }
-function randBool(pTrue) { return Math.random() < pTrue; }
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const rng = mulberry32(20261123);
+
+function randChoice(arr) { return arr[Math.floor(rng() * arr.length)]; }
+function randInt(min, max) { return Math.floor(min + rng() * (max - min + 1)); }
+function randBool(pTrue) { return rng() < pTrue; }
 
 export function generateSyntheticHousehold() {
   const county = randChoice(SYNTHETIC_COUNTIES);
   const isUrban = ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Uasin Gishu', 'Kiambu', 'Kisii', 'Nyeri', 'Machakos', 'Trans Nzoia'].includes(county);
   const headGender = randChoice(['MALE', 'FEMALE']);
   const headAge = randInt(19, 78);
-  const householdSize = Math.max(1, Math.round(1 + Math.random() * 5 + (Math.random() < 0.08 ? Math.random() * 10 : 0)));
+  const householdSize = Math.max(1, Math.round(1 + rng() * 5 + (rng() < 0.08 ? rng() * 10 : 0)));
   const hasCar = randBool(isUrban ? 0.22 : 0.08);
   const hasMoto = randBool(isUrban ? 0.15 : 0.28);
   const assets = [
@@ -2079,8 +2117,8 @@ export function generateSyntheticHousehold() {
     ...(randBool(0.4) ? ['FRIDGE'] : []),
     ...(randBool(0.7) ? ['FEATURE_PHONE'] : []),
   ];
-  const grossMpesaMonthly = Math.round(Math.exp(6 + Math.random() * 4)); // roughly log-spread ~400 to ~90,000
-  const monthlyNetEarnedIncome = Math.max(0, Math.round(grossMpesaMonthly * (0.2 + Math.random() * 0.6)));
+  const grossMpesaMonthly = Math.round(Math.exp(6 + rng() * 4)); // roughly log-spread ~400 to ~90,000
+  const monthlyNetEarnedIncome = Math.max(0, Math.round(grossMpesaMonthly * (0.2 + rng() * 0.6)));
   const ownershipStatus = isUrban && randBool(0.5) ? 'RENTED' : 'OWNED';
 
   // NEW (system design, post-audit-v2): occasionally generate multi-item
@@ -2128,7 +2166,7 @@ export function generateSyntheticHousehold() {
     isRefugee: randBool(0.02),
     grossMpesaMonthly,
     transactionCount: randInt(10, 200),
-    avgRetainedBalance: Math.round(grossMpesaMonthly * (0.02 + Math.random() * 0.15)),
+    avgRetainedBalance: Math.round(grossMpesaMonthly * (0.02 + rng() * 0.15)),
     isSeasonalWorker: randBool(0.15),
     lowSeasonRetainedBalance: 0,
     monthlyNetEarnedIncome,

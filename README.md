@@ -84,7 +84,6 @@ The existing financial comparison and member workflow continue to use the declar
 - **Demographic baseline:** Kenya has approximately 16.7 million eligible informal-sector workers (drawn from an estimated 12–14 million total households, with 12.2 million recorded in the 2019 KNBS Census).
 - **Current revenue imbalance:** Formal-sector PAYE employees (~3.3 million contributors) contribute roughly KSh 73 billion annually against SHA's KSh 102 billion target, while informal compliance has lagged severely (early administrative data reported fewer than 200,000 paying informal members contributing ~KSh 780 million).
 - **Informal compliance and trust:** In May 2026, SHA stated that 92% of assessed informal households are assigned premiums of KSh 850 or less (45% between KSh 300–500 and 47% between KSh 501–850). However, compliance is dictated not merely by nominal premium tiers, but by citizen trust in the fairness of the assessment, clarity of operating expense deductions, and transparent appeal avenues.
-- **Historical Revenue Hypotheses (Superseded):** Early exploratory hackathon materials modeled an illustrative 60% compliance benchmark yielding ~KSh 58 billion annually (~KSh 4.84B/month) at an assumed KSh 520 average monthly assessment. **This speculative scenario is formally superseded and archived (see [SUPERSEDED_NOTICE.md](docs/archive/SUPERSEDED_NOTICE.md)).** Actuarial revenue projections cannot be constructed without empirical KNBS microdata and official administrative collection curves. The research prototype does not enforce arbitrary tariff anchors (such as KSh 495 or KSh 520), but models cash-flow assessment mechanics under Regulation 18(1) & (2).
 
 ---
 
@@ -187,7 +186,7 @@ This reform aligns with major policy, judicial, and statistical developments acr
 - **Algorithm Documentation** — Full technical specification with formulae ([docs/SHA_Algorithm_v2.1_Documentation.docx](docs/SHA_Algorithm_v2.1_Documentation.docx))
 - **AI Bill 2026 Compliance** — Regulatory compliance framework ([docs/AI_BILL_2026_COMPLIANCE.docx](docs/AI_BILL_2026_COMPLIANCE.docx))
 - **Legal Ethical Architectural Evaluation** — Constitutional and statutory compliance framework ([docs/LEGAL_ETHICAL_ARCHITECTURAL_EVALUATION.docx](docs/LEGAL_ETHICAL_ARCHITECTURAL_EVALUATION.docx))
-- **Calculation Receipts (Historical Draft)** — Early conceptual explanation note ([docs/SHAP_DEDUCTION_RECEIPTS.docx](docs/SHAP_DEDUCTION_RECEIPTS.docx); superseded by active calculation breakdown in [ContributionStatementTab.jsx](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/ContributionStatementTab.jsx))
+- **Calculation Receipts (superseded; see [docs/archive/SUPERSEDED_NOTICE.md](docs/archive/SUPERSEDED_NOTICE.md))** — Early conceptual explanation note ([docs/SHAP_DEDUCTION_RECEIPTS.docx](docs/SHAP_DEDUCTION_RECEIPTS.docx))
 - **Privacy Policy** — Draft data protection policy for proposed deployment; not a compliance certification ([docs/PRIVACY_POLICY.docx](docs/PRIVACY_POLICY.docx))
 
 ---
@@ -275,7 +274,7 @@ flowchart TD
     AGI --> Consistency{Consistency Verification \nHeuristics}
     Consistency -- Review Flag --> Manual[Caseworker / CHP Review \nDPA §35 & Reg 22]
     Consistency -- Verified --> Tier(Contribution Setting \nReg 18(1) & (2) Floor)
-    Tier --> Breakdown[Calculation Breakdown \n*147*4#]
+    Tier --> CB[Calculation Breakdown \n*147*4#]
 ```
 
 ---

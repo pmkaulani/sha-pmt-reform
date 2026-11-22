@@ -479,8 +479,8 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
 
     if (rule.costsAllowed) {
       if (Array.isArray(source.expenses) && source.expenses.length > 0) {
-        itemisedExpenses = source.expenses.map(e => ({
-          id: e.id || `exp-${Math.random().toString(36).slice(2, 6)}`,
+        itemisedExpenses = source.expenses.map((e, idx) => ({
+          id: e.id || `exp-${source.id || 'src'}-${idx + 1}`,
           category: e.category,
           categoryLabel: OPERATING_EXPENSE_CATEGORIES[e.category]?.label || e.category,
           amountKsh: Number(e.amountKsh || 0),

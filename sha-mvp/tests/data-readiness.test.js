@@ -457,6 +457,7 @@ test("Data Readiness 19: AlgorithmSimulation.original-agi-v2.1.js remains byte-f
 test("Data Readiness 20: Model-versioning continues to identify originalAgi and declaredIncome versions", () => {
   const benchInput = {
     monthlyNetEarnedIncome: 30000,
+    county: "Nairobi",
     housingType: "Owner-Occupied",
     householdSize: 3,
     assets: [],

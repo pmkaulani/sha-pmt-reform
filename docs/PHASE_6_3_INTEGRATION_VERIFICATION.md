@@ -139,7 +139,7 @@ flowchart TD
 - **Input Profile:** 5 household members, Kakamega County, shopkeeper managing chama savings.
 - **Earned Income Ledger:** Itemised small business source, gross receipts KSh 216,000 over 12 months, allowable operating costs KSh 0, monthly net KSh 18,000.
 - **Review Summary:** Displayed `CALCULATED_STANDARD` with `household-income-ledger-v1.1`.
-- **Classification Execution:** Generated illustrative PMT baseline of KSh 3,162/mo vs proposed AGI rules engine result of KSh 495/mo (minimum floor KSh 300, calculated contribution applied).
+- **Classification Execution:** Generated illustrative PMT baseline of KSh 3,162/mo vs proposed AGI rules engine result of KSh 300/mo (statutory minimum floor applied under Regulation 18(2); net evaluated contribution after rural COL and dependency deductions).
 - **Result:** **PASS**.
 
 #### Scenario B: Explicit Zero Earned Income

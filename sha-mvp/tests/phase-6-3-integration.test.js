@@ -249,7 +249,7 @@ test("Integration 2: Explicit zero-earned-income produces valid qualified state 
 
   const versions = calculateProposedModelVersions(assessmentInputs);
   assert.equal(versions.declaredIncome.result.estimatedAnnualIncome, 0);
-  // Evaluated contribution is statutory non-salaried floor (Regulation 18(2): KSh 300/mo minimum; cf. Reg 17(2) for salaried)
+  // Evaluated contribution is the statutory minimum floor (KSh 300/mo)
   assert.equal(versions.declaredIncome.result.monthlyContribution, 300);
   assert.equal(versions.declaredIncome.result.minimumContributionApplied, true);
   assert.equal(versions.declaredIncome.result.indigenceStatus, "NOT_DETERMINED");

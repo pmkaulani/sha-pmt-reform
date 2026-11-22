@@ -115,7 +115,7 @@
 ## Slide 9: What the Prototype Software Delivers Today
 ### Ready-to-Inspect Enterprise Artifacts
 - **15 Integrated Application Tabs:** Full wizard from household profile to income ledgers, comparative charts, model divergence views, and pilot controls.
-- **14 Automated Test Suites (241 Passing Tests):** 100% pass rate covering numerical precision, boundary checks, and fail-closed security guards.
+- **14 Automated Test Suites (242 Passing Tests):** 100% pass rate covering numerical precision, boundary checks, and fail-closed security guards.
 - **Data Protection Compliance:** Fail-closed runner blocking empirical runs on synthetic data; zero live citizen data written to browser storage.
 - **Complete Institutional Handover Package:** 12 structured governance, data privacy, and architecture documents in `docs/institutional-handover/`.
 

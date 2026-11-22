@@ -437,6 +437,7 @@ test("Phase 5 Criterion 18: Offline replay cannot generate official member actio
 test("Phase 5 Criterion 19: Model versions and source provenance remain reproducible", () => {
   const benchInput = {
     monthlyNetEarnedIncome: 45000,
+    county: "Nairobi",
     housingType: "Owner-Occupied",
     householdSize: 4,
     assets: ["TV", "SMARTPHONE"],
@@ -478,6 +479,7 @@ test("Phase 5 Criterion 21: Existing model, contribution, and assessment tests c
   // Ensure model-versioning preserves both engines simultaneously
   const testHousehold = {
     monthlyNetEarnedIncome: 18000,
+    county: "Kakamega",
     housingType: "Rented",
     monthlyRentPaid: 3500,
     electricityBillMonthly: 600,

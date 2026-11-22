@@ -82,7 +82,7 @@ No, for three distinct architectural reasons:
 
 ### Q2.2: How do you verify the integrity of your code?
 **Authoritative Answer:**  
-- The codebase contains **14 automated test suites comprising 241 unit and integration tests** with a 100% pass rate.
+- The codebase contains **14 automated test suites comprising 242 unit and integration tests** with a 100% pass rate.
 - Automated tests enforce fail-closed security: the empirical runner immediately blocks execution if synthetic fixtures are paired with real survey manifests (`BLOCKED_PROVENANCE_MISMATCH`) or if evaluation protocols are not frozen (`BLOCKED_PROTOCOL_NOT_APPROVED`).
 - The production Vite bundle builds with zero errors, and `npm audit` reports zero dependency vulnerabilities.
 - Historical AGI engine logic is locked by immutable Git blob hashes (`61537188d9727e9b01ef4a2c0fadc1c633abaa10`).

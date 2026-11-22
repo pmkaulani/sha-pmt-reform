@@ -11,7 +11,7 @@
 ## Pre-Flight Setup Checklist
 - [ ] Vite development server running: `npm --prefix sha-mvp run dev` on `http://localhost:5173/app.html`.
 - [ ] Browser window sized to standard 1280x800 resolution with clean zoom (100%).
-- [ ] Verification test suite pre-checked: `npm --prefix sha-mvp test` (241/241 passing).
+- [ ] Verification test suite pre-checked: `npm --prefix sha-mvp test` (242/242 passing).
 - [ ] Terminal open in background showing zero unhandled exceptions or console errors.
 - [ ] **Data Safety Invariant:** Do NOT enter real citizen or SHA member records. All demonstrations must use built-in synthetic personas or mock inputs.
 
