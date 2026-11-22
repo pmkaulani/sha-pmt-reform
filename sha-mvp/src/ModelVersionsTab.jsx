@@ -8,7 +8,8 @@ const COLORS = {
   soft: "#F5F8FB",
   blue: "#176B87",
   green: "#287653",
-  amber: "#9A6500"
+  amber: "#9A6500",
+  red: "#C53030"
 };
 
 const money = (value) => {
@@ -74,12 +75,24 @@ function ModelPanel({ model, original }) {
           <div style={{ color: COLORS.muted, fontSize: 12 }}>No deduction entries were produced for this household.</div>
         ) : (
           <div style={{ display: "grid", gap: 6 }}>
-            {deductions.slice(0, 7).map((item, index) => (
-              <div key={`${item.name || "adjustment"}-${index}`} style={{ display: "flex", justifyContent: "space-between", gap: 10, borderBottom: `1px solid ${COLORS.border}`, paddingBottom: 6 }}>
-                <span style={{ color: COLORS.muted, fontSize: 11, lineHeight: 1.4 }}>{item.name || "Adjustment"}</span>
-                <strong style={{ color: COLORS.ink, fontSize: 11, whiteSpace: "nowrap" }}>{money(item.amount)}</strong>
-              </div>
-            ))}
+            {deductions.slice(0, 7).map((item, index) => {
+              const isNegative = original && typeof item.amount === "number" && item.amount < 0;
+              return (
+                <div key={`${item.name || "adjustment"}-${index}`} style={{ borderBottom: `1px solid ${COLORS.border}`, paddingBottom: 6 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                    <span style={{ color: COLORS.muted, fontSize: 11, lineHeight: 1.4 }}>{item.name || "Adjustment"}</span>
+                    <strong style={{ color: isNegative ? COLORS.red : COLORS.ink, fontSize: 11, whiteSpace: "nowrap" }}>
+                      {money(item.amount)}
+                    </strong>
+                  </div>
+                  {isNegative && (
+                    <div style={{ color: COLORS.amber, fontSize: 10, lineHeight: 1.4, marginTop: 2, fontStyle: "italic" }}>
+                      * Documented limitation of v2.1 baseline: dependency allowance computes a negative deduction when base is below floor.
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {deductions.length > 7 && <div style={{ color: COLORS.muted, fontSize: 10 }}>+ {deductions.length - 7} more entries in the calculation output</div>}
           </div>
         )}
@@ -122,7 +135,7 @@ export default function ModelVersionsTab({ results }) {
       </div>
 
       <div style={{ background: "#FFF8E8", border: "1px solid #EAD7A8", borderRadius: 9, padding: 13, color: "#6F520E", fontSize: 12, lineHeight: 1.55 }}>
-        <strong>Important:</strong> These are research prototypes. Neither output is the member's official SHA assessment, an official SHA premium, or a reproduction of SHA's production Regulation 21(6) Fifth Schedule means-testing instrument. The models encode different research hypotheses and use different information fields. A difference between their outputs demonstrates disagreement between methodologies, not which methodology is more accurate. The 2.75% rate and KSh 300 floor reflect statutory reference parameters under Regulation 18(1) & (2) for non-salaried households (with salaried employment governed separately under Regulation 17(1)–(2)).
+        <strong>Important:</strong> These are research prototypes. Neither output is the member's official SHA assessment, an official SHA premium, or a reproduction of SHA's production Regulation 21(6) Fifth Schedule means-testing instrument. The models encode different research hypotheses and use different information fields. A difference between their outputs demonstrates disagreement between methodologies, not which methodology is more accurate. The 2.75% rate and KSh 300 floor reflect statutory reference parameters under Regulation 18(1) & (2) for non-salaried households (with salaried employment governed separately under Regulation 17).
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 330px), 1fr))", gap: 12, alignItems: "start" }}>

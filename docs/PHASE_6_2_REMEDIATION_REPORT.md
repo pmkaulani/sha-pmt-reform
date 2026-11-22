@@ -14,14 +14,14 @@
 Phase 6.2 was initiated to address critical legal, methodological, and architectural deficiencies identified during the comprehensive repository audit. Rather than adding speculative features or advancing prematurely to pilot deployment, Phase 6.2 focused on **statutory accuracy, fail-closed evaluation rigor, assessment integrity, and defensible institutional claims**.
 
 ### Key Outcomes:
-1. **Statutory Baseline Alignment (LN 49/2024):** Aligned statutory citations with the gazetted Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024, published in Kenya Gazette Supplement No. 60, Legislative Supplement No. 28, on 8 March 2024). Confirmed that Regulation 18(1) & (2) govern non-salaried contributions (2.75% rate and KSh 300/mo minimum), while Regulation 17(1)–(2) govern salaried employment. Confirmed that Regulation 21(6) explicitly prescribes that means testing be conducted using the formula set out in the Fifth Schedule ('Means Testing', p. 798): $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$, estimating log per-capita income across urban and rural strata, while Regulation 21(3) sets out broad socioeconomic data domains (housing characteristics, access to basic services, household composition and characteristics). Regulation 62 designates 'Zones' for health facility tariffs. The official baseline was formally reframed as `OFFICIAL SHA MEANS-TESTING INSTRUMENT — IMPLEMENTATION DETAILS PENDING VERIFICATION`.
+1. **Statutory Baseline Alignment (LN 49/2024):** Aligned statutory citations with the gazetted Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024, published in Kenya Gazette Supplement No. 60, Legislative Supplement No. 28, on 8 March 2024). Confirmed that Regulation 18(1) & (2) govern non-salaried contributions (2.75% rate and KSh 300/mo minimum), while Regulation 17 governs salaried employment. Confirmed that Regulation 21(6) explicitly prescribes that means testing be conducted using the formula set out in the Fifth Schedule ('Means Testing', p. 798): $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$, estimating log per-capita income across urban and rural strata, while Regulation 21(3) sets out broad socioeconomic data domains (housing characteristics, access to basic services, household composition and characteristics). Regulation 62 designates 'Zones' for health facility tariffs. The official baseline was formally reframed as `OFFICIAL SHA MEANS-TESTING INSTRUMENT — IMPLEMENTATION DETAILS PENDING VERIFICATION`.
 2. **Data Protection Law Realignment:** Corrected citations across the repository to properly reflect the Kenya Data Protection Act, 2019 (Sections 25, 28, 29, 30(1)(b)(iv), 30(1)(b)(v), 30(1)(b)(viii), 31, 32, 34, 35, 36, 39, and 53) and Regulation 22 of the Data Protection (General) Regulations, 2021 (mandating substantive, meaningful human intervention in automated decision-making).
 3. **Fail-Closed Empirical Comparison Runner:** Hardened `runEmpiricalComparison` to refuse execution when survey manifests are paired with synthetic fixtures (`Provenance mismatch`), require frozen pre-registered protocols (`approvalStatus === "FROZEN"`), eliminate generic prediction fallbacks, isolate zero/negative disposable resources into a dedicated unburdened category, and mark affordability thresholds as unapproved illustrative research benchmarks (`NOT_POLICY_APPROVED`).
 4. **EvaluationLab Holdout Enforcement:** Updated `EvaluationLabTab.jsx` to evaluate candidate models strictly against the independent holdout partition (`PARTITION_TYPES.HOLDOUT`) rather than the complete sample.
 5. **Statistical Uncertainty Integrity:** Enforced that `evaluateSamplingUncertainty()` returns `UNCERTAINTY_NOT_ESTIMATED` with `confidenceIntervalsAvailable: false` because complex survey design weights (clustering and stratification) are not implemented. De-listed AGI models from claiming independent poverty classification eligibility under the KSh 300 administrative floor.
 6. **Assessment Calculation Pathway Repairs:** Implemented `createZeroEarnedIncomeAssessment()` to produce an authoritative explicit zero-earned-income state, flagged unearned transfers as requiring policy decisions (`PROVISIONAL_PENDING_POLICY`), isolated short observation windows (3–11 months) as provisional extrapolations, and added explicit disclaimers regarding allowable costs and reimbursement reconciliation.
 7. **Pilot Readiness & State Machine Hardening:** Resolved Stage 2 normalisation (`STAGE_2_OFFLINE_HISTORICAL_REPLAY` -> `OFFLINE_REPLAY`), enforced a permitted transition graph (`ALLOWED_PILOT_CONTROL_TRANSITIONS`), defaulted approvals to `NOT_REQUESTED`, and updated checklist labels to `(Synthetic Demo Checked)`.
-8. **KNBS Codebook & Profiler Plausibility:** Aligned mapping dictionaries with authentic KNBS KIHBS variables (`hhid`, `resid`, `hhsize`, `totcons_annual`), marked mappings as `DEMO_ONLY`, and preserved extended households using `Number.isFinite()`.
+8. **KNBS Codebook & Profiler Plausibility:** Aligned mapping dictionaries with KNBS KIHBS variables (`hhid`, `resid`, `hhsize`, `totcons_annual`), marked mappings as `DEMO_ONLY`, and preserved extended households using `Number.isFinite()`.
 
 ---
 
@@ -29,7 +29,7 @@ Phase 6.2 was initiated to address critical legal, methodological, and architect
 
 ### Legal Finding 1: The Fifth Schedule is "Means Testing" (Regulation 21(6)); Regulation 62 is "Zones"
 * **Statutory Location:** Fifth Schedule (Gazette p. 798) to the Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024; published in Gazette Supplement No. 60, Leg. Supp. No. 28, 8 March 2024).
-* **Governing Regulation:** Regulation 21(6) explicitly prescribes: *"Means testing shall be conducted using the formula set out in the Fifth Schedule."*
+* **Governing Regulation:** Regulation 21(6) explicitly prescribes: *"The Authority shall conduct means testing using the formula set out in the Fifth Schedule to these Regulations."*
 * **Actual Statutory Content:** The Fifth Schedule is titled **"Means Testing"** and specifies the econometric equation:
   $$\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$$
   where $\log(y)^u$ is log per-capita income, $a^u$ is a structural parameter, $b^uX_h^u$ are household-specific indicators, $c^uZ_{hi}^u$ are individual-specific indicators, and $\varepsilon_h^u$ are estimation errors across urban and rural strata ($u$). Regulation 21(3) separately identifies broad data domains (housing characteristics, access to basic services, household composition and characteristics). The Fifth Schedule itself does not enumerate 43 specific variables.
@@ -41,7 +41,7 @@ Phase 6.2 was initiated to address critical legal, methodological, and architect
 * **Remediation Action:** Clarified that while the Fifth Schedule sets out the statutory formula structure under Regulation 21(6), SHA's operational 43-variable calibration, variable codebook, and cutoff parameters remain undisclosed in the Gazette. According to Lighthouse Reports (4 May 2026), SHA disclosed in an ATI response (Nov 2025) that its operational model uses the 2021 KCHS predicting log per-capita *consumption*. The relationship between predicted consumption and the Fifth Schedule's per-capita income specification forms a key research question.
 
 ### Legal Finding 3: Statutory Contribution Rate, Minimum Floor & Definitive Crosswalk
-* **Salaried Employment:** Regulation 17(1)–(2) establishes contributions for salaried households at 2.75% of gross salary or wage, with Regulation 17(2) prescribing the statutory minimum of KSh 300 per month.
+* **Salaried Employment:** Regulation 17 establishes contributions for salaried households at 2.75% of gross salary or wage payable monthly by the ninth day of each month.
 * **Non-Salaried Contribution Rate & Floor:** Regulation 18(1) establishes the annual contribution for non-salaried households at 2.75% of household income determined through the means-testing instrument, with Regulation 18(2) prescribing the statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually).
 * **Payment Timing:** Regulation 18(3) governs annual payment timing before coverage lapses.
 * **Premium Financing:** Regulation 18(4)–(6) governs premium financing arrangements with approved commercial banks, SACCOs, or financial institutions.
@@ -226,19 +226,19 @@ Executed `npm --prefix sha-mvp run build`:
 
 ---
 
-## 10. Algorithm Byte-for-Byte Preservation Check
+## 10. Preserved Original AGI Baseline Invariant
 
-The baseline algorithm file [`sha-mvp/src/lib/AlgorithmSimulation.original-agi-v2.1.js`](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/lib/AlgorithmSimulation.original-agi-v2.1.js) was verified byte-for-byte:
-* **Git Blob SHA-1:** `61537188d9727e9b01ef4a2c0fadc1c633abaa10` (Identical)
-* **Canonical Unix LF SHA-256:** `8D6FB8E4FABF10432D7094CC35E9C8BB509AF51F6D8B4C6427CF147057A683EC` (Identical)
-* **Windows CRLF SHA-256:** `4A2BE4D705C06A9116C97F97FE14EE9620BC82C2556A3C4D197FBDDAEBCCDE72` (Identical)
+The baseline algorithm file [`sha-mvp/src/lib/AlgorithmSimulation.original-agi-v2.1.js`](file:///c:/Users/STD%20USER/Desktop/work/SHA/sha-mvp/src/lib/AlgorithmSimulation.original-agi-v2.1.js) was recovered from historical commit `c1a5a09` (where it originally existed as `AlgorithmSimulation.js`) and is preserved as an immutable reference:
+* **Git Blob SHA-1:** `61537188d9727e9b01ef4a2c0fadc1c633abaa10` (Verified immutable)
+* **Canonical Unix LF SHA-256:** `8D6FB8E4FABF10432D7094CC35E9C8BB509AF51F6D8B4C6427CF147057A683EC`
+* **Windows CRLF SHA-256:** `4A2BE4D705C06A9116C97F97FE14EE9620BC82C2556A3C4D197FBDDAEBCCDE72`
 
 ---
 
 ## 11. Conclusion & Institutional Posture
 
-With Phase 6.2 complete, the SHA PMT Reform repository adheres to the highest standards of legal accuracy, econometric rigor, and software verification:
-1. It makes **zero unverified claims** of empirical superiority.
-2. It makes **zero false assertions** regarding statutory PMT schedules.
-3. It enforces **fail-closed evaluation gates** that prevent premature or invalid comparisons.
-4. It provides SHA with an **authoritative, legally sound, and statistically defensible research proposal**.
+With Phase 6.2 complete, the SHA PMT Reform repository is structured for transparent institutional review:
+1. It avoids unverified claims of empirical superiority.
+2. It avoids unsupported assertions regarding statutory PMT schedules.
+3. It enforces fail-closed evaluation gates that prevent premature or invalid comparisons.
+4. It provides SHA with a structured research proposal for joint exploration.

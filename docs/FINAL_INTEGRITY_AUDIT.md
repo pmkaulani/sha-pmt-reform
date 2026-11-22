@@ -77,7 +77,7 @@ All legal and data governance documents have been audited and corrected:
 
 ### Social Health Insurance Statutory & Regulatory Alignment:
 * **Legal Notice No. 49 of 2024 (Social Health Insurance Regulations, 2024; Gazette Supplement No. 60, Leg. Supp. No. 28, 8 March 2024; Parliament of Kenya Repository, pp. 746–749 & 798):**
-  * **Regulation 17(1)–(2) (Salaried households):** Fixed at 2.75% of gross salary or wage payable monthly under 17(1); Regulation 17(2) establishes the statutory minimum contribution floor of KSh 300 per month for salaried employees.
+  * **Regulation 17 (Salaried households):** Fixed at 2.75% of gross salary or wage payable monthly by the ninth day of each month.
   * **Regulation 18(1)–(2) (Non-salaried households):** Annual contribution of 2.75% of household income determined through the means-testing instrument prescribed under Regulation 21; Regulation 18(2) establishes the statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually) for non-salaried households.
   * **Regulation 18(3):** Governs annual contribution payment timing (payable 14 days before the lapse of annual coverage).
   * **Regulation 18(4)–(6):** Governs premium financing arrangements: 18(4) enables approved commercial bank/SACCO premium financing arrangements; 18(5) financing proceeds remitted directly to the Authority; 18(6) Authority informs members about available financing products.

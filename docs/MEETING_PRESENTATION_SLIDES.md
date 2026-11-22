@@ -29,14 +29,14 @@
 ### Clear Reconciliation with Enacted Law (Parliament of Kenya Repository, pp. 746–749 & 798)
 | Dimension | Gazetted Provision | Operational Function |
 | :--- | :--- | :--- |
-| **Salaried Contributions** | **Regulation 17(1)–(2)** | Salaried household contribution: 2.75% of gross payroll payable monthly; statutory minimum floor of KSh 300/month under **Reg 17(2)**. |
+| **Salaried Contributions** | **Regulation 17** | Salaried household contribution: 2.75% of gross salary/wage payable monthly by the ninth day of each month. |
 | **Non-Salaried Contributions** | **Regulation 18(1)–(2)** | Non-salaried household contribution: 2.75% of income via means testing; statutory minimum floor of KSh 300/month under **Reg 18(2)**. |
 | **Payment Timing** | **Regulation 18(3)** | Annual contribution payment timing (payable 14 days before lapse of annual coverage). |
 | **Premium Financing** | **Regulation 18(4)–(6)** | Statutory provisions enabling approved commercial bank or SACCO premium financing; proceeds remitted to SHA (prototype does not operate a financing gateway). |
 | **Financial Assistance** | **Regulation 19(1)–(4)** | Households in need of financial assistance (indigent households); base premium calculated via actuarial models. Reg 18(2) minimum floor is not an indigent subsidy. |
 | **Lawful Custody** | **Regulation 20** | Contributions for persons under lawful custody (state responsibility). |
 | **Means-Testing Governance** | **Regulation 21(1)–(5)** | Household data collection, joint instrument development by CSs, data domains (housing, services, composition), income estimation, and periodic reviews. |
-| **Means-Testing Formula** | **Regulation 21(6)** | Prescribes that means testing shall be conducted using the formula set out in the Fifth Schedule. |
+| **Means-Testing Formula** | **Regulation 21(6)** | Prescribes: *"The Authority shall conduct means testing using the formula set out in the Fifth Schedule to these Regulations."* |
 | **Fifth Schedule ('Means Testing')** | **Fifth Schedule (p. 798)** | Econometric specification: $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$ (per-capita income; marked `r. 21(6)`; completely distinct from Zones). |
 | **Claims Zones** | **Regulation 62** | Titled "Zones", under Part VIII Claims Settlement (health facility reimbursement groupings; unrelated to Fifth Schedule). |
 | **Regulatory Amendments** | **LN 55/2025 & LN 147/2024** | LN 147/2024 amended Regs 2, 11, 12, 13, 15, 59, 63 (not Regs 17–21); revoked by LN 55/2025 (Clause 9). Principal LN 49 of 2024 remains intact. |

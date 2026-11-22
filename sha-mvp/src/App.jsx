@@ -1742,6 +1742,21 @@ function SHAPTab({results, adminParams}) {
         </div>
       )}
 
+      {/* Contribution Evaluation & Floor Note */}
+      <div style={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:10,padding:16,display:"grid",gap:8}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:15,fontWeight:600}}>
+          <span style={{color:S.text}}>Evaluated Monthly Contribution:</span>
+          <span style={{fontWeight:800,color:(results.next.minimumContributionApplied ?? (results.next.monthlyContribution === 300)) ? S.sage : S.text}}>
+            KSh {results.next.monthlyContribution.toLocaleString()}/month
+          </span>
+        </div>
+        {(results.next.minimumContributionApplied ?? (results.next.monthlyContribution === 300)) && (
+          <div style={{padding:12,background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:8,fontSize:13,color:"#166534",lineHeight:1.5,marginTop:4}}>
+            <strong>Statutory Minimum Contribution Rule Applied (Regulation 18(2)):</strong> Evaluated income produces a calculated 2.75% contribution below the statutory floor, so the KSh 300/month (KSh 3,600/year) minimum applies.
+          </div>
+        )}
+      </div>
+
       {/* Transparency factors */}
       <div style={{display:"grid",gap:16,marginTop:12}}>
         <div style={{fontSize:16,fontWeight:600,color:S.text}}>Key Overrides & Constraints</div>
@@ -2604,7 +2619,7 @@ export default function SHADemo() {
       
       setResults({current:cur, next:nxt, modelVersions, adminParamsSnapshot: JSON.parse(JSON.stringify(adminParams)), d: JSON.parse(JSON.stringify(assessmentInputs)), fraudRisk:fraudRisk, sectorAnalysis:sectorAnalysis, fairnessMetrics:fairnessMetrics, auditRecord});
       setClassifying(false);
-      setActiveTab("comparison");
+      setActiveTab("shap");
     },800);
   };
 

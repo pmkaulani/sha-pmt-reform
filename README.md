@@ -110,17 +110,12 @@ This reform aligns with major policy, judicial, and statistical developments acr
 ## Repository Structure
 
 ```
-├── docs/                           # Policy, legal, audit & financial documentation
-│   ├── SHA_Financial_Model.xlsx    # Revenue & compliance projections
-│   ├── SHA_Impact_Summary.xlsx     # Impact metrics
-│   ├── IMPLEMENTATION_ROADMAP.xlsx # Phased rollout timeline
-│   ├── EXECUTIVE_SUMMARY_ONE_PAGER.docx
-│   ├── SHA_Algorithm_v2.1_Documentation.docx
-│   ├── AI_BILL_2026_COMPLIANCE.docx
-│   ├── LEGAL_ETHICAL_ARCHITECTURAL_EVALUATION.docx
-│   ├── PRIVACY_POLICY.docx
-│   ├── KIPPRA_SUBMISSION_LETTER.docx
-│   └── ... (full document set)
+├── docs/                           # Policy, legal, audit & handover documentation
+│   ├── archive/                    # Archived legacy deliverables (.docx, .xlsx, superseded files)
+│   ├── institutional-handover/     # Executive proposal and methodology specifications
+│   ├── MEETING_QA_AND_STATUTORY_NOTE.md # Definitive statutory crosswalk and legal notes
+│   ├── DEMONSTRATION_SCRIPT.md     # Meeting demonstration walkthrough
+│   └── ... (full markdown documentation set)
 │
 ├── explainer/                      # Standalone interactive explainer webpage
 │   └── index.html                  # Visual walkthrough of PMT flaws and AGI solutions
@@ -161,20 +156,20 @@ This reform aligns with major policy, judicial, and statistical developments acr
 
 | Gazetted Provision | Definitive Scope & Subject Matter | Operational Context & Research Boundary |
 |---|---|---|
-| **Regulation 17(1)–(2)** | Salaried household contribution: 17(1) fixed at 2.75% of gross salary/wage payable monthly; **17(2)** statutory minimum floor of KSh 300 per month. | Formal payroll deduction; distinct from non-salaried means testing. |
+| **Regulation 17** | Salaried household contribution: fixed at 2.75% of gross salary/wage payable monthly. | Formal payroll deduction; distinct from non-salaried means testing. |
 | **Regulation 18(1)–(2)** | Non-salaried household contribution: 18(1) annual contribution of 2.75% of household income determined via means testing under Reg 21; **18(2)** statutory minimum floor of KSh 300 per month (KSh 3,600/year). | Primary target of this research prototype; Reg 18(2) sets the non-salaried minimum. |
 | **Regulation 18(3)** | Annual contribution payment timing (payable 14 days before annual coverage lapses). | Statutory deadline for non-salaried premium remittance. |
 | **Regulation 18(4)–(6)** | Premium financing arrangements: 18(4) approved commercial bank/SACCO arrangements; 18(5) proceeds remitted directly to Authority; 18(6) Authority informs members about available products. | Third-party financing authorization; prototype does not operate a live financing gateway. |
 | **Regulation 19(1)–(4)** | Households in need of financial assistance: 19(1) identification of indigent households via means testing; 19(2)–(3) responsible national/county officials; 19(4) base premium calculated using statistical data and actuarial models guided by benefits schedules. | Subsidized coverage; applying the KSh 300 floor under Reg 18(2) is not an indigent determination. |
 | **Regulation 20** | Contributions for persons under lawful custody. | State responsibility for persons in correctional custody. |
 | **Regulation 21(1)–(5)** | Means-testing administration & data: 21(1) Authority collects household data; 21(2) instrument developed by CS Health & CS Social Protection; 21(3) socioeconomic domains (housing characteristics, access to basic services, household composition and characteristics); 21(4) data used to estimate household income for Regs 18 & 19; 21(5) periodic reviews. | Administrative and governance framework; Reg 21(3) defines housing, services, and composition domains. |
-| **Regulation 21(6)** | Prescribes: *"Means testing shall be conducted using the formula set out in the Fifth Schedule."* | Statutory mandate for the Fifth Schedule econometric formula. |
+| **Regulation 21(6)** | Prescribes: *"The Authority shall conduct means testing using the formula set out in the Fifth Schedule to these Regulations."* | Statutory mandate for the Fifth Schedule econometric formula. |
 | **Fifth Schedule (p. 798)** | Titled **"MEANS TESTING"** marked `(r. 21(6))`. Econometric regression formula: $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$, estimating log per-capita income across urban and rural strata ($u$). | Titled "Means Testing"; completely distinct from Zones. Coefficients remain undisclosed in Gazette. |
 | **Regulation 62** | Titled **"Zones"**, under Part VIII (Claims Settlement); specifies regional health facility reimbursement groupings. | Health provider reimbursement tariffs; completely unrelated to household means testing or Fifth Schedule. |
 
 > **Statutory Precision Invariants:**  
-> 1. Regulation 17(2) applies strictly to the salaried minimum.  
-> 2. Regulation 18(2) applies strictly to the non-salaried minimum; never attribute the non-salaried minimum to Regulation 17.  
+> 1. Regulation 18(2) applies strictly to the non-salaried minimum (KSh 300/mo); never attribute the non-salaried minimum to Regulation 17.  
+> 2. Regulation 17 governs salaried employment (2.75% of gross salary or wage payable monthly).  
 > 3. The Fifth Schedule is titled "Means Testing" (r. 21(6), Gazette p. 798), not "Zones"; Regulation 62 is "Zones" under Part VIII.  
 > 4. Do not use the pre-gazettement Ministry draft numbering (which had blank LN and numbered provisions 16, 17, 18, 19) in statutory crosswalks. LN 147/2024 amended Regs 2, 11, 12, 13, 15, 59, 63, but did not amend Regs 17–21.
 
@@ -182,12 +177,11 @@ This reform aligns with major policy, judicial, and statistical developments acr
 
 ## Key Documents
 
-- **Executive Summary** — One-page overview for decision-makers ([docs/EXECUTIVE_SUMMARY_ONE_PAGER.docx](docs/EXECUTIVE_SUMMARY_ONE_PAGER.docx))
-- **Algorithm Documentation** — Full technical specification with formulae ([docs/SHA_Algorithm_v2.1_Documentation.docx](docs/SHA_Algorithm_v2.1_Documentation.docx))
-- **AI Bill 2026 Compliance** — Regulatory compliance framework ([docs/AI_BILL_2026_COMPLIANCE.docx](docs/AI_BILL_2026_COMPLIANCE.docx))
-- **Legal Ethical Architectural Evaluation** — Constitutional and statutory compliance framework ([docs/LEGAL_ETHICAL_ARCHITECTURAL_EVALUATION.docx](docs/LEGAL_ETHICAL_ARCHITECTURAL_EVALUATION.docx))
-- **Calculation Receipts (superseded; see [docs/archive/SUPERSEDED_NOTICE.md](docs/archive/SUPERSEDED_NOTICE.md))** — Early conceptual explanation note ([docs/SHAP_DEDUCTION_RECEIPTS.docx](docs/SHAP_DEDUCTION_RECEIPTS.docx))
-- **Privacy Policy** — Draft data protection policy for proposed deployment; not a compliance certification ([docs/PRIVACY_POLICY.docx](docs/PRIVACY_POLICY.docx))
+- **Executive Proposal** — Comprehensive proposal for institutional leadership ([docs/institutional-handover/EXECUTIVE_PROPOSAL.md](docs/institutional-handover/EXECUTIVE_PROPOSAL.md))
+- **Statutory Crosswalk & Legal Notes** — Authoritative legal references and Fifth Schedule analysis ([docs/MEETING_QA_AND_STATUTORY_NOTE.md](docs/MEETING_QA_AND_STATUTORY_NOTE.md))
+- **Demonstration Walkthrough** — Structured meeting demonstration script ([docs/DEMONSTRATION_SCRIPT.md](docs/DEMONSTRATION_SCRIPT.md))
+- **Data Governance Checklist** — Enacted law compliance under DPA 2019 ([docs/LEGAL_AND_DATA_GOVERNANCE_CHECKLIST.md](docs/LEGAL_AND_DATA_GOVERNANCE_CHECKLIST.md))
+- **Archived Working Documents (superseded)** — Inventory of early legacy `.docx` and `.xlsx` artifacts ([docs/archive/SUPERSEDED_NOTICE.md](docs/archive/SUPERSEDED_NOTICE.md))
 
 ---
 

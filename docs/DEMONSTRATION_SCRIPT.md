@@ -9,9 +9,10 @@
 ---
 
 ## Pre-Flight Setup Checklist
+- [ ] Active Git branch: Verify checked out on `meeting-prep/final-reconciliation` (`git checkout meeting-prep/final-reconciliation`). Do NOT merge to `master`; present from this branch and open a draft PR on GitHub.
 - [ ] Vite development server running: `npm --prefix sha-mvp run dev` on `http://localhost:5173/app.html`.
 - [ ] Browser window sized to standard 1280x800 resolution with clean zoom (100%).
-- [ ] Verification test suite pre-checked: `npm --prefix sha-mvp test` (242/242 passing).
+- [ ] Verification test suite pre-checked: `npm --prefix sha-mvp test` (all tests passing).
 - [ ] Terminal open in background showing zero unhandled exceptions or console errors.
 - [ ] **Data Safety Invariant:** Do NOT enter real citizen or SHA member records. All demonstrations must use built-in synthetic personas or mock inputs.
 
@@ -21,29 +22,31 @@
 * **Screen:** [`http://localhost:5173/app.html`](http://localhost:5173/app.html) (Landing on Assessment Wizard)
 * **Presenter Script:**
   > "Distinguished leadership and colleagues, what you see on the screen is a functional research prototype designed to explore how cash-flow income ledgers, liquidity metrics, and structured appeal mechanisms can strengthen informal-sector contributions under the **Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024; Gazette Supplement No. 60, Legislative Supplement No. 28, 8 March 2024)**.  
-  > In the gazetted statutory crosswalk, Regulation 17(1)–(2) governs salaried employment (2.75% and KSh 300/mo minimum under Reg 17(2)), Regulation 18(1)–(2) governs non-salaried households (2.75% via means testing and KSh 300/mo minimum under Reg 18(2)), Regulation 18(3) sets annual payment timing, Regulation 18(4)–(6) enables premium financing, Regulation 19 covers financial assistance for indigent households, and Regulation 20 covers persons under lawful custody. Regulation 21(6) designates the Fifth Schedule ('Means Testing', Gazette p. 798) econometric formula: $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$ (completely distinct from Regulation 62 'Zones'). This conversation is especially timely following the High Court judgment of 19 March 2026 (*Okoiti v CS Health*), which upheld the regulations while directing fair and effective means testing for non-salaried persons.  
+  > In the gazetted statutory crosswalk, Regulation 17 governs salaried employment (2.75% monthly deduction), Regulation 18(1)–(2) governs non-salaried households (2.75% via means testing and KSh 300/mo minimum under Reg 18(2)), Regulation 18(3) sets annual payment timing, Regulation 18(4)–(6) enables premium financing, Regulation 19 covers financial assistance for indigent households, and Regulation 20 covers persons under lawful custody. Regulation 21(6) designates the Fifth Schedule ('Means Testing', Gazette p. 798) econometric formula: $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$ (completely distinct from Regulation 62 'Zones'). This conversation is especially timely following the High Court judgment of 19 March 2026 (*Okoiti v CS Health*), which upheld the regulations while directing fair and effective means testing for non-salaried persons.  
   > Before walking through the user journeys, I want to emphasize our core governance boundary: this application is an independent academic research tool. Source inspection confirms no application-level backend submission path to SHA or external assessment services; the UI references Google Fonts for standard typography, but transmits zero member data. Drafts exist only in active React session memory. We are here to propose a controlled, non-interfering partnership to evaluate these methods safely."
 
 ---
 
-## Step 2: Journey 1 — Informal Microbusiness & Operating Deductions (4 Minutes)
-* **Action:** Click persona preset button **"Mama Wanjiku (Chama Treasurer)"** in Stage 0.
+## Step 2: Journey 1 — Informal Microbusiness & Itemised Operating Deductions (4 Minutes)
+* **Action:** Click persona preset button **"Wanjiru — Market Trader (Itemised Expenses)"** in Stage 0.
 * **Highlight:**
-  - 5 household members in Kakamega County.
+  - 5 household members in Nakuru County (Urban Tier 2).
   - Advance to **Stage 1 (Housing & Assets)**: Notice that housing characteristics are captured as contextual information, not an automatic punitive wealth score.
   - Advance to **Stage 2 (Earned Income Ledger)**:
-    - Point out the small business entry: Gross turnover is KSh 216,000 annually.
-    - Demonstrate allowable operating costs: Raw materials, stock, transport.
-    - Net livelihood earnings calculate to KSh 18,000 monthly.
+    - Point out the retail market trader entry: Gross receipts / turnover is KSh 540,000 annually (KSh 45,000 monthly).
+    - Demonstrate allowable itemised operating costs: Stock inventory, transport, market stall fees totaling KSh 180,000 annually (KSh 15,000 monthly).
+    - Net livelihood earnings calculate to KSh 30,000 monthly (KSh 360,000 annually).
   - Advance to **Stage 3 (Other Financial Flows)**:
-    - Observe the chama savings entry. It is classified under fiduciary flows and isolated from personal livelihood income.
+    - Observe that fiduciary flows, personal loans, or family remittances are isolated from personal livelihood earned income.
   - Advance to **Stage 4 (Review)**:
     - Click **"Run Household Assessment"**.
-* **Screen Transition:** Automatic navigation to **Financial Comparison Tab**.
+* **Screen Transition:** Automatic navigation to **Proposed Calculation Breakdown Tab (`#shap`)**.
 * **Presenter Script:**
-  > "Notice the Financial Comparison screen. On the left is an illustrative comparator benchmark; on the right is the proposed cash-flow rules engine.  
-  > Notice the prominent disclosure banner: the comparator is an author-created illustrative tool, not SHA's proprietary regression.  
-  > Notice that Mama Wanjiku's contribution is assessed under **Regulation 18(1) & (2)** at 2.75% of declared net household income. The prototype deducts her operating expenses as a **candidate research methodology** — expense categories and allowance rules require validation against SHA's official means-testing instrument and are not an established entitlement under Regulation 18. The declared-income approach also protects her from being penalized for handling group savings."
+  > "Notice the Calculation Breakdown screen. 
+  > Wanjiru's annual earned income base begins at KSh 360,000 (net livelihood earnings of KSh 30,000/mo after deducting KSh 15,000/mo allowable operating costs from KSh 45,000/mo gross turnover).
+  > Applying the Tier 2 Cost of Living allowance of KSh 120,000 leaves KSh 240,000. For her 5-member household, the 32% dependency allowance (4 dependents × 8%) deducts KSh 76,800, arriving at an evaluated Adjusted Gross Income (AGI) of KSh 163,200.
+  > Under **Regulation 18(1) & (2)**, 2.75% of this evaluated income produces an annual contribution of KSh 4,488, which evaluates to **KSh 374 per month**.
+  > This clearly demonstrates how the 2.75% means-tested rate operates in practice above the KSh 300 statutory minimum floor when net earnings and family size are accounted for fairly."
 
 ---
 

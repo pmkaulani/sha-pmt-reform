@@ -12,7 +12,7 @@
  *    government documentation is released, independently reviewed, and verified against reference tests.
  * 4. Transparent gaps: Every missing parameter, transformation, and bracket is explicitly cataloged.
  * 5. STATUTORY ACCURACY (Legal Notice No. 49 of 2024, Parliament of Kenya Repository):
- *    - Regulation 17(1)–(2) establishes salaried household contribution rates (2.75% of gross payroll) and KSh 300/mo minimum (under Reg 17(2)).
+ *    - Regulation 17 establishes salaried household contribution rates (2.75% of gross payroll payable monthly).
  *    - Regulation 18(1)–(2) establishes non-salaried household contribution rates (2.75% annual of income determined via means testing under Regulation 21(6), minimum KSh 300/mo under Reg 18(2)).
  *    - Regulation 18(3) governs annual contribution payment timing (payable 14 days before lapse of coverage).
  *    - Regulation 18(4)–(6) authorizes premium financing arrangements with approved financial institutions.

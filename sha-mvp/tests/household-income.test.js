@@ -454,3 +454,22 @@ test("33. An empty unmarked array is rejected as invalid, while an explicit zero
   assert.equal(reproduced.monthlyEarnedNetKsh, 0);
   assert.equal(reproduced.annualisedEarnedNetKsh, 0);
 });
+
+test("34. High operating cost ratio (>=90%) triggers advisory HIGH_COST_RATIO review flag", () => {
+  const result = calculateHouseholdIncome([
+    source({
+      id: "trader",
+      sourceType: "SELF_EMPLOYMENT",
+      amountReceivedKsh: 100000,
+      directCostsKsh: 95000,
+      monthsObserved: 12
+    })
+  ]);
+
+  assert.equal(result.isValid, true);
+  assert.equal(result.monthlyEarnedNetKsh, Math.round(5000 / 12));
+  const highCostFlag = result.reviewFlags.find(f => f.code === "HIGH_COST_RATIO");
+  assert.ok(highCostFlag, "Must raise HIGH_COST_RATIO flag when costs >= 90% of receipts");
+  assert.match(highCostFlag.message, /95%/);
+  assert.match(highCostFlag.message, /Advisory review recommended/i);
+});

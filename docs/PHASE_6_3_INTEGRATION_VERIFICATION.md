@@ -19,7 +19,7 @@ Phase 6.3 represents the **final end-to-end integration verification and demonst
 3. **Application Navigation & Screen Audit:** Successfully launched the Vite development server (`http://localhost:5173/app.html`) and systematically exercised all 15 functional tabs/screens with the headless browser subagent, checking desktop (1280x800) and mobile (390x844) viewport layouts.
 4. **Assessment Journey Safeguards:**
    - **Scenario A (Informal Microbusiness):** Completed full assessment through Stage 1 (Household), Stage 2 (Earned Income), Stage 3 (Other Money), and Stage 4 (Review), navigating to the Financial Comparison tab without error.
-   - **Scenario B (Explicit Zero Earned Income):** Verified that selecting "Our household currently has no earned income" produces a clean, non-crashing `CALCULATED_EXPLICIT_ZERO_EARNED` status, an indicative pre-adjustment base of KSh 0, and applies the statutory Regulation 18(2) administrative floor of KSh 300/month (with salaried household minimums governed under Regulation 17(2)).
+   - **Scenario B (Explicit Zero Earned Income):** Verified that selecting "Our household currently has no earned income" produces a clean, non-crashing `CALCULATED_EXPLICIT_ZERO_EARNED` status, an indicative pre-adjustment base of KSh 0, and applies the statutory Regulation 18(2) administrative floor of KSh 300/month (with salaried household contributions governed separately under Regulation 17).
    - **Scenario C (Unearned Financial Flows / Transfers):** Confirmed that declaring cash assistance, remittances, or soft loans isolates them into non-earned policy review buckets and displays the visible `PROVISIONAL_PENDING_POLICY` alert banner in Financial Comparison.
    - **Scenario D (Short Observation Windows 3–11 Months):** Confirmed that observation periods shorter than 12 months trigger the visible `PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION` alert banner in Financial Comparison and Contribution Statement, preventing any unqualified contribution result.
    - **Scenario E (Operating Cost Itemisation & Reimbursement Reconciliation):** Verified deductible direct operating expense categories, expense-to-reimbursement reconciliation notices, and preservation of reported net earnings.
@@ -237,14 +237,14 @@ A comprehensive statutory audit reconciled all legal references with the gazette
 
 | Statutory Subject | Gazetted Provision (LN 49/2024) | Statutory Content & Audit Status |
 |-------------------|---------------------------------|----------------------------------|
-| *Salaried Employment* | **Regulation 17(1)–(2)** | Salaried household contribution (2.75% of gross salary/wage) and KSh 300 monthly minimum (under Reg 17(2)). |
+| *Salaried Employment* | **Regulation 17** | Salaried household contribution (2.75% of gross salary/wage payable monthly). |
 | *Non-Salaried Contribution Rate* | **Regulation 18(1)–(2)** | Non-salaried household contribution (2.75% via means testing) and KSh 300 monthly minimum (under Reg 18(2)). |
 | *Annual Payment Timing* | **Regulation 18(3)** | Timing of annual contributions prior to lapse (payable 14 days before lapse). |
 | *Premium Financing* | **Regulation 18(4)–(6)** | Statutory provisions authorizing approved commercial bank or SACCO premium financing arrangements. |
 | *Financial Assistance (Indigents)* | **Regulation 19** | Households in need of financial assistance. Application of the KSh 300 floor under Reg 18(2) does NOT constitute an automatic indigent determination. |
 | *Persons in Lawful Custody* | **Regulation 20** | Contributions for persons under lawful custody (state responsibility). |
 | *Means-Testing Governance & Data* | **Regulation 21(1)–(5)** | Means-testing data collection, instrument development, socioeconomic data domains (housing, basic services, household composition), income estimation, and reviews. |
-| *Means Testing Formula* | **Regulation 21(6)** | Prescribes that means testing shall be conducted using the formula set out in the Fifth Schedule. |
+| *Means Testing Formula* | **Regulation 21(6)** | Prescribes: *"The Authority shall conduct means testing using the formula set out in the Fifth Schedule to these Regulations."* |
 | *Fifth Schedule ('Means Testing')* | **Fifth Schedule (p. 798)** | Specifies econometric formula: $\log(y)^u = a^u + b^uX_h^u + c^uZ_{hi}^u + \varepsilon_h^u$, estimating log per-capita income across urban and rural strata ($u$). *(Note: The schedule itself does not enumerate 43 specific variables. Investigative reporting by Lighthouse Reports in May 2026 notes that SHA disclosed in a Nov 2025 ATI response that its operational model uses 43 variables from 2021 KCHS predicting log per-capita consumption; numerical coefficients remain undisclosed).* |
 | *Zones* | **Regulation 62** | Titled **"Zones"**, under claims settlement; designates regional geographic county groupings for health facility reimbursement tariffs (completely unrelated to the Fifth Schedule or Means Testing). |
 | *Revocation of LN 147/2024* | **Legal Notice 55 of 2025** | Clause 9 expressly revokes Legal Notice 147 of 2024 (does not revoke principal LN 49 of 2024). |

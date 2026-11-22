@@ -33,7 +33,7 @@
 
 ### The Statutory Framework: Section 27 and Regulations 17 and 21:
 Under the **Social Health Insurance Act, 2023** and the **Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024, published in Kenya Gazette Supplement No. 60, Legislative Supplement No. 28, on 8 March 2024, held in the Parliament of Kenya Institutional Repository, pp. 746–749 & 798)**:
-* **Regulation 17(1)–(2) (Salaried households):** Fixed at 2.75% of gross salary or wage payable monthly under 17(1); Regulation 17(2) prescribes the statutory minimum contribution floor of KSh 300 per month for salaried employees.
+* **Regulation 17 (Salaried households):** Fixed at 2.75% of gross salary or wage payable monthly by the ninth day of each month.
 * **Regulation 18(1)–(2) (Non-salaried households):** Annual contribution of 2.75% of household income determined through means testing under Regulation 21; Regulation 18(2) prescribes the statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually) for non-salaried households.
 * **Regulation 18(3):** Governs annual contribution payment timing (contributions payable 14 days before the lapse of annual coverage).
 * **Regulation 18(4)–(6):** Governs premium financing arrangements: 18(4) enables approved commercial bank/SACCO premium financing arrangements; 18(5) financing proceeds remitted directly to the Authority; 18(6) Authority informs members about available financing products.
@@ -50,7 +50,7 @@ Under the **Social Health Insurance Act, 2023** and the **Social Health Insuranc
 * **Statutory Status:** The deployed SHA Means-Testing Instrument operational parameters remain pending official verification and disclosure by SHA. A primary research question is how the operational per-capita consumption prediction relates to the Fifth Schedule's per-capita income estimation.
 
 > **Statutory Precision Invariants:**  
-> 1. Regulation 17(2) applies to the salaried minimum.  
+> 1. Regulation 17 governs salaried employment (2.75% monthly payroll deduction).  
 > 2. Regulation 18(2) applies to the non-salaried minimum (never attribute non-salaried minimum to Regulation 17).  
 > 3. The Fifth Schedule is titled "Means Testing", not "Zones"; Regulation 62 is "Zones" under Part VIII.  
 > 4. Do not use the pre-gazettement Ministry draft numbering (which had blank LN and numbered provisions 16, 17, 18, 19) in statutory crosswalks.

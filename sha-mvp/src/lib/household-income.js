@@ -627,6 +627,13 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
           sourceId: source.id,
           message: `${rule.label} has reported operating costs exceeding receipts (KSh ${reportedNet.toLocaleString()}). Manual review required.`,
         });
+      } else if (rule.bucket === "EARNED" && received > 0 && costs > 0 && (costs / received) >= 0.90) {
+        const costRatio = costs / received;
+        reviewFlags.push({
+          code: "HIGH_COST_RATIO",
+          sourceId: source.id,
+          message: `${rule.label} reports operating costs of ${Math.round(costRatio * 100)}% of gross receipts (KSh ${costs.toLocaleString()} / KSh ${received.toLocaleString()}). Advisory review recommended.`,
+        });
       }
     } else {
       periodStatus = "INACTIVE_RECORD";
