@@ -6,7 +6,7 @@
  *
  * Statutory and Research Context:
  * Aligned with the Kenya Data Protection Act, 2019 (Sections 30 and 53) research provisions,
- * and the Social Health Insurance (General) Regulations, 2024 (Regulations 17 and 21).
+ * and the Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule 'Means Testing').
  *
  * Boundary Note:
  * This document states what is technically required to perform an independent empirical evaluation.
@@ -25,7 +25,7 @@ export const SHA_REQUEST_ITEMS = [
     itemNumber: 2,
     title: "Complete Variable Dictionary & Operational Survey Codebook",
     category: "DATA_DICTIONARY",
-    description: "The full operational codebook for the 43 proxy variables identified in external disclosures and deployed under Regulation 21, including exact question wording, category codes, skip logic, and interviewer instructions.",
+    description: "The full operational codebook for the proxy variables deployed under Regulation 21(6) and the Fifth Schedule ('Means Testing'), including exact question wording, category codes, skip logic, and interviewer instructions.",
     rationale: "Eliminates ambiguity in variable definitions, preventing false classification when comparing household inputs."
   },
   {
@@ -60,7 +60,7 @@ export const SHA_REQUEST_ITEMS = [
     itemNumber: 7,
     title: "Score-to-Contribution Tariff Band Cutoffs & Subsidy Rules",
     category: "TARIFF_MAPPING",
-    description: "The numerical score cutoffs determining which households qualify for full premium subsidies (indigents) versus progressive contribution brackets under Regulation 17(1) and Regulation 21.",
+    description: "The numerical score cutoffs determining which households qualify for financial assistance under Regulation 19 versus progressive contribution brackets under Regulation 18(1) and Regulation 21(6).",
     rationale: "Allows evaluation of whether the means-testing instrument produces progressive and affordable premium assignments."
   },
   {
@@ -112,10 +112,10 @@ export function buildShaRequestPackJson() {
     statutoryBasis: [
       "Kenya Data Protection Act, 2019 (Sections 25, 30(1)(b)(viii), 30(1)(e), 35, 53)",
       "Data Protection (General) Regulations, 2021 (Regulation 22)",
-      "Social Health Insurance (General) Regulations, 2024 (Regulations 17 and 21; Note: Fifth Schedule is titled 'Zones' under Regulation 62(3))",
+      "Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule 'Means Testing')",
       "ODPC Guidance Notes on Processing for Research Purposes (2025)"
     ],
-    researchObjective: "Facilitate an independent, reproducible empirical comparison between the existing proxy means testing instrument (Regulation 21) and candidate cash-flow / liquidity assessment models (Adjusted Gross Income frameworks).",
+    researchObjective: "Facilitate an independent, reproducible empirical comparison between the existing proxy means testing instrument (Regulation 21(6) / Fifth Schedule) and candidate cash-flow / liquidity assessment models (Adjusted Gross Income frameworks).",
     disclaimer: "This schedule details technical information necessary to reconstruct an authoritative baseline and conduct independent empirical validation. It does not imply that SHA has agreed to supply any listed items.",
     itemsCount: SHA_REQUEST_ITEMS.length,
     items: SHA_REQUEST_ITEMS
@@ -136,7 +136,7 @@ export function generateShaRequestPackMarkdown() {
 ---
 
 ### 1. Executive Summary & Statutory Framework
-This technical inquiry schedule outlines the specific econometric parameters, operational codebooks, and verification data required to conduct an independent, evidence-based assessment of the Social Health Authority's (SHA) Means Testing Instrument (MTI) established under **Regulation 21 of the Social Health Insurance (General) Regulations, 2024**.
+This technical inquiry schedule outlines the specific econometric parameters, operational codebooks, and verification data required to conduct an independent, evidence-based assessment of the Social Health Authority's (SHA) Means Testing Instrument (MTI) established under **Regulation 21(6) and the Fifth Schedule of the Social Health Insurance Regulations, 2024**.
 
 All inquiries are formulated in accordance with:
 - **Kenya Data Protection Act, 2019** (Sections 25, 30(1)(b)(viii), 30(1)(e), 35, and 53 regarding research processing, automated decision safeguards, and lawful disclosure);

@@ -1564,15 +1564,20 @@ function ComparisonTab({results, adminParams}) {
   const diff = cur.monthly - nxt.monthly;
   const comparatorHigher = diff > 0;
   const chartData = [
-    {name:"Illustrative Baseline",v:cur.monthly,fill:S.terra},
+    {name:"Author-Created Comparator",v:cur.monthly,fill:S.terra},
     {name:"Proposed AGI Rules Engine",v:nxt.monthly,fill:S.sage},
   ];
   return (
     <div style={{display:"grid",gap:24}}>
+      {/* Comparator Disclosure Banner */}
+      <div style={{background:"#F8FAFC",border:"1px solid #CBD5E1",borderRadius:8,padding:"12px 16px",fontSize:12,color:"#475569",lineHeight:1.5}}>
+        <strong>Methodological Disclosure:</strong> The comparator shown below is an <em>author-created illustrative score</em> with invented demonstration weights (e.g. gross M-Pesa volume factor, flat dwelling proxies). It is <strong>not</strong> SHA's production means-testing instrument under Regulation 21(6) and the Fifth Schedule, and is not a reconstruction of SHA's 43-variable regression. A difference between this comparator and the proposed model illustrates methodology divergence, not proof of actual SHA overcharging.
+      </div>
+
       {/* Big numbers */}
       <div className="grid-2">
         {[
-          {label:"Illustrative baseline · PMT-style",monthly:cur.monthly,income:cur.annualIncome,tier:cur.tier,indigent:cur.isIndigent,color:S.terra,bdColor:S.terraBd,bgColor:S.terraD,note:null},
+          {label:"Author-created illustrative comparator — not SHA's instrument",monthly:cur.monthly,income:cur.annualIncome,tier:cur.tier,indigent:cur.isIndigent,color:S.terra,bdColor:S.terraBd,bgColor:S.terraD,note:null},
           {label:"Proposed · AGI rules engine",monthly:nxt.monthly,income:nxt.annualIncome,tier:nxt.tier,indigent:nxt.isIndigent,color:S.sage,bdColor:S.sageBd,bgColor:S.sageD,note:null},
         ].map(box=>(
           <div key={box.label} style={{background:box.bgColor,border:`1px solid ${box.bdColor}`,borderRadius:12,padding:24,boxShadow:"0 1px 3px rgba(0,0,0,0.02)"}}>
@@ -1628,14 +1633,14 @@ function ComparisonTab({results, adminParams}) {
           <div>
             <div style={{fontSize:13,fontWeight:700,textTransform:"uppercase",color:comparatorHigher?S.terra:S.sage,marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
               {comparatorHigher?<AlertTriangle size={16}/>:<CheckCircle2 size={16}/>}
-              {comparatorHigher?"Illustrative comparator is higher.":"Proposed calculation is higher."}
+              {comparatorHigher?"Author-created comparator is higher.":"Proposed calculation is higher."}
             </div>
             <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>
               {diff === 0 
                 ? "Difference between the two prototype calculations: both produce the same indicative monthly amount. Agreement between simulations does not establish that either amount is correct."
                 : comparatorHigher
-                  ? `Difference between the two prototype calculations: the illustrative PMT-style baseline is KSh ${diff.toLocaleString()} higher per month than the proposed rules-engine result. This comparison does not establish that an actual SHA assessment is wrong.`
-                  : `Difference between the two prototype calculations: the proposed rules-engine result is KSh ${Math.abs(diff).toLocaleString()} higher per month than the illustrative baseline. This is a model comparison, not a finding about an actual household assessment.`}
+                  ? `Difference between the two prototype calculations: the author-created illustrative comparator is KSh ${diff.toLocaleString()} higher per month than the proposed rules-engine result. This comparison illustrates methodological disagreement on demonstration inputs; it does not establish that an actual SHA assessment is wrong.`
+                  : `Difference between the two prototype calculations: the proposed rules-engine result is KSh ${Math.abs(diff).toLocaleString()} higher per month than the author-created comparator. This is a model comparison, not a finding about an actual household assessment.`}
             </div>
           </div>
           <div className="diff-callout-amount" style={{color:comparatorHigher?S.terra:S.sage}}>
@@ -1652,7 +1657,7 @@ function ComparisonTab({results, adminParams}) {
             <XAxis dataKey="name" tick={{fill:S.text,fontSize:12,fontWeight:500}} axisLine={false} tickLine={false}/>
             <YAxis tick={{fill:S.muted,fontSize:12}} axisLine={false} tickLine={false} tickFormatter={v=>`${v.toLocaleString()}`}/>
             <Tooltip cursor={{fill:S.faint}} formatter={(v)=>[`KSh ${v.toLocaleString()}`,"Monthly"]} contentStyle={{background:S.surface,border:`1px solid ${S.border}`,borderRadius:8,color:S.text,fontSize:13,fontWeight:500,boxShadow:"0 4px 6px rgba(0,0,0,0.05)"}}/>
-            <ReferenceLine y={300} stroke={S.amber} strokeDasharray="4 3" label={{value:"KSh 300 Monthly Floor (Reg. 17(2) Reference)",fill:S.amber,fontSize:11,position:"insideTopRight",fontWeight:600}}/>
+            <ReferenceLine y={300} stroke={S.amber} strokeDasharray="4 3" label={{value:"KSh 300 Monthly Floor (Reg. 18(2) Minimum Rule)",fill:S.amber,fontSize:11,position:"insideTopRight",fontWeight:600}}/>
             <Bar dataKey="v" radius={[6,6,0,0]} maxBarSize={80}>{chartData.map((e,i)=><Cell key={i} fill={e.fill}/>)}</Bar>
           </BarChart>
         </ResponsiveContainer>

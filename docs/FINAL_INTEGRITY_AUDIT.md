@@ -75,12 +75,19 @@ All legal and data governance documents have been audited and corrected:
 * **Section 35 & Regulation 22:** Clarified that under Section 35 and Regulation 22 of the Data Protection (General) Regulations 2021, automated decision-making requires **substantive, meaningful human intervention**, and that a perfunctory review checkbox does not satisfy statutory requirements.
 * **Section 53:** Correctly cited as **Processing for Research, Statistical, and Historical Purposes** alongside the **ODPC 2025 Guidance Notes on Processing for Research Purposes**.
 
-### Social Health Insurance Statutory & Regulatory Corrections:
-* **Regulation 17(1) & 17(2):** Regulation 17(1) establishes the annual contribution rate of 2.75% of household income as determined in accordance with Regulation 21 for households whose income is not derived from salaried employment. Regulation 17(2) establishes the statutory minimum contribution of KSh 300 per month (KSh 3,600 annually).
-* **Regulation 21(1)–(5):** Regulation 21 governs means testing, with subsections (1) through (5) covering instrument development, proxy indicators, and income estimation. Note: Regulation 21 contains no subsection (6).
-* **The Fifth Schedule is "Zones" (Regulation 62(3)):** The Fifth Schedule to the Regulations is titled **"Zones"** under Regulation 62(3), designating geographic groupings of counties for health facility tariffs. It does **NOT** contain the means-testing formula, regression weights, or proxy variables.
-* **Revocation of LN 147/2024 by LN 55/2025:** Legal Notice 55 of 2025 revoked Legal Notice 147 of 2024. Neither instrument contains a published regression table. The 43-variable PMT regression model is an administrative/econometric instrument developed for SHA (disclosed via journalistic investigations), not a published statutory schedule.
-* **Statutory Reconciliation:** The documentation explicitly presents whether the income ledger can be introduced administratively under Regulation 21(2) & (4) or requires an amendment to the Regulations as an **unresolved legal question requiring formal advice from the Attorney General and SHA Legal Counsel**.
+### Social Health Insurance Statutory & Regulatory Alignment:
+* **Legal Notice No. 49 of 2024 (Social Health Insurance Regulations, 2024):**
+  * **Regulation 17:** Governs contributions for persons in salaried employment.
+  * **Regulation 18(1):** Establishes the annual contribution rate of 2.75% of household income determined through the means-testing instrument for households whose income is not derived from salaried employment.
+  * **Regulation 18(2):** Establishes the statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually).
+  * **Regulation 18(3):** Governs payment timing before the annual contribution lapses.
+  * **Regulation 19:** Governs households in need of financial assistance (indigent households). Administrative application of the KSh 300 floor under Reg 18(2) does NOT constitute a statutory indigent determination.
+  * **Regulation 21(2):** Mandates that the means-testing instrument be developed by the Cabinet Secretary for Health in collaboration with the Cabinet Secretary responsible for social protection.
+  * **Regulation 21(6):** Explicitly prescribes that means testing is conducted using the formula set out in the Fifth Schedule.
+  * **Fifth Schedule ('Means Testing'):** The Fifth Schedule to the gazetted Regulations is titled **"Means Testing"** and contains stated urban and rural regression equations. *(Note: While the functional equation is gazetted, SHA's full operational regression weights, variable codebooks, categorical transformations, and cutoff parameters remain undisclosed).*
+  * **Regulation 62 ('Zones'):** Regulation 62 is titled **"Zones"**, designating regional geographic county groupings for health facility tariffs.
+* **Revocation of LN 147/2024 by LN 55/2025:** Legal Notice 55 of 2025 expressly revokes Legal Notice 147 of 2024 in Clause 9.
+* **Statutory Reconciliation:** The documentation explicitly presents whether the structured income ledger can be introduced administratively under Regulation 21(2) or requires an amendment to the Regulations as an **unresolved legal question requiring formal advice from the Attorney General and SHA Legal Counsel**.
 
 ---
 

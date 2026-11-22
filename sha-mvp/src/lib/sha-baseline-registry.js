@@ -11,9 +11,10 @@
  * 3. Status strictly enforced: Remains NOT_CONFIGURED or PARTIALLY_DOCUMENTED until official
  *    government documentation is released, independently reviewed, and verified against reference tests.
  * 4. Transparent gaps: Every missing parameter, transformation, and bracket is explicitly cataloged.
- * 5. STATUTORY ACCURACY: Regulation 17(1) & (2) establish non-salaried household contribution rates (2.75% annual
- *    of income determined via Regulation 21, minimum KSh 300/mo). The Fifth Schedule is titled 'Zones' under
- *    Regulation 62(3) and does NOT contain the means-testing formula.
+ * 5. STATUTORY ACCURACY: Regulation 18(1) & (2) establish non-salaried household contribution rates (2.75% annual
+ *    of income determined via means testing under Regulation 21(6), minimum KSh 300/mo). The Fifth Schedule is titled
+ *    'Means Testing' and contains a stated means-testing equation. Regulation 19 governs financial assistance (indigents).
+ *    Regulation 62 governs Zones. Legal Notice 55 of 2025 revokes Legal Notice 147 of 2024 (clause 9).
  */
 
 export const SHA_BASELINE_STATUSES = Object.freeze({
@@ -90,7 +91,7 @@ export const SHA_REG21_PROXY_VARIABLES = Object.freeze([
 export const OFFICIAL_SHA_BASELINE_SPECIFICATION = Object.freeze({
   specId: "SHA-BASELINE-REG21-PROVISIONAL",
   officialModelName: "Official SHA Means-Testing Instrument — Implementation Details Pending Verification",
-  legalBasis: "Social Health Insurance Act, 2023 (Section 27); Social Health Insurance (General) Regulations, 2024 (Regulations 17 and 21)",
+  legalBasis: "Social Health Insurance Act, 2023 (Section 27); Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule)",
   status: SHA_BASELINE_STATUSES.NOT_CONFIGURED,
   effectivePeriod: {
     startDate: "2024-10-01",
@@ -145,12 +146,12 @@ export const OFFICIAL_SHA_BASELINE_SPECIFICATION = Object.freeze({
     maximumContributionMonthly: null, // Removed under SHIF regulations
     scoreBands: null,
     subsidyThresholdPovertyScore: null,
-    notes: "Regulation 17(1) establishes the annual contribution for non-salaried households at 2.75% of household income determined via Regulation 21, with Regulation 17(2) providing a KSh 300/mo minimum. The exact score-to-income and cutoff algorithms deployed by SHA remain undisclosed."
+    notes: "Regulation 18(1) establishes the annual contribution for non-salaried households at 2.75% of household income determined via Regulation 21(6) Fifth Schedule, with Regulation 18(2) providing a KSh 300/mo minimum. Regulation 19 governs financial assistance. The complete operational coefficients, encoding rules, and cutoff algorithms deployed by SHA remain undisclosed."
   },
   officialSourceReferences: [
     "Social Health Insurance Act, 2023 (Section 27)",
-    "Social Health Insurance (General) Regulations, 2024 (Regulations 17 and 21)",
-    "Note: The Fifth Schedule of the Regulations is titled 'Zones' under Regulation 62(3) and does NOT contain the PMT formula.",
+    "Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule 'Means Testing')",
+    "Note: While the Fifth Schedule sets out an urban/rural means-testing equation, complete operational parameters, coefficients, and implementation rules remain undisclosed by SHA.",
     "Investigative disclosures: Africa Uncensored / Lighthouse Reports / The Guardian (May 2026)"
   ],
   independentTechnicalReviewer: null,

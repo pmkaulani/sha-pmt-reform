@@ -64,7 +64,7 @@ The repository now preserves two distinct proposed calculation models. They are 
 
 The existing financial comparison and member workflow continue to use the declared-income variant as their current primary demonstration output. Adding the recovered model does not silently switch contribution statements, member challenge drafts or officer-review records to a different formula. A later integration should explicitly decide how model versions are referenced in each immutable assessment snapshot.
 
-**Governance boundary:** both engines are research prototypes. Neither is SHA's production Regulation 21 means-testing instrument, neither can issue an official assessment, and differences between their outputs are not evidence that either one is empirically correct. The historical engine is preserved for traceability; future changes should create a new version rather than overwrite it.
+**Governance boundary:** both engines are research prototypes. Neither is SHA's production Regulation 21(6) / Fifth Schedule means-testing instrument, neither can issue an official assessment, and differences between their outputs are not evidence that either one is empirically correct. The historical engine is preserved for traceability; future changes should create a new version rather than overwrite it.
 
 ### Revenue Modeling & Informal Sector Participation
 
@@ -267,7 +267,7 @@ The baseline comparator in `src/lib/AlgorithmSimulation.js` is a simplified, ill
 
 ### 6. Official SHA Baseline Parameters and KNBS Microdata Are Required
 Comparative empirical evaluation of means-testing reform is strictly **BLOCKED** until two external dependencies are formally provided:
-1. **Official SHA Model Disclosure:** Full regression coefficients, dummy encodings, regional intercepts, and statutory lookup tables under Section 27 and Regulations 17 and 21. *(Note: The Fifth Schedule of the Regulations is titled 'Zones' under Regulation 62(3) and does NOT contain the PMT regression formula; official operational parameters remain undisclosed by SHA).*
+1. **Official SHA Model Disclosure:** Full regression coefficients, dummy encodings, regional intercepts, and statutory lookup tables under Section 27 and Regulations 18, 19, and 21(6). *(Note: Under the Social Health Insurance Regulations, 2024, Regulation 21(6) designates the Fifth Schedule, titled 'Means Testing', as the statutory formula; however, the complete operational model, variable encodings, and implementation parameters remain undisclosed by SHA; Regulation 62 is titled 'Zones').*
 2. **Approved Survey Microdata:** Lawfully accessible, anonymised national household budget microdata (e.g. KNBS KIHBS) with verified sampling weights, cluster identifiers, and strata.
 
 ### 7. What Can and Cannot Be Concluded from Synthetic Demonstrations

@@ -112,13 +112,13 @@ test("Phase 6.2 — Statutory Baseline: Official SHA Means-Testing Instrument re
     OFFICIAL_SHA_BASELINE_SPECIFICATION.legalBasis.includes("Section 27")
   );
   assert.ok(
-    OFFICIAL_SHA_BASELINE_SPECIFICATION.legalBasis.includes("Regulations 17 and 21")
+    OFFICIAL_SHA_BASELINE_SPECIFICATION.legalBasis.includes("Regulations 18, 19, and 21(6)")
   );
 
-  // Must note that the Fifth Schedule is titled "Zones" under Regulation 62(3)
+  // Must note that the Fifth Schedule is titled "Means Testing" and contains a stated equation
   assert.ok(
     OFFICIAL_SHA_BASELINE_SPECIFICATION.officialSourceReferences.some(ref =>
-      ref.includes("Fifth Schedule of the Regulations is titled 'Zones' under Regulation 62(3)")
+      ref.includes("Fifth Schedule 'Means Testing'")
     )
   );
 
@@ -137,10 +137,9 @@ test("Phase 6.2 — Statutory Baseline: Evaluation Model Registry reflects verif
     "Official SHA Means-Testing Instrument — Implementation Details Pending Verification"
   );
   assert.ok(shaModel.sourceProvenance.includes("Section 27"));
-  assert.ok(shaModel.sourceProvenance.includes("Regulations 17 and 21"));
-  assert.ok(!shaModel.sourceProvenance.includes("Regulation 18"));
-  assert.ok(!shaModel.sourceProvenance.includes("Regulation 21(6)"));
-  assert.ok(shaModel.knownLimitations.includes("Fifth Schedule of the Regulations is titled 'Zones' under Regulation 62(3)"));
+  assert.ok(shaModel.sourceProvenance.includes("Regulations 18 and 21(6)"));
+  assert.ok(shaModel.sourceProvenance.includes("Fifth Schedule"));
+  assert.ok(shaModel.knownLimitations.includes("Fifth Schedule ('Means Testing')"));
 });
 
 test("Phase 6.2 — Model Registry: AGI models are de-listed from claiming independent poverty classification", () => {
@@ -158,10 +157,10 @@ test("Phase 6.2 — Model Registry: AGI models are de-listed from claiming indep
     assert.equal(povertyEligibility.status, "NOT_EVALUABLE_INCOMPATIBLE");
   }
 
-  // Original AGI v2.1 specifically cites Regulation 17(2) statutory minimum contribution floor
+  // Original AGI v2.1 specifically cites Regulation 18(2) statutory minimum contribution floor
   assert.ok(
-    agiOriginal.evaluationAdapters["INDEPENDENT_POVERTY_STATUS"].reason.includes("Regulation 17(2)"),
-    "Must cite Regulation 17(2) administrative minimum contribution"
+    agiOriginal.evaluationAdapters["INDEPENDENT_POVERTY_STATUS"].reason.includes("Regulation 18(2)"),
+    "Must cite Regulation 18(2) administrative minimum contribution"
   );
 });
 
@@ -340,8 +339,8 @@ test("Phase 6.2 — Household Income: createZeroEarnedIncomeAssessment produces 
   assert.equal(assessment.annualisedEarnedNetKsh, 0);
   assert.equal(assessment.calculationStatus, "CALCULATED_EXPLICIT_ZERO_EARNED");
   assert.equal(assessment.reviewFlags[0].code, "EXPLICIT_ZERO_EARNED_INCOME");
-  assert.ok(assessment.disclaimer.includes("Regulation 17(2)"));
-  assert.ok(assessment.disclaimer.includes("Regulation 17(3)"));
+  assert.ok(assessment.disclaimer.includes("Regulation 18(2)"));
+  assert.ok(assessment.disclaimer.includes("Regulation 19"));
 });
 
 test("Phase 6.2 — Assessment Flow: Declaration of unearned transfers triggers requiresPolicyDecision", () => {
@@ -565,7 +564,6 @@ test("Phase 6.2 — Legal & Governance: Data Access Register & Request Pack use 
   const requestPack = buildShaRequestPackJson();
   assert.ok(requestPack.statutoryBasis.some(b => b.includes("Sections 25, 30(1)(b)(viii), 30(1)(e), 35, 53")));
   assert.ok(requestPack.statutoryBasis.some(b => b.includes("Regulation 22")));
-  assert.ok(requestPack.statutoryBasis.some(b => b.includes("Regulations 17 and 21")));
-  assert.ok(!JSON.stringify(requestPack).includes("Regulation 21(6)"));
-  assert.ok(!JSON.stringify(requestPack).includes("Regulation 18"));
+  assert.ok(requestPack.statutoryBasis.some(b => b.includes("Regulations 18, 19, and 21(6)")));
+  assert.ok(requestPack.statutoryBasis.some(b => b.includes("Fifth Schedule 'Means Testing'")));
 });

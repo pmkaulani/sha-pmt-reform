@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SHA PMT Reform — Fixing Kenya's Health Insurance Algorithm</title>
-  <meta name="description" content="Kenya's SHA health insurance algorithm overcharges the poorest 80% of households. This is the working replacement." />
-  <meta property="og:title" content="SHA Means-Testing Reform — Working Prototype" />
-  <meta property="og:description" content="Kenya's health insurance algorithm uses roof type to predict income. We built the fix." />
+  <title>Household Income Assessment Research Prototype</title>
+  <meta name="description" content="An independent research prototype exploring how irregular household income can be recorded, explained and reviewed. All demonstrations use synthetic data. This is not SHA's official means-testing instrument, an approved replacement, or a service for real member assessments." />
+  <meta property="og:title" content="Household Income Assessment Research Prototype" />
+  <meta property="og:description" content="An independent research prototype exploring structured income recording and assessment review for non-salaried households." />
   <meta property="og:type" content="website" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="canonical" href="https://sha-pmt-reform.vercel.app/" />
@@ -83,11 +83,11 @@
       border-bottom: 1px solid var(--border);
     }
     .hero h1 {
-      font-size: clamp(2.2rem, 5vw, 3.8rem); font-weight: 900; line-height: 1.1;
-      color: var(--text-1); letter-spacing: -0.04em; max-width: 800px; margin-bottom: 24px;
+      font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 900; line-height: 1.15;
+      color: var(--text-1); letter-spacing: -0.03em; max-width: 840px; margin-bottom: 24px;
     }
     .hero-sub {
-      font-size: 1.15rem; color: var(--text-2); max-width: 640px;
+      font-size: 1.15rem; color: var(--text-2); max-width: 680px;
       margin-bottom: 40px; line-height: 1.6;
     }
     .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
@@ -103,18 +103,18 @@
     .btn svg { width: 18px; height: 18px; }
 
     /* ── Section Defaults ── */
-    section { padding: 100px 0; }
+    section { padding: 90px 0; }
     .section-label {
       font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.1em; color: var(--blue); margin-bottom: 16px;
     }
     .section-title {
-      font-size: clamp(1.8rem, 3.5vw, 2.4rem); font-weight: 800;
-      color: var(--text-1); line-height: 1.2; margin-bottom: 20px; letter-spacing: -0.03em;
+      font-size: clamp(1.8rem, 3.5vw, 2.3rem); font-weight: 800;
+      color: var(--text-1); line-height: 1.25; margin-bottom: 20px; letter-spacing: -0.02em;
     }
-    .section-desc { font-size: 1.05rem; color: var(--text-2); max-width: 640px; margin-bottom: 48px; line-height: 1.6; }
+    .section-desc { font-size: 1.05rem; color: var(--text-2); max-width: 680px; margin-bottom: 48px; line-height: 1.6; }
 
-    /* ── The Problem ── */
+    /* ── The Research Challenge ── */
     .problem-section { background: #fafafa; border-bottom: 1px solid var(--border); }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
     .card {
@@ -129,13 +129,13 @@
     .card h3 { font-size: 1.1rem; font-weight: 700; color: var(--text-1); margin-bottom: 12px; }
     .card p { font-size: 0.95rem; color: var(--text-2); line-height: 1.6; }
 
-    /* ── Impact Stats ── */
+    /* ── Research Topics ── */
     .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 40px; }
-    .stat-box { padding: 24px; border-left: 3px solid var(--red); background: #fff; border-radius: 0 8px 8px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .stat-val { font-size: 2rem; font-weight: 900; color: var(--text-1); margin-bottom: 8px; letter-spacing: -0.04em; }
-    .stat-label { font-size: 0.85rem; color: var(--text-2); font-weight: 500; }
+    .stat-box { padding: 24px; border-left: 3px solid var(--blue); background: #fff; border-radius: 0 8px 8px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .stat-val { font-size: 1.3rem; font-weight: 800; color: var(--text-1); margin-bottom: 8px; }
+    .stat-label { font-size: 0.85rem; color: var(--text-2); font-weight: 500; line-height: 1.5; }
 
-    /* ── The Fix ── */
+    /* ── The Fix / Approach ── */
     .fix-section { background: #ffffff; border-bottom: 1px solid var(--border); }
     .fix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 
@@ -149,89 +149,86 @@
     .comp-col { padding: 32px; }
     .comp-col:first-child { border-right: 1px solid var(--border); }
     .comp-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
-    .col-red .comp-title { color: var(--red); }
-    .col-green .comp-title { color: var(--green); }
+    .col-comparator .comp-title { color: #b45309; }
+    .col-agi .comp-title { color: var(--green); }
     .comp-line { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.9rem; }
     .comp-line-label { color: var(--text-2); }
     .comp-line-val { font-weight: 600; color: var(--text-1); }
     .comp-result { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
     .comp-result-label { font-weight: 600; color: var(--text-3); font-size: 0.9rem; }
-    .comp-result-val { font-size: 1.4rem; font-weight: 800; }
-    .col-red .comp-result-val { color: var(--red); }
-    .col-green .comp-result-val { color: var(--green); }
+    .comp-result-val { font-size: 1.3rem; font-weight: 800; }
+    .col-comparator .comp-result-val { color: #b45309; }
+    .col-agi .comp-result-val { color: var(--green); }
 
     /* ── The Ask ── */
-    .ask-section { background: #0f172a; color: #f8fafc; text-align: center; padding: 120px 0; }
+    .ask-section { background: #0f172a; color: #f8fafc; text-align: center; padding: 100px 0; }
     .ask-section .section-label { color: #94a3b8; }
     .ask-section .section-title { color: #ffffff; }
     .ask-section .section-desc { color: #cbd5e1; margin: 0 auto 40px; }
     .ask-box {
       background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-      padding: 40px; border-radius: var(--radius); max-width: 800px; margin: 0 auto 40px;
+      padding: 36px; border-radius: var(--radius); max-width: 800px; margin: 0 auto 36px;
       text-align: left;
     }
-    .ask-box p { font-size: 1.05rem; line-height: 1.7; margin-bottom: 20px; color: #e2e8f0; }
+    .ask-box p { font-size: 1.05rem; line-height: 1.7; margin-bottom: 18px; color: #e2e8f0; }
     .ask-box p:last-child { margin-bottom: 0; }
 
     footer { text-align: center; padding: 40px 24px; background: #ffffff; font-size: 0.85rem; color: var(--text-3); border-top: 1px solid var(--border); }
 
     @media (max-width: 768px) {
       .grid-2, .fix-grid, .comp-body { grid-template-columns: 1fr; }
-      .stat-row { grid-template-columns: 1fr 1fr; }
-      .comp-col:first-child { border-right: none; border-bottom: 1px solid var(--border); }
-    }
-    @media (max-width: 480px) {
       .stat-row { grid-template-columns: 1fr; }
+      .comp-col:first-child { border-right: none; border-bottom: 1px solid var(--border); }
     }
   </style>
 </head>
 <body>
 
 <nav>
-  <div class="nav-brand">SHA <span>Reform</span></div>
+  <div class="nav-brand">Household Assessment <span>Research Prototype</span></div>
   <div class="nav-links">
-    <a href="#problem">The Problem</a>
-    <a href="#solution">The Solution</a>
-    <a href="#impact">Impact</a>
-    <a href="#ask">The Ask</a>
+    <a href="#challenge">Research Challenge</a>
+    <a href="#methodology">Methodology</a>
+    <a href="#demonstration">Synthetic Walkthrough</a>
+    <a href="#governance">Governance & Next Steps</a>
   </div>
-  <a href="app.html" class="nav-cta">View Prototype</a>
+  <a href="app.html" class="nav-cta">Open Application</a>
 </nav>
 
 <section class="hero">
   <div class="container reveal">
-    <h1>Kenya's Health Insurance Algorithm is Overcharging the Poorest</h1>
+    <h1>A research prototype for structured household income recording and assessment review</h1>
     <p class="hero-sub">
-      The current SHA algorithm relies on a flawed logic: using housing materials to guess a citizen's income. This results in massive overcharges for the most vulnerable. We have built a data-driven replacement that fixes this.
+      An independent research prototype exploring how irregular household income can be recorded, explained and reviewed. All demonstrations use synthetic data. This is not SHA's official means-testing instrument, an approved replacement, or a service for real member assessments.
     </p>
     <div class="hero-actions">
       <a href="app.html" class="btn btn-primary">
-        Launch Interactive Prototype
+        Launch Research Prototype
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
       </a>
     </div>
   </div>
 </section>
 
-<section class="cta-section" style="background: var(--surface); padding: 60px 24px; border-bottom: 1px solid var(--border); text-align: center;">
+<section class="cta-section" style="background: var(--surface); padding: 48px 24px; border-bottom: 1px solid var(--border); text-align: center;">
   <div class="container reveal">
-    <h3 style="font-size: 2rem; font-weight: 700; color: var(--text-1); margin-bottom: 16px;">See it for yourself</h3>
-    <p style="font-size: 1.1rem; color: var(--text-2); max-width: 700px; margin: 0 auto 32px;">
-      Don't take our word for it. Pick one of the real household profiles below — or enter your own numbers — and compare what you'd pay under the current algorithm versus the proposed fix. Two minutes. <strong>Your data never leaves your browser.</strong>
+    <h3 style="font-size: 1.6rem; font-weight: 700; color: var(--text-1); margin-bottom: 12px;">Explore the Research Walkthrough</h3>
+    <p style="font-size: 1.05rem; color: var(--text-2); max-width: 720px; margin: 0 auto 24px;">
+      Examine synthetic household scenarios or enter demonstration values to observe how structured income classification, itemised operating expenses, and calculation traces operate. <strong>All calculation operates locally in your browser with synthetic data.</strong>
     </p>
-    <a href="app.html" class="btn btn-primary" style="display: inline-flex; font-size: 1.1rem; padding: 14px 28px;">
-      Try the Calculator →
+    <a href="app.html" class="btn btn-primary" style="display: inline-flex; font-size: 1rem; padding: 12px 24px;">
+      Explore Prototype Interface →
     </a>
   </div>
 </section>
 
-<section class="problem-section" id="problem">
+<section class="problem-section" id="challenge">
   <div class="container">
     <div class="reveal">
-      <div class="section-label">The Current System</div>
-      <h2 class="section-title">The flaw in Proxy Means Testing</h2>
+      <div class="section-label">Informal Economy Measurement Challenge</div>
+      <h2 class="section-title">The Challenge of Assessing Non-Salaried Households</h2>
       <p class="section-desc">
-        To assess the informal sector, SHA uses a Proxy Means Testing (PMT) algorithm. Because informal workers lack formal paystubs, the algorithm looks at their housing materials—like whether they have a tile roof, stone walls, or basic electricity—and uses that to estimate their wealth. It fails on the ground.
+        Under Regulation 18(1) & (2) of the Social Health Insurance Regulations, 2024, non-salaried households contribute 2.75% of income determined through means-testing, subject to a minimum of KSh 300 per month. Means-testing is conducted pursuant to Regulation 21(6) using the formula in the Fifth Schedule. In the informal sector, assessing irregular income presents distinct economic and methodological questions.
       </p>
     </div>
 
@@ -240,180 +237,117 @@
         <div class="card-icon">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
         </div>
-        <h3>Inherited Poverty</h3>
-        <p>A stone wall adds KSh 120,000 to a household's wealth score. An elderly pensioner living with zero income in an inherited stone house is incorrectly classified as wealthy and charged high premiums.</p>
-      </div>
-      <div class="card">
-        <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        </div>
-        <h3>The Arid Land Fallacy</h3>
-        <p>The system values land purely by acreage without considering location or arability. A citizen with 5 acres of dry, non-productive land in Turkana is scored as wealthier than someone owning 1 acre of prime real estate in Nairobi.</p>
+        <h3>Asset Illiquidity vs. Cash Flow</h3>
+        <p>A household may inhabit an inherited dwelling or small parcel of family land yet experience volatile, near-zero seasonal cash flow. Estimating annual income primarily from physical housing characteristics risks assigning contributions disconnected from monthly liquid resources.</p>
       </div>
       <div class="card">
         <div class="card-icon">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
         </div>
-        <h3>Misunderstanding Mobile Money</h3>
-        <p>The algorithm treats gross M-Pesa transaction volume as personal income. A community treasurer (Chama) handling KSh 80,000 a month in group funds is penalized as a high-income earner.</p>
-      </div>
-      <div class="card">
-        <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-        </div>
-        <h3>Ignoring Urban Cost of Living</h3>
-        <p>The algorithm looks at gross metrics but ignores the realities of urban survival. A KSh 20,000 income in Nairobi is largely consumed by high rent and transport, yet it is treated the exact same as KSh 20,000 in a rural village where costs are vastly lower.</p>
-      </div>
-      <div class="card">
-        <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        </div>
-        <h3>Punishing Basic Infrastructure</h3>
-        <p>Having access to electricity automatically adds KSh 80,000 to a wealth score. In modern Kenya, this punishes the vast majority of citizens for simply having basic infrastructure connected.</p>
+        <h3>Gross Turnover vs. Net Disposable Surplus</h3>
+        <p>Informal micro-retailers handle cash turnover that reflects wholesale restocking, transport, and commercial stall fees. Treating gross receipts as personal income without deducting direct operating costs overstates disposable household capacity.</p>
       </div>
       <div class="card">
         <div class="card-icon">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
         </div>
-        <h3>The Tools of Trade Fallacy</h3>
-        <p>A Bodaboda motorcycle is a rider's sole source of daily income and is often heavily financed by debt. The algorithm blindly treats it as a luxury vehicle, adding KSh 150,000 to their wealth score.</p>
-      </div>
-      <div class="card">
-        <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        </div>
-        <h3>The Subsistence Livestock Trap</h3>
-        <p>The system treats a few goats kept for subsistence milk or dire emergencies as liquid cash wealth. It assumes a poor rural family with zero cash flow can simply sell their safety net to pay monthly health premiums.</p>
+        <h3>Non-Earned and Fiduciary Flows</h3>
+        <p>Loans, family remittances, and custodial group funds (chamas) carry distinct economic meanings. Debt creates repayment obligations, and group savings belong to others. They should not be treated as regular earned income.</p>
       </div>
       <div class="card">
         <div class="card-icon">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         </div>
-        <h3>The Black Box Calculation</h3>
-        <p>The current system does not reveal how it arrives at your premium. Citizens receive a flat charge with zero mathematical explanation of how their assets or income proxies were tallied, preventing any appeals or corrections.</p>
-      </div>
-      <div class="card" style="background: #fef2f2; border-color: #fca5a5; grid-column: 1 / -1;">
-        <div class="card-icon" style="background: #fee2e2; color: #ef4444;">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-        </div>
-        <h3 style="color: #991b1b;">...And Dozens of Other Flaws</h3>
-        <p style="color: #7f1d1d;">These 8 examples are just the surface. Our comprehensive audit uncovered <strong>dozens of critical algorithmic failures</strong> driving the 80% overprediction rate and causing the system to haemorrhage KSh 11 Billion in fraud.</p>
+        <h3>Traceable Calculation Records</h3>
+        <p>Without an itemised calculation trace, citizens and caseworkers cannot inspect how an assessed contribution was derived, which deductions were applied, or what information should be corrected during an administrative review.</p>
       </div>
     </div>
 
     <div class="stat-row reveal">
       <div class="stat-box">
-        <div class="stat-val">80%</div>
-        <div class="stat-label">of Kenya's poorest households have their income drastically over-predicted due to flawed proxy assumptions.</div>
+        <div class="stat-val">Informal Livelihoods</div>
+        <div class="stat-label">Over 80% of Kenya's working population operates in non-salaried, informal, and agricultural activities with irregular cash flow.</div>
       </div>
       <div class="stat-box">
-        <div class="stat-val">56%</div>
-        <div class="stat-label">exclusion error rate. Over half of vulnerable households are locked out of subsidies simply for having basic electricity.</div>
+        <div class="stat-val">Statutory Rates</div>
+        <div class="stat-label">Regulation 18(1) sets 2.75% of income with a KSh 300/mo minimum under Regulation 18(2), while Regulation 19 governs financial assistance.</div>
       </div>
       <div class="stat-box">
-        <div class="stat-val">KSh 11B</div>
-        <div class="stat-label">lost to hospital-side fraud in six months because the current system cannot automatically detect phantom dependents.</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val">25%</div>
-        <div class="stat-label">payment compliance. Only 5 million out of 20 million enrolled citizens are actually paying due to immense unaffordability.</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val">KSh 150K</div>
-        <div class="stat-label">luxury penalty applied to Bodaboda riders, completely ignoring that the motorcycle is a debt-financed tool of trade.</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val">40%</div>
-        <div class="stat-label">breakeven compliance rate required by the AGI model. By closing evasion loopholes, it funds subsidies for the poor.</div>
+        <div class="stat-val">Data Protection</div>
+        <div class="stat-label">DPA 2019 Section 35 and Regulation 22 require meaningful human intervention and explainability in automated decision-making.</div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="fix-section" id="solution">
+<section class="fix-section" id="methodology">
   <div class="container">
     <div class="reveal">
-      <div class="section-label">The Fix</div>
-      <h2 class="section-title">The Adjusted Gross Income (AGI) Model</h2>
+      <div class="section-label">Research Methodology</div>
+      <h2 class="section-title">The Structured Income Ledger & Evaluation Framework</h2>
       <p class="section-desc">
-        We didn't just find the 18 flaws—we engineered the exact solution to fix all of them. The AGI Model abandons housing guesswork entirely. Instead, it relies on verifiable digital footprints to accurately calculate household ability-to-pay. It preserves the statutory 2.75% rate, meaning <strong>it can be deployed immediately without legislative amendment.</strong>
+        This research prototype explores a structured household income ledger that itemises livelihood sources, deducts allowable operating expenses, and produces an arithmetic calculation trace. All models operate as research hypotheses for external examination.
       </p>
     </div>
 
     <div class="fix-grid reveal">
       <div class="card">
-        <h3>1. Fixing the Housing Fallacy</h3>
-        <p><strong>Housing Materials Excluded:</strong> The model entirely abandons roof type and wall materials as wealth proxies. Inheriting a stone house no longer arbitrarily spikes an elderly citizen's premium.</p>
+        <h3>1. Multi-Source Income Categorisation</h3>
+        <p>Distinguishes earned livelihoods (agriculture, micro-retail, casual labour) from non-earned flows (loans, remittances, chama funds), preventing non-income receipts from inflating the contribution base.</p>
       </div>
       <div class="card">
-        <h3>2. Fixing the Land Fallacy</h3>
-        <p><strong>Productivity over Acreage:</strong> Acreage alone is discarded. The model evaluates commercial agricultural output and KRA-declared revenue, ensuring dry ASAL land isn't conflated with prime fertile real estate.</p>
+        <h3>2. Itemised Operating Expense Deductions</h3>
+        <p>Permits recording direct business costs (stock purchases, raw materials, commercial rent, transport) to compute an indicative net surplus rather than assessing gross turnover.</p>
       </div>
       <div class="card">
-        <h3>3. Fixing the Mobile Money Trap</h3>
-        <p><strong>80% Fiduciary Exemption:</strong> The system actively identifies group and community treasurers (Chamas) and applies a massive 80% exemption to their gross M-Pesa throughput, taxing only personal consumption.</p>
+        <h3>3. Observation Window Controls</h3>
+        <p>Requires multi-month records and enforces full 12-month coverage for seasonal activities to prevent extrapolating short harvest peaks into unrealistic annual earnings.</p>
       </div>
       <div class="card">
-        <h3>4. Fixing the Urban Reality</h3>
-        <p><strong>3-Tier Cost of Living Deductions:</strong> Calculates an "Adjusted" Gross Income by systematically deducting urban rent and transport costs. KSh 20K in Nairobi is heavily adjusted downwards compared to KSh 20K in a rural village.</p>
-      </div>
-      <div class="card">
-        <h3>5. Fixing the Utility Penalty</h3>
-        <p><strong>Decoupling Infrastructure:</strong> Having basic utility connections like electricity or piped water is no longer taxed as a luxury asset, protecting citizens who simply have access to basic modern infrastructure.</p>
-      </div>
-      <div class="card">
-        <h3>6. Fixing the Tools of Trade</h3>
-        <p><strong>50% Commercial Exemption:</strong> Bodaboda motorcycles and similar debt-financed equipment are automatically recognized as essential operational assets, not luxury wealth, preventing immense premium spikes.</p>
-      </div>
-      <div class="card">
-        <h3>7. Fixing the Subsistence Trap</h3>
-        <p><strong>Commercial vs. Subsistence Farming:</strong> The model differentiates between commercial livestock sales (via triangulated market data) and subsistence farming, ensuring emergency safety nets aren't treated as liquid cash.</p>
-      </div>
-      <div class="card">
-        <h3>8. Fixing the Black Box</h3>
-        <p><strong>Transparent SHAP Receipts:</strong> Every citizen receives a plain-language deduction receipt detailing exactly how their premium was calculated, down to the shilling. Full transparency prevents "Error by Design" and allows for verifiable appeals.</p>
+        <h3>4. Transparent Calculation Breakdown</h3>
+        <p>Produces a deterministic, step-by-step arithmetic waterfall from declared earnings to final contribution, enabling caseworkers and citizens to review every factor.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="comparison-section" id="impact">
+<section class="comparison-section" id="demonstration">
   <div class="container">
     <div class="reveal">
-      <div class="section-label">Real Impact</div>
-      <h2 class="section-title">Comparing Outcomes</h2>
-      <p class="section-desc">We ran representative Kenyan households through both the current SHA PMT algorithm and our proposed AGI Model.</p>
+      <div class="section-label">Synthetic Demonstration Walkthrough</div>
+      <h2 class="section-title">Observing Methodological Disagreements</h2>
+      <p class="section-desc">
+        Below are illustrative synthetic household profiles demonstrating how an author-created proxy comparator differs from a declared-income calculation. <strong>These figures are synthetic research demonstrations and do not represent actual SHA assessments.</strong>
+      </p>
     </div>
 
     <!-- Mama Wanjiku -->
     <div class="comp-card reveal">
       <div class="comp-header">
-        <div class="comp-name">Household Profile: Mama Wanjiku (Chama Treasurer)</div>
-        <div class="comp-desc">Location: Kakamega | Handles KSh 80,000/month in group funds | Personal retained balance: KSh 2,500</div>
+        <div class="comp-name">Synthetic Profile: Mama Wanjiku (Chama Treasurer)</div>
+        <div class="comp-desc">Fictional demonstration profile | Handles KSh 80,000/month in custodial group funds | Personal net business earnings: KSh 18,000/mo</div>
       </div>
       <div class="comp-body">
-        <div class="comp-col col-red">
+        <div class="comp-col col-comparator">
           <div class="comp-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
-            Current SHA Algorithm
+            Author-Created Illustrative Comparator (Not SHA's Instrument)
           </div>
-          <div class="comp-line"><span class="comp-line-label">M-Pesa Assessment</span><span class="comp-line-val">Counted as personal income</span></div>
-          <div class="comp-line"><span class="comp-line-label">Calculated Wealth Score</span><span class="comp-line-val">KSh 768,000</span></div>
+          <div class="comp-line"><span class="comp-line-label">Comparator Assumption</span><span class="comp-line-val">Invented gross-flow weighting</span></div>
+          <div class="comp-line"><span class="comp-line-label">Indicative Wealth Score</span><span class="comp-line-val">KSh 768,000</span></div>
           <div class="comp-result">
-            <span class="comp-result-label">Assessed Monthly Premium</span>
+            <span class="comp-result-label">Comparator Monthly Output</span>
             <span class="comp-result-val">KSh 1,760</span>
           </div>
         </div>
-        <div class="comp-col col-green">
+        <div class="comp-col col-agi">
           <div class="comp-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
-            Proposed AGI Model
+            Proposed Income Ledger / AGI Model (Research Prototype)
           </div>
-          <div class="comp-line"><span class="comp-line-label">M-Pesa Assessment</span><span class="comp-line-val">Fiduciary Exemption Applied</span></div>
-          <div class="comp-line"><span class="comp-line-label">Calculated Effective AGI</span><span class="comp-line-val">KSh 6,000</span></div>
+          <div class="comp-line"><span class="comp-line-label">Chama Fund Treatment</span><span class="comp-line-val">Custodial funds excluded from income</span></div>
+          <div class="comp-line"><span class="comp-line-label">Evaluated Adjusted Base</span><span class="comp-line-val">Based on net earnings & living allowance</span></div>
           <div class="comp-result">
-            <span class="comp-result-label">Assessed Monthly Premium</span>
-            <span class="comp-result-val">KSh 300 (Subsidized)</span>
+            <span class="comp-result-label">Prototype Monthly Output</span>
+            <span class="comp-result-val">KSh 300 (Reg. 18(2) Minimum Rule)</span>
           </div>
         </div>
       </div>
@@ -422,92 +356,55 @@
     <!-- Mzee Kamau -->
     <div class="comp-card reveal">
       <div class="comp-header">
-        <div class="comp-name">Household Profile: Mzee Kamau (Elderly Pensioner)</div>
-        <div class="comp-desc">Location: Nyeri | Age: 72 | Lives in inherited stone house | Zero regular income</div>
+        <div class="comp-name">Synthetic Profile: Mzee Kamau (Elderly Resident)</div>
+        <div class="comp-desc">Fictional demonstration profile | Lives in inherited family house | Zero regular active livelihood earnings</div>
       </div>
       <div class="comp-body">
-        <div class="comp-col col-red">
+        <div class="comp-col col-comparator">
           <div class="comp-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
-            Current SHA Algorithm
+            Author-Created Illustrative Comparator (Not SHA's Instrument)
           </div>
-          <div class="comp-line"><span class="comp-line-label">Stone Walls Assessment</span><span class="comp-line-val">+KSh 120,000 penalty</span></div>
-          <div class="comp-line"><span class="comp-line-label">Tile Roof Assessment</span><span class="comp-line-val">+KSh 150,000 penalty</span></div>
+          <div class="comp-line"><span class="comp-line-label">Housing Materials Proxy</span><span class="comp-line-val">Invented stone/tile additions</span></div>
+          <div class="comp-line"><span class="comp-line-label">Indicative Wealth Score</span><span class="comp-line-val">KSh 350,000</span></div>
           <div class="comp-result">
-            <span class="comp-result-label">Assessed Monthly Premium</span>
+            <span class="comp-result-label">Comparator Monthly Output</span>
             <span class="comp-result-val">KSh 801</span>
           </div>
         </div>
-        <div class="comp-col col-green">
+        <div class="comp-col col-agi">
           <div class="comp-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
-            Proposed AGI Model
+            Proposed Income Ledger / AGI Model (Research Prototype)
           </div>
-          <div class="comp-line"><span class="comp-line-label">Housing Assessment</span><span class="comp-line-val">Excluded entirely</span></div>
-          <div class="comp-line"><span class="comp-line-label">Age/Income Assessment</span><span class="comp-line-val">Age 72, &lt;KSh 5K income</span></div>
+          <div class="comp-line"><span class="comp-line-label">Earned Income Base</span><span class="comp-line-val">Explicit zero earned income verified</span></div>
+          <div class="comp-line"><span class="comp-line-label">Statutory Floor Rule</span><span class="comp-line-val">Reg. 18(2) minimum rule applied</span></div>
           <div class="comp-result">
-            <span class="comp-result-label">Assessed Monthly Premium</span>
-            <span class="comp-result-val">KSh 300 (Subsidized)</span>
+            <span class="comp-result-label">Prototype Monthly Output</span>
+            <span class="comp-result-val">KSh 300 (Minimum Rule)</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Samuel Bodaboda -->
-    <div class="comp-card reveal">
-      <div class="comp-header">
-        <div class="comp-name">Household Profile: Samuel (Bodaboda Rider)</div>
-        <div class="comp-desc">Location: Nairobi | Daily Income: Subsistence | Assets: Motorcycle (Debt-financed) | Rent: KSh 8,000/mo</div>
-      </div>
-      <div class="comp-body">
-        <div class="comp-col col-red">
-          <div class="comp-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
-            Current SHA Algorithm
-          </div>
-          <div class="comp-line"><span class="comp-line-label">Motorcycle Assessment</span><span class="comp-line-val">+KSh 150,000 luxury penalty</span></div>
-          <div class="comp-line"><span class="comp-line-label">Nairobi Rent</span><span class="comp-line-val">Ignored</span></div>
-          <div class="comp-result">
-            <span class="comp-result-label">Assessed Monthly Premium</span>
-            <span class="comp-result-val">KSh 1,420</span>
-          </div>
-        </div>
-        <div class="comp-col col-green">
-          <div class="comp-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
-            Proposed AGI Model
-          </div>
-          <div class="comp-line"><span class="comp-line-label">Motorcycle Assessment</span><span class="comp-line-val">50% Commercial Exemption</span></div>
-          <div class="comp-line"><span class="comp-line-label">Nairobi Rent Assessment</span><span class="comp-line-val">-KSh 8,000/mo Cost of Living</span></div>
-          <div class="comp-result">
-            <span class="comp-result-label">Assessed Monthly Premium</span>
-            <span class="comp-result-val">KSh 300 (Subsidized)</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="reveal" style="text-align: center; color: #64748b; margin-top: 2rem; font-weight: 500;">
-      ...And 5 more representative household comparisons available in the full technical document.
+    <div class="reveal" style="text-align: center; color: #64748b; margin-top: 1.5rem; font-size: 0.9rem;">
+      Note: A difference between the illustrative comparator and the proposed model demonstrates methodological disagreement on synthetic inputs; it does not establish that an actual SHA assessment is wrong.
     </div>
   </div>
 </section>
 
-<section class="ask-section" id="ask">
+<section class="ask-section" id="governance">
   <div class="container reveal">
-    <div class="section-label">The Ask</div>
-    <h2 class="section-title">What we need from you</h2>
+    <div class="section-label">Institutional Engagement</div>
+    <h2 class="section-title">A Proposal for Collaborative Technical Dialogue</h2>
     
     <div class="ask-box">
-      <p>This is a fully functional, mathematically sound prototype. By fixing the core logic of the means-testing algorithm, we can increase voluntary compliance, lower premiums for the poorest, and ultimately raise net revenue for the health system.</p>
-      <p><strong>We are not asking for immediate policy adoption.</strong></p>
-      <p>We are asking for an introduction. We need to get this prototype in front of the right technical stakeholders within the innovation department, the Ministry of Health, or KIPPRA who can rigorously review this model and help guide it from a prototype into a viable policy alternative.</p>
-      <p>If you work in human rights, constitutional law, or investigative journalism: everything here — the methodology, the code, the data — is public. Cite it, test it, or take it further than we did. If you find something we got wrong, that's useful too.</p>
-      <p>If you're a citizen and the numbers above got your attention, sharing this is the most useful thing you can do. If you work in policy or health financing and can make that introduction — <a href="mailto:pmkaulani@gmail.com" style="color: inherit; text-decoration: underline;">pmkaulani@gmail.com</a>.</p>
+      <p>This project is an independent research prototype developed to examine whether structured income recording, itemised expense deductions, and transparent calculation breakdowns can support SHA's assessment operations.</p>
+      <p><strong>We do not seek immediate operational deployment.</strong></p>
+      <p>We are proposing an evidence-based technical dialogue with the Social Health Authority and relevant policy stakeholders to review the income-recording methodology, inspect evaluation safeguards, and determine what empirical microdata would be necessary for independent validation.</p>
+      <p>All software, documentation, and evaluation protocols are maintained for transparent academic and institutional review. For technical dialogue inquiries: <a href="mailto:pmkaulani@gmail.com" style="color: inherit; text-decoration: underline;">pmkaulani@gmail.com</a>.</p>
     </div>
 
     <a href="app.html" class="btn btn-primary" style="background: #fff; color: #0f172a;">
-      Review the Working Prototype
+      Open Assessment Prototype
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
     </a>
   </div>
@@ -515,7 +412,7 @@
 
 <footer>
   <div class="container">
-    Peter M. Kaulani · <a href="mailto:pmkaulani@gmail.com" style="color: inherit; text-decoration: underline;">pmkaulani@gmail.com</a> · SHA PMT Reform Initiative · June 2026
+    Peter M. Kaulani · <a href="mailto:pmkaulani@gmail.com" style="color: inherit; text-decoration: underline;">pmkaulani@gmail.com</a> · SHA PMT Reform Research Initiative · 2026
   </div>
 </footer>
 

@@ -9,7 +9,7 @@
 ### Executive Summary & The Core Challenge
 The transition from the National Hospital Insurance Fund (NHIF) to the Social Health Authority (SHA) under the **Social Health Insurance Act, 2023** represents Kenya's most ambitious universal health coverage reform. A foundational requirement of the Act is that non-salaried households in the informal sector contribute **2.75% of their assessed economic capacity**, with a statutory minimum contribution of KSh 300 per month.
 
-To operationalize this, **Regulation 21 of the Social Health Insurance (General) Regulations, 2024** deploys a Proxy Means Testing (PMT) instrument based on household characteristics, housing materials, and durable asset ownership. 
+To operationalize this, **Regulation 21 of the Social Health Insurance Regulations, 2024 (LN 49/2024)** prescribes a Proxy Means Testing (PMT) formula set out in the Fifth Schedule ('Means Testing') based on household characteristics, housing materials, and durable asset ownership. 
 
 While statistically standard in social assistance targeting, **asset-based proxy regressions face inherent friction when applied to health insurance contribution setting in Kenya's informal economy**:
 1. **Asset Wealth vs. Liquid Cash Flow:** A rural or informal household may possess an inherited corrugated-iron dwelling or a small parcel of land, yet experience volatile, near-zero seasonal cash flow. Estimating annual income primarily from physical assets risks assigning unaffordable monthly premiums, driving informal workers away from registration.
@@ -33,7 +33,7 @@ Instead, we propose a **controlled, 5-stage collaborative pilot pathway**:
 ### What We Request from SHA Leadership
 The actual request to the SHA Board and Executive is focused, constructive, and low-risk:
 1. **Permission for Technical Dialogue:** Authorize a technical review between SHA's ICT/Actuarial teams and the reform research working group.
-2. **Parameter Disclosure for Baseline Reconstruction:** Disclose the official regression weights, regional constants, preprocessing transforms, and tariff cutoff bands deployed under Regulation 21 so the baseline can be independently tested. *(Note: The Fifth Schedule of the Regulations is titled 'Zones' under Regulation 62(3) and does not contain the PMT formula; operational parameters remain undisclosed by SHA).*
+2. **Parameter Disclosure for Baseline Reconstruction:** Disclose the official regression weights, regional constants, preprocessing transforms, and tariff cutoff bands deployed under Regulation 21(6) and the Fifth Schedule ('Means Testing') so the baseline can be independently tested. *(Note: While the functional regression equation is gazetted in the Fifth Schedule, SHA's full operational regression weights, variable codebooks, categorical transformations, and cutoff parameters remain undisclosed).*
 3. **Lawful Data Sharing Protocol:** Establish a Data Sharing Agreement (DSA) under Kenya DPA Section 30 (Lawful Processing) and Section 53 (Research Provisions) in accordance with the ODPC 2025 Research Guidance Notes for a de-identified historical benchmark sample. Sample size and sampling frames must be determined via rigorous statistical power calculations rather than arbitrary estimates.
 4. **Designation of Institutional Counterparts:** Appoint a Policy Owner, Technical System Owner, and DPO representative to oversee pilot governance.
 5. **Consideration of a Supervised Shadow Pilot:** Authorize Stage 3 shadow testing to observe empirical distribution stability without touching live member contributions.

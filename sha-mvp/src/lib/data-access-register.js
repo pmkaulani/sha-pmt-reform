@@ -41,12 +41,12 @@ export const DATA_ACCESS_REGISTER = [
     resourceName: "Official SHA Means-Testing Instrument Technical Documentation",
     responsibleInstitution: "Social Health Authority (SHA) / Ministry of Health",
     resourceType: RESOURCE_TYPES.TECHNICAL_DOCUMENTATION,
-    purpose: "Verify the legal basis, econometric architecture, and official implementation guidelines for Regulation 21.",
+    purpose: "Verify the legal basis, econometric architecture, and official implementation guidelines for Regulation 21(6) and Fifth Schedule means testing.",
     requestedFields: "Algorithm specification, methodology paper, model design report, validation history.",
     requestDate: null,
     status: ACCESS_STATUSES.NOT_REQUESTED,
     dataOwnerContact: "Data Protection Officer / Director General, Social Health Authority",
-    provenanceReference: "Social Health Insurance (General) Regulations, 2024 (Regulations 17 and 21)",
+    provenanceReference: "Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule)",
     restrictionsAndLimitations: "Confidential government technical document; requires formal inter-agency disclosure request.",
     notesAndNextAction: "Prepare formal technical inquiry package to SHA under Kenya Data Protection Act 2019 research provisions (Sections 30 and 53)."
   },
@@ -74,7 +74,7 @@ export const DATA_ACCESS_REGISTER = [
     requestDate: null,
     status: ACCESS_STATUSES.NOT_AVAILABLE,
     dataOwnerContact: "Director of Actuarial and Financial Services, Social Health Authority",
-    provenanceReference: "Regulation 21(3) scoring algorithm",
+    provenanceReference: "Regulation 21(6) Fifth Schedule scoring equation",
     restrictionsAndLimitations: "Parameters are currently undisclosed in published regulations and gazette notices.",
     notesAndNextAction: "Baseline cannot be calculated until SHA officially releases or verifies parameters."
   },
@@ -88,7 +88,7 @@ export const DATA_ACCESS_REGISTER = [
     requestDate: null,
     status: ACCESS_STATUSES.PARTIALLY_RECEIVED,
     dataOwnerContact: "Policy & Planning Directorate, Ministry of Health",
-    provenanceReference: "Regulation 17(1) & (2) (specifies 2.75% annual rate and KSh 300/mo minimum; Note: Fifth Schedule is titled 'Zones' under Regulation 62(3) and lacks score cutoff bands)",
+    provenanceReference: "Regulation 18(1) & (2) (specifies 2.75% annual rate and KSh 300/mo minimum for non-salaried households; Regulation 19 governs financial assistance; Fifth Schedule sets out means testing equation)",
     restrictionsAndLimitations: "Published regulations state minimums but omit intermediate bracket mappings.",
     notesAndNextAction: "Request formal score band schedule."
   },

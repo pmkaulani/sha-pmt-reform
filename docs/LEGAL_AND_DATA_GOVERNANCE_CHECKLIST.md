@@ -32,22 +32,24 @@
 * **Section 27(4):** Mandates that the national government shall assist households that cannot afford the statutory contribution, anchoring the indigent subsidy.
 
 ### The Statutory Framework: Section 27 and Regulations 17 and 21:
-Under the **Social Health Insurance Act, 2023** and the **Social Health Insurance (General) Regulations, 2024**:
-* **Regulation 17(1):** Establishes that non-salaried households shall pay an annual contribution of 2.75% of household income determined by means testing conducted under Regulation 21.
-* **Regulation 17(2):** Sets the statutory minimum contribution at KSh 300 per month (KSh 3,600 annually).
-* **Regulation 21(1)–(5):** Governs the means-testing instrument:
-  - *Regulation 21(1):* Mandates means-testing for every person without formal salaried income.
-  - *Regulation 21(2):* Provides that the means-testing instrument shall be developed and calibrated by the Authority in consultation with relevant stakeholders.
-  - *Regulation 21(3):* Directs that the instrument capture socio-economic data (housing characteristics, assets, energy source, livelihood).
-  - *Regulation 21(4):* Requires the collected information to be utilized to estimate household economic capacity and income.
-  - *Regulation 21(5):* Governs periodic review and updates to the instrument.
-  *(Note: Regulation 21 contains only subsections (1) through (5); there is no statutory subsection (6)).*
+Under the **Social Health Insurance Act, 2023** and the **Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024)**:
+* **Regulation 17:** Governs contributions for persons in salaried employment.
+* **Regulation 18(1):** Establishes that non-salaried households shall pay an annual contribution of 2.75% of household income determined through means testing.
+* **Regulation 18(2):** Establishes the statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually).
+* **Regulation 18(3):** Governs payment timing before the annual contribution lapses.
+* **Regulation 19:** Governs households in need of financial assistance (indigent households). Administrative application of the KSh 300 floor under Reg 18(2) does NOT constitute a statutory indigent determination.
+* **Regulation 21:** Governs means testing:
+  - *Regulation 21(1):* Mandates means-testing for households whose income is not derived from salaried employment.
+  - *Regulation 21(2):* Provides that the means-testing instrument shall be developed by the Cabinet Secretary for Health in collaboration with the Cabinet Secretary responsible for social protection.
+  - *Regulation 21(6):* Prescribes that means testing shall be conducted using the formula set out in the Fifth Schedule.
+* **Fifth Schedule ('Means Testing'):** The Fifth Schedule to the gazetted Regulations is titled **"Means Testing"** and contains stated urban and rural regression equations. *(Note: While the functional equation is gazetted, SHA's full operational regression weights, variable codebooks, categorical transformations, and cutoff parameters remain undisclosed).*
+* **Regulation 62 ('Zones'):** Regulation 62 is titled **"Zones"**, designating regional geographic county groupings for health facility reimbursement tariffs.
+* **Legal Notice 55 of 2025:** Expressly revokes Legal Notice 147 of 2024 in Clause 9.
+* **Statutory Status:** The deployed SHA Means-Testing Instrument operational parameters remain pending official verification and disclosure by SHA.
 
-### Statutory Clarification Regarding the Fifth Schedule & Legal Notices:
-* **The Fifth Schedule is "Zones":** The Fifth Schedule to the Social Health Insurance (General) Regulations, 2024 is titled **"Zones"** under Regulation 62(3) (specifies regional geographic zones for health facilities). **It does NOT contain the means-testing formula or regression coefficients.**
-* **Origin of the 43-Variable Model:** The 43-variable proxy means test (PMT) model is an administrative econometric instrument developed for SHA and disclosed through investigative reporting (Africa Uncensored / Lighthouse Reports, May 2026), rather than a published statutory schedule.
-* **Revocation of LN 147/2024 by LN 55/2025:** Legal Notice No. 55 of 2025 revoked Legal Notice No. 147 of 2024. Neither statutory instrument contains an explicit regression table or variable weighting schedule for means testing.
-* **Statutory Status:** The deployed SHA Means-Testing Instrument remains pending official verification and disclosure by SHA.
+### Statutory Clarification Regarding Data Protection & Research:
+* **DPA 2019 Section 53:** While Section 53 provides research and statistical exemptions, it does NOT constitute a blanket disclosure authorization; lawful processing still requires a valid statutory basis under Section 30 and appropriate DPIA safeguards under Section 31.
+* **Data Protection (General) Regulations 2021, Regulation 22:** Governs automated individual decision-making and profiling, mandating meaningful human intervention.
 
 ### Unresolved Legal & Regulatory Questions:
 1. **Administrative Implementation vs. Statutory Amendment:** Whether a structured income ledger can be introduced administratively as an operational method of estimating income under Regulation 21(2) & (4), or whether formal regulatory amendment is required, is an **unresolved legal question** that requires formal advice from the Attorney General, Ministry of Health Legal Directorate, and SHA Legal Counsel.
@@ -62,4 +64,4 @@ Under the **Social Health Insurance Act, 2023** and the **Social Health Insuranc
 - [ ] **Complete & File DPIA under Section 31:** Finalize the Data Protection Impact Assessment for means-testing algorithms and submit to the ODPC for statutory review.
 - [ ] **Review Human-in-the-Loop Safeguards under Regulation 22:** Verify that CHP and sub-county caseworker review workflows provide substantive human intervention satisfying Regulation 22 of the Data Protection (General) Regulations 2021 (no rubber-stamp reviews).
 - [ ] **Execute Multi-Agency Data Sharing Agreement (DSA):** Draft and execute a formal DSA with KNBS and academic evaluation partners under DPA Section 53 and ODPC 2025 Research Guidance.
-- [ ] **Statutory Pathway Determination:** Obtain a formal legal opinion on whether implementing the proposed income ledger requires a Gazetted regulatory amendment or can be implemented through administrative operational guidelines under Regulation 21(2) & (4).
+- [ ] **Statutory Pathway Determination:** Obtain a formal legal opinion on whether implementing the proposed income ledger requires a Gazetted regulatory amendment or can be implemented through administrative operational guidelines under Regulation 21(2).

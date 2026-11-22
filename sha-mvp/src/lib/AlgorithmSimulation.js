@@ -1,11 +1,13 @@
 // SHA Means-Testing Evaluation - v2.1 prototype rules engine
 // The 2.75% contribution rate and KSh 300 monthly floor are statutory reference parameters
-// for non-salaried households under Regulation 17(1) & (2) of the Social Health Insurance (General) Regulations, 2024.
-// This prototype does NOT implement or represent the official SHA means-testing instrument established
-// under Regulation 21 (note: the Fifth Schedule of the Regulations is titled 'Zones' under Regulation 62(3)
-// and does not contain the PMT formula). Current income estimations, illustrative deductions,
-// and calculation rules are research prototype assumptions that require validation against SHA's
-// official instrument, model parameters, and administrative implementation.
+// for non-salaried households under Regulation 18(1) & (2) of the Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024).
+// Means testing is conducted pursuant to Regulation 21(6) using the formula set out in the Fifth Schedule ('Means Testing').
+// Note: While the Fifth Schedule sets out an urban/rural means-testing equation, complete operational parameters,
+// coefficients, variable encodings, and production implementation details have not been fully disclosed.
+// Current income estimations, illustrative deductions, and calculation rules are research prototype assumptions
+// that require validation against SHA's official instrument, model parameters, and administrative implementation.
+// Regulation 19 governs households in need of financial assistance (indigent households); applying the KSh 300
+// minimum contribution under Regulation 18(2) does not constitute a statutory indigence determination.
 //
 // IMPORTANT (audit v2, read before citing this file to a technical reviewer):
 // This entire module is a deterministic rules engine (if/else + fixed
@@ -58,14 +60,14 @@ export function validateAssessmentInputs(d) {
 }
 
 export const BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: true, tier: 'Low-Income (Reg. 17(2) Reference: KSh 300 Floor)' },
-  { min: 131001, max: 450000, isIndigent: false, tier: 'Standard' }, // Reg. 17(1) 2.75% reference parameter
-  { min: 450001, max: Infinity, isIndigent: false, tier: 'Upper' }, // Reg. 17(1) 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
+  { min: 0, max: 131000, monthly: 300, isIndigent: true, tier: 'Low-Income (Reg. 18(2) Minimum Contribution Rule: KSh 300 Floor)' },
+  { min: 131001, max: 450000, isIndigent: false, tier: 'Standard' }, // Reg. 18(1) 2.75% reference parameter
+  { min: 450001, max: Infinity, isIndigent: false, tier: 'Upper' }, // Reg. 18(1) 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
 ];
 
 export const PROPOSED_BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: true }, // Reg. 17(2) reference minimum contribution (KSh 300 floor for non-salaried households)
-  { min: 131001, max: Infinity, isIndigent: false }, // Reg. 17(1) 2.75% rate applied to evaluated AGI (prototype policy model; requires validation against Regulation 21 means-testing instrument)
+  { min: 0, max: 131000, monthly: 300, isIndigent: true }, // Reg. 18(2) reference minimum contribution (KSh 300 floor for non-salaried households)
+  { min: 131001, max: Infinity, isIndigent: false }, // Reg. 18(1) 2.75% rate applied to evaluated AGI (prototype policy model; requires validation against Regulation 21(6) Fifth Schedule means-testing instrument)
 ];
 
 const ASAL_COUNTIES = {
@@ -96,9 +98,13 @@ const DEFAULT_MAX_RENT = {
 };
 
 /**
- * Calculates an illustrative PMT-style baseline for side-by-side demonstration.
- * This hand-authored comparator is NOT a reconstruction of SHA's disclosed 43-variable regression
- * and must not be described as SHA's actual formula or as evidence of real overcharging.
+ * Author-created illustrative comparator — not SHA's instrument.
+ * 
+ * DISCLOSURE: This hand-authored comparator uses invented weights and demonstration constants
+ * (e.g. gross M-Pesa volume factor, flat dwelling additions). It is NOT SHA's operational means-testing
+ * instrument under Regulation 21(6) and the Fifth Schedule, and is NOT a reconstruction of SHA's 43-variable
+ * regression. It exists solely as an illustrative baseline for software testing and interface demonstration.
+ * A difference between this comparator and an AGI model does not demonstrate actual SHA overcharging.
  */
 export function calculateCurrentModel(d) {
   let score = 0;
@@ -571,7 +577,7 @@ export function calculateProposedModel(d, adminParams = {}) {
   const INDIGENT_THRESHOLD = 131000;
   if (!isIndigent && adjustedGrossIncome <= INDIGENT_THRESHOLD) {
     isIndigent = true;
-    factors.push({ name: 'Pro-Poor Constraint', impact: 'Medium', direction: 'down', description: 'AGI below illustrative low-income threshold (KSh 131,000)', isFlaw: false });
+    factors.push({ name: 'Pro-Poor Constraint', impact: 'Medium', direction: 'down', description: 'AGI below illustrative low-income threshold (KSh 131,000) — minimum contribution rule applied under Regulation 18(2)', isFlaw: false });
   }
 
   // Meta-Flaw 30: 2.75% Rate Assumption
@@ -579,7 +585,7 @@ export function calculateProposedModel(d, adminParams = {}) {
   let tier = "LOW";
   
   if (isIndigent) {
-    monthlyContribution = 300; // Illustrative minimum contribution assumption (KSh 300 floor)
+    monthlyContribution = 300; // Minimum contribution rule under Regulation 18(2) (KSh 300/mo floor)
   } else {
     monthlyContribution = Math.max(300, Math.round((adjustedGrossIncome * 0.0275) / 12));
     if (adjustedGrossIncome > 450000) tier = "HIGH";

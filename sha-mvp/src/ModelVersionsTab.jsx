@@ -122,7 +122,7 @@ export default function ModelVersionsTab({ results }) {
       </div>
 
       <div style={{ background: "#FFF8E8", border: "1px solid #EAD7A8", borderRadius: 9, padding: 13, color: "#6F520E", fontSize: 12, lineHeight: 1.55 }}>
-        <strong>Important:</strong> These are research prototypes. Neither output is the member's official SHA assessment, an official SHA premium, or a reproduction of SHA's production Regulation 21 means-testing instrument. The 2.75% rate and KSh 300 floor are prototype reference assumptions and require policy/legal validation in context.
+        <strong>Important:</strong> These are research prototypes. Neither output is the member's official SHA assessment, an official SHA premium, or a reproduction of SHA's production Regulation 21(6) Fifth Schedule means-testing instrument. The models encode different research hypotheses and use different information fields. A difference between their outputs demonstrates disagreement between methodologies, not which methodology is more accurate. The 2.75% rate and KSh 300 floor reflect statutory reference parameters under Regulation 18(1) & (2).
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 330px), 1fr))", gap: 12, alignItems: "start" }}>
@@ -134,7 +134,7 @@ export default function ModelVersionsTab({ results }) {
         <div style={{ color: COLORS.ink, fontSize: 13, fontWeight: 750 }}>Same household · different model assumptions</div>
         <div style={{ color: COLORS.muted, fontSize: 12, lineHeight: 1.55, marginTop: 5 }}>{differenceLabel}</div>
         <div style={{ color: COLORS.muted, fontSize: 11, lineHeight: 1.5, marginTop: 7 }}>
-          A difference is expected because the original model builds its base from retained liquidity, selected financial flows and adjusted capital/livelihood assets. The declared-income variant starts from annualised declared net earnings and keeps capital assets and balances as contextual signals.
+          The models encode different research hypotheses and use different information fields. The original asset/liquidity AGI v2.1 builds its base from retained liquidity, selected financial flows, and adjusted capital/livelihood assets. The declared-income variant starts from annualised declared net earnings and keeps capital assets and balances as contextual signals. A difference between their outputs demonstrates disagreement between methodologies, not which methodology is more accurate.
         </div>
       </div>
     </div>

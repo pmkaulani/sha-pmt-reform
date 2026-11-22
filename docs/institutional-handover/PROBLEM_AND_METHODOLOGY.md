@@ -16,7 +16,7 @@ When PMT is repurposed to determine **compulsory monthly financial contributions
 
 ### 2. Candidate Methodological Frameworks Examined
 
-#### Model 1: Official Regulation 21 PMT (Baseline)
+#### Model 1: Official Regulation 21(6) / Fifth Schedule PMT (Baseline)
 - **Econometric Form:** Ordinary Least Squares (OLS) regression predicting $\ln(\text{Consumption})$.
 - **Inputs:** 43 proxy variables (dwelling roof/wall/floor, energy, sanitation, livestock, appliances).
 - **Core Construct:** Long-term permanent consumption proxy.

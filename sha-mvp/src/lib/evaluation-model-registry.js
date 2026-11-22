@@ -43,7 +43,7 @@ export const REGISTERED_EVALUATION_MODELS = Object.freeze({
       INDEPENDENT_POVERTY_STATUS: {
         isEligible: false,
         status: MODEL_EVALUATION_STATUSES.NOT_EVALUABLE_INCOMPATIBLE,
-        reason: "Construct mismatch: Minimum contribution floor (KSh 300/mo) is an administrative statutory rule under Regulation 17(2), not an independent statistical poverty classification threshold."
+        reason: "Construct mismatch: Minimum contribution floor (KSh 300/mo) is an administrative statutory rule under Regulation 18(2), not an independent statistical poverty classification threshold."
       }
     }
   },
@@ -80,16 +80,16 @@ export const REGISTERED_EVALUATION_MODELS = Object.freeze({
   COMPARATOR_PMT_ILLUSTRATIVE: {
     id: "COMPARATOR_PMT_ILLUSTRATIVE",
     version: "1.0.0",
-    name: "Illustrative PMT-Style Baseline Comparator",
-    shortName: "Illustrative PMT Comparator",
+    name: "Author-Created Illustrative PMT Comparator — Not SHA's Instrument",
+    shortName: "Author-Created Comparator",
     calculationType: "SIMPLIFIED_REGRESSION_PROXY",
     sourceFile: "src/lib/AlgorithmSimulation.js",
-    sourceProvenance: "Synthetic research benchmark",
+    sourceProvenance: "Author-created synthetic research benchmark",
     primaryOutputUnit: "KSh/year",
     contributionOutputUnit: "KSh/month",
     outputMeaning: "Proxy annual household welfare estimate based on dwelling materials, water/light services, and durable asset ownership.",
-    policyAssumptions: "Housing quality and durable assets correlate with economic welfare in the informal sector.",
-    knownLimitations: "Explicit notice: This is NOT SHA's deployed 43-variable means-testing algorithm. It cannot be used to evaluate SHA's real-world accuracy or performance.",
+    policyAssumptions: "Demonstration proxy scoring with hand-authored demonstration weights.",
+    knownLimitations: "Explicit notice: This is NOT SHA's operational means-testing instrument under Regulation 21(6) and the Fifth Schedule, and is NOT SHA's deployed 43-variable means-testing algorithm. It cannot be used to evaluate SHA's real-world accuracy or performance, and must not be described as a valid replacement for the missing SHA baseline.",
     researchStatus: "ILLUSTRATIVE_COMPARATOR_ONLY",
     isOfficialShaBaseline: false,
     evaluationAdapters: {
@@ -114,12 +114,12 @@ export const REGISTERED_EVALUATION_MODELS = Object.freeze({
     shortName: "Official SHA Deployed Baseline (Pending Verification)",
     calculationType: "DEPLOYED_MEANS_TESTING_REGRESSION",
     sourceFile: "None (Proprietary SHA Government System)",
-    sourceProvenance: "Social Health Insurance Act, 2023 (Section 27); Social Health Insurance (General) Regulations, 2024 (Regulations 17 and 21)",
+    sourceProvenance: "Social Health Insurance Act, 2023 (Section 27); Social Health Insurance Regulations, 2024 (Regulations 18 and 21(6), Fifth Schedule)",
     primaryOutputUnit: "KSh/year (Official Evaluated Income)",
     contributionOutputUnit: "KSh/month (Gazetted Contribution)",
     outputMeaning: "Official government means-testing scores and statutory premium determinations.",
-    policyAssumptions: "Statutory parameters determined by Ministry of Health and SHA under Section 27 and Regulations 17 and 21.",
-    knownLimitations: "SHA has not officially disclosed the production regression model, variable definitions, weights, preprocessing transformations, or calibration tables. Note: The Fifth Schedule of the Regulations is titled 'Zones' under Regulation 62(3) and does NOT contain the PMT formula.",
+    policyAssumptions: "Statutory parameters determined by Ministry of Health and SHA under Section 27, Regulation 18, and Regulation 21(6).",
+    knownLimitations: "While Regulation 21(6) states that means testing is conducted using the formula set out in the Fifth Schedule ('Means Testing'), SHA has not officially disclosed the complete production regression model, variable definitions, weights, preprocessing transformations, or calibration tables.",
     researchStatus: "OFFICIAL_GOVERNMENT_SYSTEM",
     isOfficialShaBaseline: true,
     status: MODEL_EVALUATION_STATUSES.NOT_CONFIGURED_MISSING_OFFICIAL_PARAMS,

@@ -114,4 +114,4 @@ flowchart TD
 - **Kenya Data Protection Act, 2019** ([Kenya Law](http://kenyalaw.org/kl/fileadmin/pdfdownloads/Acts/2019/TheDataProtectionAct__No24of2019.pdf))
 - **ODPC Guidance Notes on Processing for Research Purposes (2025)** ([ODPC Portal](https://www.odpc.go.ke/wp-content/uploads/2025/11/ODPC-%E2%80%93-GUIDANCE-NOTES-Processing-for-Research-Purpose.pdf))
 - **ODPC Guidance Note on Processing of Health Data (2024)** ([ODPC Portal](https://www.odpc.go.ke/wp-content/uploads/2024/02/ODPC-Guidance-Note-on-Processing-of-Health-Data.pdf))
-- **Social Health Insurance (General) Regulations, 2024** (Regulations 17 and 21; Note: Fifth Schedule is titled 'Zones' under Regulation 62(3)).
+- **Social Health Insurance Regulations, 2024** (Regulations 18, 19, and 21(6), Fifth Schedule 'Means Testing'; Regulation 62 'Zones').

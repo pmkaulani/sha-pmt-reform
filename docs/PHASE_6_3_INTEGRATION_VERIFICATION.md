@@ -233,15 +233,21 @@ The Pilot Readiness module (`PilotReadinessTab.jsx`, `pilot-stages.js`, `pilot-r
 
 ## 9. Statutory Reference & Legal Alignment Audit
 
-A comprehensive codebase audit confirmed the eradication of erroneous statutory references:
+A comprehensive statutory audit reconciled all legal references with the gazetted **Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024)**, resolving earlier numbering discrepancies originating from the pre-gazettement public participation draft:
 
-| Erroneous Citation | Actual Statutory Reality | Remediation Implemented |
-|--------------------|--------------------------|-------------------------|
-| *Regulation 18* (Contribution rate) | Regulation 18 governs **payment modalities**; Regulation 17(1) & (2) govern contribution rates and floors. | Purged all 8 lingering occurrences of "Reg. 18" in `App.jsx`, `ContributionStatementTab.jsx`, and `AlgorithmSimulation.js`. Replaced with `Regulation 17(1) & (2)`. |
-| *Regulation 21(6)* | Regulation 21 governs means-testing and contains subsections (1) through (5) only. There is no subsection (6). | Replaced citations with `Regulation 21` and `Regulation 17(1) & (2)`. |
-| *Fifth Schedule as PMT formula* | Fifth Schedule is titled **"Zones"** under Regulation 62(3) (health facility reimbursement zones). | Corrected across all documentation, code comments, and baseline registries. |
-| *Legal Notice 55 of 2025* | LN 55/2025 revoked LN 147/2024; neither publishes PMT regression coefficients. | Reframed baseline as `OFFICIAL SHA MEANS-TESTING INSTRUMENT — IMPLEMENTATION DETAILS PENDING VERIFICATION`. |
-| *Data Protection Act citations* | DPA 2019 Principles (Section 25), Automated Decision-Making (Section 35), Data Protection Impact Assessment (Section 31). | Re-aligned all legal compliance checklists with authentic sections of the Kenya Data Protection Act, 2019. |
+| Statutory Subject | Gazetted Provision (LN 49/2024) | Statutory Content & Audit Status |
+|-------------------|---------------------------------|----------------------------------|
+| *Salaried Employment* | **Regulation 17** | Contributions for persons in salaried employment (statutory deductions). |
+| *Non-Salaried Contribution Rate* | **Regulation 18(1)** | Annual contribution for non-salaried households: 2.75% of household income determined through means testing. |
+| *Minimum Contribution Floor* | **Regulation 18(2)** | Statutory minimum contribution floor of KSh 300 per month (KSh 3,600 annually). |
+| *Payment Timing* | **Regulation 18(3)** | Timing of annual contributions prior to lapse. |
+| *Financial Assistance (Indigents)* | **Regulation 19** | Households in need of financial assistance. Application of the KSh 300 floor does NOT constitute an automatic indigent determination. |
+| *Means Testing Instrument* | **Regulation 21(2)** | Developed by CS Health in collaboration with CS Social Protection. |
+| *Means Testing Formula* | **Regulation 21(6)** | Prescribes that means testing shall be conducted using the formula set out in the Fifth Schedule. |
+| *Fifth Schedule ('Means Testing')* | **Fifth Schedule** | Titled **"Means Testing"**; contains stated urban and rural regression equations. *(Operational parameters, weights, and dummy encodings remain undisclosed by SHA).* |
+| *Zones* | **Regulation 62** | Titled **"Zones"**; designates regional geographic county groupings for health facility reimbursement tariffs. |
+| *Revocation of LN 147/2024* | **Legal Notice 55 of 2025** | Clause 9 expressly revokes Legal Notice 147 of 2024. |
+| *Data Protection Citations* | **Kenya DPA 2019 & Reg 22** | Sections 25, 30, 31, 35, 53 of DPA 2019; Regulation 22 of Data Protection (General) Regulations 2021 (substantive human review). |
 
 ---
 

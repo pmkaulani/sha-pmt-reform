@@ -593,20 +593,31 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
           message: `${rule.label} has only ${months} observed months. Full 12-month coverage is required for seasonal activities to prevent peak harvest extrapolation.`,
         });
       } else if (!requiresFullYear && months < 3) {
-        requiresManualReview = true;
-        periodStatus = "LIMITED_OBSERVATION_PERIOD";
-        reviewFlags.push({
-          code: "LIMITED_OBSERVATION_PERIOD",
-          sourceId: source.id,
-          message: `${rule.label} has fewer than 3 observed months. This observation window cannot establish a reliable pattern and requires manual review.`,
-        });
+        if (rule.bucket === "EARNED") {
+          requiresManualReview = true;
+          periodStatus = "LIMITED_OBSERVATION_PERIOD";
+          reviewFlags.push({
+            code: "LIMITED_OBSERVATION_PERIOD",
+            sourceId: source.id,
+            message: `${rule.label} has fewer than 3 observed months. This observation window cannot establish a reliable pattern and requires manual review.`,
+          });
+        } else {
+          // Non-earned and fiduciary flows (loans, reimbursements, chama funds, transfers)
+          // are non-earned flows excluded from earned income. Their observation period does
+          // not block calculation of valid earned income.
+          periodStatus = "SHORT_FLOW_RECORDED";
+        }
       } else if (!requiresFullYear && months < 12) {
-        periodStatus = "SHORT_WINDOW_PROVISIONAL";
-        reviewFlags.push({
-          code: "SHORT_WINDOW_PROVISIONAL",
-          sourceId: source.id,
-          message: `${rule.label} covers ${months} observed months. Monthly average is provisional and not an established annual pattern.`,
-        });
+        if (rule.bucket === "EARNED") {
+          periodStatus = "SHORT_WINDOW_PROVISIONAL";
+          reviewFlags.push({
+            code: "SHORT_WINDOW_PROVISIONAL",
+            sourceId: source.id,
+            message: `${rule.label} covers ${months} observed months. Monthly average is provisional and not an established annual pattern.`,
+          });
+        } else {
+          periodStatus = "SHORT_FLOW_RECORDED";
+        }
       }
 
       if (rule.bucket === "EARNED" && reportedNet < 0) {
@@ -767,7 +778,7 @@ export function createZeroEarnedIncomeAssessment(commonAssessmentPeriod = null) 
     allowableCostsPolicyNotice: "Operating expense rules reflect research assumptions. Official deduction allowances require SHA approval.",
     reimbursementReconciliationNotice: "No reimbursements reported.",
     calculationScope: "PROTOTYPE_EARNED_INCOME_SUBTOTAL_ONLY",
-    disclaimer: "Household explicitly declared zero earned income from active livelihoods. Under statutory rules (Regulation 17(2)), minimum contribution of KSh 300/mo applies unless approved for full indigent subsidy under Regulation 17(3)."
+    disclaimer: "Household explicitly declared zero earned income from active livelihoods. Under statutory rules (Regulation 18(2)), the minimum contribution rule of KSh 300/mo applies. This minimum contribution does not constitute a determination of indigence or an approval for financial assistance under Regulation 19."
   };
 }
 

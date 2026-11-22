@@ -175,7 +175,7 @@ export const PILOT_GOVERNANCE_ROLES = Object.freeze([
     assignmentStatus: GOVERNANCE_ASSIGNMENT_STATUS.NOT_ASSIGNED,
     responsibilities: [
       "Review pilot operations against the Social Health Insurance Act, 2023.",
-      "Verify compliance with Section 27 of SHI Act 2023 and Regulation 17 and 21 statutory bounds.",
+      "Verify compliance with Section 27 of SHI Act 2023 and Regulation 18 and 21 statutory bounds.",
       "Ensure pilot outputs do not create ultra vires billing liabilities for citizens.",
       "Draft proposed regulatory amendments if reform advances to adoption."
     ],

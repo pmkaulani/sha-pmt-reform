@@ -317,6 +317,54 @@ test("group funds are classified as fiduciary flow and not earner's personal inc
   assert.equal(result.monthlyFiduciaryFlowsKsh, 20000);
 });
 
+test("one-month loan or chama flow does not block calculation of valid earned income", () => {
+  // Household with a 12-month business and a 1-month loan
+  const loanResult = calculateHouseholdIncome([
+    source({ id: "business", sourceType: "SELF_EMPLOYMENT", amountReceivedKsh: 240000, monthsObserved: 12 }),
+    source({ id: "loan", sourceType: "LOAN_PROCEEDS", amountReceivedKsh: 10000, monthsObserved: 1 }),
+  ]);
+
+  assert.equal(loanResult.isValid, true);
+  assert.equal(loanResult.canPopulatePrototypeEarnedIncomeBase, true);
+  assert.equal(loanResult.calculationStatus, "CALCULATED_STANDARD");
+  assert.equal(loanResult.monthlyEarnedNetKsh, 20000);
+  assert.equal(loanResult.annualisedEarnedNetKsh, 240000);
+  assert.equal(loanResult.monthlyNonEarnedFlowsKsh, 10000);
+  assert.equal(loanResult.requiresManualReview, false);
+
+  // Household with a 12-month business, a 1-month loan, and a 1-month chama flow
+  const multiFlowResult = calculateHouseholdIncome([
+    source({ id: "business", sourceType: "SELF_EMPLOYMENT", amountReceivedKsh: 360000, monthsObserved: 12 }),
+    source({ id: "loan", sourceType: "LOAN_PROCEEDS", amountReceivedKsh: 5000, monthsObserved: 1 }),
+    source({ id: "chama", sourceType: "GROUP_FUNDS", amountReceivedKsh: 3000, monthsObserved: 1 }),
+  ]);
+
+  assert.equal(multiFlowResult.isValid, true);
+  assert.equal(multiFlowResult.canPopulatePrototypeEarnedIncomeBase, true);
+  assert.equal(multiFlowResult.calculationStatus, "CALCULATED_STANDARD");
+  assert.equal(multiFlowResult.monthlyEarnedNetKsh, 30000);
+  assert.equal(multiFlowResult.annualisedEarnedNetKsh, 360000);
+  assert.equal(multiFlowResult.monthlyNonEarnedFlowsKsh, 5000);
+  assert.equal(multiFlowResult.monthlyFiduciaryFlowsKsh, 3000);
+  assert.equal(multiFlowResult.requiresManualReview, false);
+
+  // But a 1-month earned income source STILL requires manual review
+  const earnedShortResult = calculateHouseholdIncome([
+    source({ id: "casual", sourceType: "CASUAL_LABOUR", amountReceivedKsh: 5000, monthsObserved: 1 }),
+  ]);
+  assert.equal(earnedShortResult.requiresManualReview, true);
+  assert.equal(earnedShortResult.calculationStatus, "BLOCKED_MANUAL_REVIEW");
+  assert.equal(earnedShortResult.monthlyEarnedNetKsh, null);
+
+  // And a 6-month seasonal source STILL requires manual review
+  const seasonalShortResult = calculateHouseholdIncome([
+    source({ id: "farm", sourceType: "AGRICULTURE", amountReceivedKsh: 50000, monthsObserved: 6 }),
+  ]);
+  assert.equal(seasonalShortResult.requiresManualReview, true);
+  assert.equal(seasonalShortResult.calculationStatus, "BLOCKED_MANUAL_REVIEW");
+  assert.equal(seasonalShortResult.monthlyEarnedNetKsh, null);
+});
+
 // ─── 6. PRESET & SYSTEM INTEGRATION CHECKS ────────────────────────────────────
 
 test("11. Existing synthetic preset compatibility is preserved", () => {

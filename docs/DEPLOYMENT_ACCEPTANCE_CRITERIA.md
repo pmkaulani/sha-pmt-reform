@@ -31,7 +31,7 @@
   - *Required Evidence:* Legal Counsel Statutory Compliance Opinion.
 - [ ] **B.2 — Data Protection Impact Assessment (DPIA) Approved:** Comprehensive DPIA completed under DPA Section 31 and reviewed by SHA DPO.
   - *Required Evidence:* Certified DPIA Document; ODPC acknowledgment receipt.
-- [ ] **B.3 — Section 27 / Regulation 21 Statutory Reconciliation:** Statutory pathway established for income estimation (e.g. administrative operational guidelines under Regulation 21(2) & (4) or Gazetted regulatory amendment). *(Note: The Fifth Schedule is titled 'Zones' under Regulation 62(3) and does not contain the PMT formula).*
+- [ ] **B.3 — Section 27 / Regulation 18 & 21 Statutory Reconciliation:** Statutory pathway established for income estimation (e.g. administrative operational guidelines under Regulation 21(2) & (6) or Gazetted regulatory amendment). *(Note: Regulation 21(6) designates the Fifth Schedule, titled 'Means Testing', as the statutory formula; complete operational parameters and coefficients remain undisclosed by SHA; Regulation 62 is titled 'Zones').*
   - *Required Evidence:* Ministry of Health Legal Directorate Memorandum; Draft Kenya Gazette Supplement.
 - [ ] **B.4 — Meaningful Human Review Safeguards Enforced:** Verification workflows comply with Regulation 22 of the Data Protection (General) Regulations 2021, ensuring substantive human adjudication on automated outputs.
   - *Required Evidence:* Caseworker Adjudication Protocol & Training Manual.
