@@ -393,16 +393,24 @@ test("Data Readiness 17: No empirical evaluation can start with an incompatible 
 
 // ─── 6. DATA PRIVACY & STORAGE BOUNDARY AUDIT ─────────────────────────────────
 
-test("Data Readiness 18: No actual household data is written to browser storage", () => {
-  // Audit codebase for any localStorage or sessionStorage usage of household inputs
+test("Data Readiness 18: No member-record persistence path identified in inspected source files", () => {
+  // Static audit of key source files for localStorage or sessionStorage usage of household inputs.
+  // Note: This static pattern scan verifies that key component and library files do not contain
+  // member-record persistence calls. It represents a scoped source inspection, not comprehensive proof
+  // of privacy or network isolation across all possible runtime paths.
   const srcDir = path.resolve(__dirname, "../src");
   const filesToCheck = [
     "App.jsx",
     "EvidenceReadinessTab.jsx",
+    "ContributionStatementTab.jsx",
+    "ModelVersionsTab.jsx",
+    "AppealPreparationTab.jsx",
+    "OfficerReviewTab.jsx",
     "lib/household-income.js",
     "lib/assessment-flow.js",
     "lib/data-governance.js",
-    "lib/data-access-register.js"
+    "lib/data-access-register.js",
+    "lib/AlgorithmSimulation.js"
   ];
 
   for (const relFile of filesToCheck) {

@@ -758,7 +758,10 @@ export function createZeroEarnedIncomeAssessment(commonAssessmentPeriod = null) 
     },
     lines: [],
     duplicateRelationships: [],
-    reproducibleInputSnapshot: [],
+    reproducibleInputSnapshot: {
+      hasDeclaredNoEarnedIncome: true,
+      sources: [],
+    },
     monthlyEarnedNetKsh: 0,
     annualisedEarnedNetKsh: 0,
     monthlyPolicyReviewResourcesKsh: 0,
@@ -786,7 +789,10 @@ export function createZeroEarnedIncomeAssessment(commonAssessmentPeriod = null) 
  * Reproduces the exact household income calculation from a saved snapshot.
  */
 export function reproduceHouseholdIncome(snapshot, commonAssessmentPeriod = null) {
-  if (snapshot && typeof snapshot === "object" && snapshot.hasDeclaredNoEarnedIncome === true) {
+  if (
+    (snapshot && typeof snapshot === "object" && snapshot.hasDeclaredNoEarnedIncome === true) ||
+    (Array.isArray(snapshot) && snapshot.length === 0)
+  ) {
     return createZeroEarnedIncomeAssessment(commonAssessmentPeriod);
   }
   return calculateHouseholdIncome(snapshot, commonAssessmentPeriod);

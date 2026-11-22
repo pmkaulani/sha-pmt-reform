@@ -72,7 +72,7 @@
 
 ## Slide 6: Procedural Fairness & Meaningful Human Review
 ### Complying with Kenya Data Protection Act 2019 & General Regulations 2021
-- **Statutory Mandate (DPA Section 35 & Regulation 22):**
+- **Statutory Mandate (DPA Section 31, Section 35 & Regulation 22):**
   - Automated profiling or algorithmic scoring must not deny social security rights without substantive, meaningful human intervention.
   - Perfunctory or automated checkbox "approvals" do not satisfy statutory standards.
 - **Prototype Implementation:**

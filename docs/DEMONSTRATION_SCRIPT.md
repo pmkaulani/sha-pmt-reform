@@ -43,7 +43,7 @@
 * **Presenter Script:**
   > "Notice the Financial Comparison screen. On the left is an illustrative comparator benchmark; on the right is the proposed cash-flow rules engine.  
   > Notice the prominent disclosure banner: the comparator is an author-created illustrative tool, not SHA's proprietary regression.  
-  > Notice that Mama Wanjiku's contribution is assessed under **Regulation 18(1) & (2)** at 2.75% of net livelihood capacity, honoring her operating expenses and protecting her from being penalized for handling group savings."
+  > Notice that Mama Wanjiku's contribution is assessed under **Regulation 18(1) & (2)** at 2.75% of declared net household income. The prototype deducts her operating expenses as a **candidate research methodology** — expense categories and allowance rules require validation against SHA's official means-testing instrument and are not an established entitlement under Regulation 18. The declared-income approach also protects her from being penalized for handling group savings."
 
 ---
 
@@ -82,7 +82,7 @@
   - Side-by-side view comparing original member declaration vs. verified audit ledger.
   - Reasoned adjudication notes field and dual sign-off controls.
 * **Presenter Script:**
-  > "This workflow operationalizes **Section 35 of the Kenya Data Protection Act, 2019 and Regulation 22 of the General Regulations, 2021**. Automated decision-making must include meaningful human review. Instead of a rubber-stamp checkbox, review officers have structured ledgers, allowing Community Health Promoters and sub-county officers to resolve genuine disputes efficiently."
+  > "This workflow illustrates how a possible implementation of **Section 35 of the Kenya Data Protection Act, 2019 and Regulation 22 of the General Regulations, 2021** might operate in practice. Those provisions require that automated decision-making affecting social security rights includes meaningful, substantive human review — not a rubber-stamp checkbox. The prototype demonstrates structured ledgers that could allow Community Health Promoters and sub-county officers to resolve genuine disputes efficiently. Actual compliance with Section 35 and Regulation 22 is a matter for SHA's legal team and the ODPC to assess."
 
 ---
 

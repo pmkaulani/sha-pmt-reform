@@ -1,4 +1,4 @@
-// SHA Means-Testing Evaluation - v2.1 prototype rules engine
+// SHA Means-Testing Evaluation — Declared-income AGI v1 prototype
 // The 2.75% contribution rate and KSh 300 monthly floor are statutory reference parameters
 // for non-salaried households under Regulation 18(1) & (2) of the Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024),
 // with salaried employment governed separately under Regulation 17(1)–(2) (minimum KSh 300/mo under Reg 17(2)).
@@ -64,14 +64,14 @@ export function validateAssessmentInputs(d) {
 }
 
 export const BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: true, tier: 'Low-Income (Reg. 18(2) Minimum Contribution Rule: KSh 300 Floor)' },
-  { min: 131001, max: 450000, isIndigent: false, tier: 'Standard' }, // Reg. 18(1) 2.75% reference parameter
-  { min: 450001, max: Infinity, isIndigent: false, tier: 'Upper' }, // Reg. 18(1) 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
+  { min: 0, max: 131000, monthly: 300, minimumContributionApplied: true, tier: 'Low-Income (Reg. 18(2) Minimum Contribution Rule: KSh 300 Floor)' },
+  { min: 131001, max: 450000, minimumContributionApplied: false, tier: 'Standard' }, // Reg. 18(1) 2.75% reference parameter
+  { min: 450001, max: Infinity, minimumContributionApplied: false, tier: 'Upper' }, // Reg. 18(1) 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
 ];
 
 export const PROPOSED_BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: true }, // Reg. 18(2) reference minimum contribution (KSh 300 floor for non-salaried households)
-  { min: 131001, max: Infinity, isIndigent: false }, // Reg. 18(1) 2.75% rate applied to evaluated AGI (prototype policy model; requires validation against Regulation 21(6) Fifth Schedule means-testing instrument)
+  { min: 0, max: 131000, monthly: 300, minimumContributionApplied: true }, // Reg. 18(2) reference minimum contribution (KSh 300 floor for non-salaried households)
+  { min: 131001, max: Infinity, minimumContributionApplied: false }, // Reg. 18(1) 2.75% rate applied to evaluated AGI (prototype policy model; requires validation against Regulation 21(6) Fifth Schedule means-testing instrument)
 ];
 
 const ASAL_COUNTIES = {
@@ -169,13 +169,15 @@ export function calculateCurrentModel(d) {
  */
 export function calculateCurrentModelContribution(lassoAnnual) {
   const band = BANDS.find(b => lassoAnnual <= b.max) ?? BANDS[BANDS.length - 1];
-  const isIndigent = band.isIndigent === true;
-  const monthly = isIndigent ? band.monthly : Math.max(300, Math.round((lassoAnnual * 0.0275) / 12));
-  return { annualIncome: lassoAnnual, monthly, isIndigent, tier: band.tier };
+  const minimumContributionApplied = band.minimumContributionApplied === true;
+  const monthly = minimumContributionApplied ? band.monthly : Math.max(300, Math.round((lassoAnnual * 0.0275) / 12));
+  // Legacy field name preserved for existing audit-record consumers and tests that read isIndigent from currentResult.
+  // The correct interpretation is "minimum contribution rule applied" (Reg. 18(2)), NOT an indigence determination.
+  return { annualIncome: lassoAnnual, monthly, isIndigent: minimumContributionApplied, minimumContributionApplied, tier: band.tier };
 }
 
 /**
- * Calculates the proposed SHA PMT v2.1 Optimization using the AGI model.
+ * Calculates the proposed SHA PMT contribution using the Declared-income AGI v1 prototype model.
  */
 export function calculateProposedModel(d, adminParams = {}) {
   // 1. Authoritative input validation
@@ -555,8 +557,12 @@ export function calculateProposedModel(d, adminParams = {}) {
   };
 
   // --- OVERRIDES & POLICY CONSTRAINTS ---
-  let isIndigent = false;
-  if (d.receivesAid || d.isRefugee) isIndigent = true;
+  // NOTE: This block determines whether the KSh 300 minimum contribution rule applies
+  // (Regulation 18(2)). It does NOT determine indigence. Indigence (financial assistance
+  // eligibility under Regulation 19) requires statutory verification; this prototype never
+  // issues such a determination. Use indigenceStatus: "NOT_DETERMINED" in all outputs.
+  let minimumContributionApplied = false;
+  if (d.receivesAid || d.isRefugee) minimumContributionApplied = true;
   if (d.headAge >= 65) {
     if (deriveVehicleList(d).length > 0) {
       requiresChpVerification = true;
@@ -569,26 +575,28 @@ export function calculateProposedModel(d, adminParams = {}) {
       });
     }
     if (effectiveBalance < 5000) {
-      isIndigent = true;
+      minimumContributionApplied = true;
       factors.push({ name: 'Age Override', impact: 'High', direction: 'down', description: 'Pensioner Trap bypass', isFlaw: false });
     }
   }
   if (d.headAge < 21 && d.householdSize > 1) {
-    isIndigent = true;
+    minimumContributionApplied = true;
     factors.push({ name: 'Child-Headed Household', impact: 'High', direction: 'down', description: 'Minor override', isFlaw: false });
   }
 
-  const INDIGENT_THRESHOLD = 131000;
-  if (!isIndigent && adjustedGrossIncome <= INDIGENT_THRESHOLD) {
-    isIndigent = true;
-    factors.push({ name: 'Pro-Poor Constraint', impact: 'Medium', direction: 'down', description: 'AGI below illustrative low-income threshold (KSh 131,000) — minimum contribution rule applied under Regulation 18(2)', isFlaw: false });
+  // Research income band for classification reporting only (not an indigence determination)
+  const LOW_INCOME_RESEARCH_THRESHOLD = 131000;
+  let researchIncomeBand = adjustedGrossIncome <= LOW_INCOME_RESEARCH_THRESHOLD ? 'LOW_INCOME_BAND' : 'STANDARD_BAND';
+  if (!minimumContributionApplied && adjustedGrossIncome <= LOW_INCOME_RESEARCH_THRESHOLD) {
+    minimumContributionApplied = true;
+    factors.push({ name: 'Pro-Poor Constraint', impact: 'Medium', direction: 'down', description: 'AGI below illustrative low-income research threshold (KSh 131,000) — minimum contribution rule applied under Regulation 18(2)', isFlaw: false });
   }
 
   // Meta-Flaw 30: 2.75% Rate Assumption
   let monthlyContribution = 0;
   let tier = "LOW";
   
-  if (isIndigent) {
+  if (minimumContributionApplied) {
     monthlyContribution = 300; // Minimum contribution rule under Regulation 18(2) (KSh 300/mo floor)
   } else {
     monthlyContribution = Math.max(300, Math.round((adjustedGrossIncome * 0.0275) / 12));
@@ -603,9 +611,9 @@ export function calculateProposedModel(d, adminParams = {}) {
     isDigitalGhost = true;
   }
   
-  if (isDigitalGhost && isIndigent) {
+  if (isDigitalGhost && minimumContributionApplied) {
     requiresChpVerification = true;
-    factors.push({ name: 'Digital Ghost / CHP Protocol', impact: 'High', direction: 'neutral', description: 'Zero digital footprint. Provisional low-income classification pending physical CHP verification within 90 days.', isFlaw: false });
+    factors.push({ name: 'Low Digital Footprint / CHP Referral Recommended', impact: 'High', direction: 'neutral', description: 'Zero digital footprint with low declared income. Minimum contribution rule applied. CHP in-person verification is recommended — no indigence determination is made by this prototype.', isFlaw: false });
   }
 
   // Consent Withheld Pathway (DPA 2019 compliance)
@@ -641,13 +649,20 @@ export function calculateProposedModel(d, adminParams = {}) {
     estimatedAnnualIncome: annualBaseTotal,
     adjustedGrossIncome: adjustedGrossIncome,
     monthlyContribution: monthlyContribution,
-    band: isIndigent ? 1 : 2,
+    band: minimumContributionApplied ? 1 : 2,
     tier: tier,
-    isIndigent: isIndigent,
+    // isIndigent is preserved as a field name for backward compatibility with existing consumers
+    // (ModelVersionsTab, createAuditRecord, calculatePopulationErrorRates, tests). Its value
+    // means "minimum contribution rule applied under Reg. 18(2)", NOT an indigence determination
+    // under Regulation 19. See indigenceStatus field for the authoritative prototype stance.
+    isIndigent: minimumContributionApplied,
+    minimumContributionApplied: minimumContributionApplied,
+    researchIncomeBand: researchIncomeBand,
+    indigenceStatus: 'NOT_DETERMINED', // Prototype never determines indigence — Reg. 19 requires statutory verification
     isDigitalGhost: isDigitalGhost,
     requiresChpVerification: requiresChpVerification,
     factors: factors,
-    modelName: 'SHA PMT v2.1 — proposed AGI rules engine',
+    modelName: 'SHA PMT — Declared-income AGI v1',
     deductions: postBaseDeductions,
     calculationBreakdown: calculationBreakdown,
     evidenceCoverage,
@@ -2102,17 +2117,19 @@ export function generateSyntheticPopulation(n = 300, adminParams = {}) {
 
 /**
  * Runs both models over a synthetic population and computes population-level
- * error rates — the numbers that belong in the Bias & Compliance / Metrics
- * tabs. Uses the proposed model as the "truth" reference (it's this project's
- * own best estimate of correct classification) and counts where the current
- * model disagrees.
+ * model-disagreement metrics — the numbers that belong in the Bias & Compliance / Metrics
+ * tabs. Counts where the two models disagree on whether the minimum contribution rule applies.
  *
- * Exclusion error: household that the proposed model marks as indigent
- *   (should receive subsidy) but the current model does not → wrongly denied.
- * Inclusion error: household that the current model marks as indigent but
- *   the proposed model does not → wrongly subsidised.
+ * IMPORTANT: The proposed model is NOT independently verified ground truth.
+ * "Exclusion disagreement" and "inclusion disagreement" measure inter-model divergence,
+ * not validated classification error against real outcomes. Labels in the UI reflect this.
+ *
+ * Exclusion disagreement: proposed model applies minimum rule, current model does not → potential
+ *   households who should pay KSh 300 but are charged more by the current model.
+ * Inclusion disagreement: current model applies minimum rule, proposed model does not → potential
+ *   households who pay KSh 300 but would pay more under the proposed model.
  * Monthly payout ratio: total current-model contributions collected vs total
- *   benefits paid out at the indigent flat rate (KSh 300/mo × indigent count).
+ *   KSh 300 payouts under those the proposed model classifies in the minimum-rule band.
  *
  * @param {number} n  Population size (default 500 for stable percentages)
  * @returns {{ exclusionRate: number, inclusionRate: number, payoutRatio: number,
@@ -2120,18 +2137,18 @@ export function generateSyntheticPopulation(n = 300, adminParams = {}) {
  */
 export function calculatePopulationErrorRates(n = 500) {
   const pop = generateSyntheticPopulation(n);
-  let excluded = 0; // proposed=indigent, current=not
-  let included = 0; // proposed=not-indigent, current=indigent
+  let excluded = 0; // proposed applies minimum rule, current does not
+  let included = 0; // current applies minimum rule, proposed does not
   let totalContributions = 0;
   let totalPayouts = 0;
 
   for (const { currentResult, proposedResult } of pop) {
-    const curIndigent = currentResult.isIndigent;
-    const propIndigent = proposedResult.isIndigent;
-    if (propIndigent && !curIndigent) excluded++;
-    if (!propIndigent && curIndigent) included++;
+    const curMin = currentResult.isIndigent;
+    const propMin = proposedResult.isIndigent;
+    if (propMin && !curMin) excluded++;
+    if (!propMin && curMin) included++;
     totalContributions += currentResult.monthly;
-    totalPayouts += propIndigent ? 300 : 0; // cost of covering those who should be covered
+    totalPayouts += propMin ? 300 : 0; // cost of covering those in minimum-rule band under proposed model
   }
 
   return {

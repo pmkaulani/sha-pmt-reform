@@ -95,7 +95,7 @@ export const SHA_REQUEST_ITEMS = [
     itemNumber: 12,
     title: "Data Protection Impact Assessment (DPIA) & Privacy Governance Protocols",
     category: "LEGAL_COMPLIANCE",
-    description: "The approved DPIA and data handling protocols governing automated decision-making and profiling under Kenya Data Protection Act, 2019 Section 35.",
+    description: "The approved DPIA and data handling protocols governing automated decision-making and profiling under Kenya Data Protection Act, 2019 Section 31 (Data Protection Impact Assessment) and Section 35 (automated individual decision-making safeguards).",
     rationale: "Ensures proposed research protocols fully comply with statutory member rights and institutional security controls."
   }
 ];
@@ -111,6 +111,8 @@ export function buildShaRequestPackJson() {
     recipient: "Social Health Authority (SHA) / Ministry of Health, Kenya",
     statutoryBasis: [
       "Kenya Data Protection Act, 2019 (Sections 25, 30(1)(b)(viii), 30(1)(e), 35, 53)",
+      "Kenya Data Protection Act, 2019 Section 31 (Data Protection Impact Assessment — required before high-risk processing)",
+      "Kenya Data Protection Act, 2019 Section 32 (conditions for consent, including right to withhold or withdraw consent)",
       "Data Protection (General) Regulations, 2021 (Regulation 22)",
       "Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule 'Means Testing'; cf. Reg 17(1)–(2) for salaried and Reg 20 for lawful custody)",
       "ODPC Guidance Notes on Processing for Research Purposes (2025)"

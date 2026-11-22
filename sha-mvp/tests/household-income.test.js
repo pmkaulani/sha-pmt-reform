@@ -7,6 +7,7 @@ import {
   reproduceHouseholdIncome,
   calculateMonthsFromDates,
   OPERATING_EXPENSE_CATEGORIES,
+  createZeroEarnedIncomeAssessment,
 } from "../src/lib/household-income.js";
 import {
   PRESETS,
@@ -400,4 +401,40 @@ test("12. Historical AGI v2.1 output preservation and confidence interval remova
   assert.equal(versions.declaredIncome.result.confidenceTier, null);
   assert.equal(versions.declaredIncome.result.agiRangeLow, null);
   assert.equal(versions.declaredIncome.result.agiRangeHigh, null);
+});
+
+// ─── ZERO-INCOME REPRODUCIBILITY REGRESSION ─────────────────────────────────
+
+test("32. Zero-earned-income assessment reproduces correctly via snapshot — regression guard", () => {
+  // Create the initial zero-income assessment
+  const original = createZeroEarnedIncomeAssessment();
+
+  // Confirm structural integrity of the original
+  assert.equal(original.isValid, true, "Zero-income assessment must be valid");
+  assert.equal(original.hasDeclaredNoEarnedIncome, true, "hasDeclaredNoEarnedIncome must be true");
+  assert.equal(original.calculationStatus, "CALCULATED_EXPLICIT_ZERO_EARNED");
+  assert.equal(original.monthlyEarnedNetKsh, 0, "Zero-income monthly earnings must be 0");
+  assert.equal(original.annualisedEarnedNetKsh, 0, "Zero-income annualised earnings must be 0");
+  assert.ok(Array.isArray(original.lines), "lines must be an array");
+  assert.equal(original.lines.length, 0, "Zero-income lines must be empty");
+
+  // Test reproduction via the reproducibleInputSnapshot property
+  const reproducedFromSnapshot = reproduceHouseholdIncome(original.reproducibleInputSnapshot);
+  assert.equal(reproducedFromSnapshot.isValid, original.isValid, "Reproduced from snapshot isValid must match");
+  assert.equal(reproducedFromSnapshot.hasDeclaredNoEarnedIncome, true, "hasDeclaredNoEarnedIncome must be true");
+  assert.equal(reproducedFromSnapshot.calculationStatus, "CALCULATED_EXPLICIT_ZERO_EARNED");
+  assert.equal(reproducedFromSnapshot.monthlyEarnedNetKsh, 0);
+
+  // Also test reproduction via the full assessment object
+  const reproduced = reproduceHouseholdIncome(original);
+
+  // Reproduced result must match the original on all key fields
+  assert.equal(reproduced.isValid, original.isValid, "Reproduced isValid must match");
+  assert.equal(reproduced.hasDeclaredNoEarnedIncome, original.hasDeclaredNoEarnedIncome, "Reproduced hasDeclaredNoEarnedIncome must match");
+  assert.equal(reproduced.calculationStatus, original.calculationStatus, "Reproduced calculationStatus must match");
+  assert.equal(reproduced.monthlyEarnedNetKsh, original.monthlyEarnedNetKsh, "Reproduced monthlyEarnedNetKsh must be 0");
+  assert.equal(reproduced.annualisedEarnedNetKsh, original.annualisedEarnedNetKsh, "Reproduced annualisedEarnedNetKsh must be 0");
+  assert.equal(reproduced.canPopulatePrototypeEarnedIncomeBase, original.canPopulatePrototypeEarnedIncomeBase);
+  assert.ok(reproduced.disclaimer.includes("Regulation 18(2)"), "Reproduced disclaimer must reference Regulation 18(2)");
+  assert.ok(reproduced.disclaimer.includes("Regulation 19"), "Reproduced disclaimer must reference Regulation 19 non-indigence notice");
 });

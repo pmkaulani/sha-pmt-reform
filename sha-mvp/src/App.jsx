@@ -1782,7 +1782,7 @@ function USSDTab({results}) {
     {title:"Calculation explanation · mock",content:[
       {t:"SHA — Explanation",y:true},{t:"—".repeat(22),y:false},
       {t:`Assessment: KSh ${nxt.monthly}/mo`,col:"#4ADE80"},{t:"",y:false},
-      {t:"Key factors (AGI Model v2.1):",y:false},
+      {t:"Key factors (Declared-income AGI v1):",y:false},
       {t:`Household: ${results.d.householdSize} members`,y:false},
       {t:`Retained Bal: KSh ${results.d.avgRetainedBalance.toLocaleString()}`,y:false},
       {t:`Assets: ${results.d.assets.length} declared`,y:false},{t:"",y:false},
@@ -1892,14 +1892,14 @@ function MetricsTab() {
   const simNote = 'Synthetic demonstration only: both prototype calculations run over 500 generated households. The proposed model is a comparison reference, not independently verified ground truth.';
 
   const metrics=[
-    {label:"Disagreement: proposed model classifies indigent",cur:excRate,tgt:"Design target: < 10%",desc:`Households the proposed rules engine classifies as indigent while the illustrative baseline does not. ${simNote} The external Lighthouse Reports subgroup figure is a separate published finding, not an output of this simulation.`},
-    {label:"Disagreement: baseline classifies indigent",cur:incRate,tgt:"Design target: < 10%",desc:`Households the illustrative baseline classifies as indigent while the proposed rules engine does not. ${simNote}`},
+    {label:"Disagreement: proposed model applies minimum rule",cur:excRate,tgt:"Design target: < 10%",desc:`Households where the proposed model applies the KSh 300 minimum contribution floor under Reg. 18(2) while the illustrative baseline charges more. ${simNote}`},
+    {label:"Disagreement: baseline applies minimum rule",cur:incRate,tgt:"Design target: < 10%",desc:`Households where the illustrative baseline applies the minimum contribution floor while the proposed model calculates a higher contribution. ${simNote}`},
     {label:"Group disparity check",cur:"Synthetic test only",tgt:"Design target: ≤ 3 pp",desc:"The current test measures a model-disagreement proxy, not formal equalized odds. Real outcome labels and adequately sized groups are required."},
-    {label:"Monthly Payout Ratio",cur:payRatio,tgt:"< 100%",desc:`KSh in indigent subsidies owed vs KSh collected from contributions, under the current model's classifications. ${simNote}`},
-    {label:"Active Payers",cur:"22.7%",tgt:"> 60%",desc:"5 Million of 22 Million registered members — parliamentary oversight figure"},
-    {label:"Inference Latency",cur:"~3 s",tgt:"< 500 ms",desc:"Time required to compute classification result"},
-    {label:"USSD Gateway Uptime (*147#)",cur:"Intermittent",tgt:"99.99%",desc:"Feature phone access reliability"},
-    {label:"Systemic Fraud Losses (6 mos)",cur:"KSh 11 B",tgt:"< KSh 1 B / yr",desc:"Ghost patients, fake facilities, upcoding — official DCI/parliamentary figure, not from this app's own fraud engine (see Bias & Compliance tab for that separate, engine-computed figure)"},
+    {label:"Simulated Floor Ratio",cur:payRatio,tgt:"< 100%",desc:`Simulated ratio of minimum-rule allocations to total contributions under synthetic population run. ${simNote}`},
+    {label:"Active Payers",cur:"22.7%",tgt:"> 60%",desc:"5 Million of 22 Million registered members — parliamentary committee report (Oct 2024; unverified against SHA audited financials)"},
+    {label:"Inference Latency",cur:"~3 s",tgt:"< 500 ms",desc:"In-browser JavaScript execution latency on demonstration machine; engineering target is < 500 ms for backend API"},
+    {label:"USSD Gateway Uptime (*147#)",cur:"Intermittent",tgt:"99.99%",desc:"Reported intermittent feature-phone gateway availability during early rollout; engineering target is 99.99%"},
+    {label:"Systemic Fraud Losses (6 mos)",cur:"KSh 11 B (Reported)",tgt:"< KSh 1 B / yr",desc:"Attributed to parliamentary health committee testimony regarding ghost claims and upcoding (Oct 2024 – Apr 2025; external estimate, not an output of this software)"},
   ];
   const barData=[
     {name:"Exclusion %",cur:excNum,tgt:10},{name:"Inclusion %",cur:incNum,tgt:10},
@@ -2168,7 +2168,7 @@ function FraudRiskTab({results}) {
   return (
     <div style={{display:"grid",gap:24}}>
       <div>
-        <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Prototype fraud-risk rules</div>
+        <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Prototype consistency-review heuristics</div>
         <div style={{fontSize:14,color:S.text,lineHeight:1.6}}>
           The prototype applies hand-authored rules to demonstration inputs. It does not query KRA, NTSA or mobile-network records, and its heuristic score is not a calibrated fraud probability. Flags are prompts for human examination, not findings of fraud and not grounds for automatic rejection. No officer is notified by this demo.
         </div>
@@ -2208,7 +2208,7 @@ function FraudRiskTab({results}) {
       {/* Fraud Flags */}
       {fraud.flagCount > 0 ? (
         <div style={{display:"grid",gap:12}}>
-          <div style={{fontSize:16,fontWeight:600,color:S.text}}>Detected Fraud Flags</div>
+          <div style={{fontSize:16,fontWeight:600,color:S.text}}>Consistency Review Prompts (Heuristic Flags)</div>
           {fraud.fraudFlags.map((flag, i) => (
             <div key={i} style={{
               background: getSeverityBgColor(flag.severity),
@@ -2669,7 +2669,7 @@ export default function SHADemo() {
     ["challenge","Prepare Challenge"],
     ["officer","Officer Review (Demo)"],
     ["fairness","Fairness Analysis"],
-    ["fraud","Fraud Risk Assessment"],
+    ["fraud","Consistency Review Heuristics"],
     ["bias","Bias & Compliance"],
     ["shap","Calculation Breakdown"],
     ["ussd","USSD Simulation"],

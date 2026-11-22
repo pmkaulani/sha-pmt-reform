@@ -42,9 +42,9 @@ The model's inequities were documented before rollout:
 
 ---
 
-## The Solution — AGI Model (v2.1)
+## The Solution — Declared-income AGI v1 & Original AGI v2.1
 
-The AGI model proposes **7 research-informed deduction rules** to the assessed consumption base prior to calculating the statutory 2.75% contribution rate, adjusting the assessment base rather than the rate:
+The two prototype models propose **7 research-informed deduction rules** applied to the declared income base prior to calculating the statutory 2.75% contribution rate. These deductions are **candidate research methodology** — their categories and allowance rules require validation against SHA's official means-testing instrument and are not an established entitlement under Regulation 18. The declared-income variant (AGI v1) adjusts the assessment base rather than the rate:
 
 | Deduction | Description |
 |---|---|
@@ -218,7 +218,7 @@ The repository's legal and policy tables describe **design intentions and questi
 
 ## Fraud Detection
 
-Kenya lost **KSh 11 billion** to ghost patients, fake facilities, and upcoding in just 6 months (Oct 2024 – Apr 2025), resulting in the closure of over 1,000 facilities. The prototype includes an **18-rule fraud-risk heuristic** intended to illustrate potential checks such as household-composition inconsistencies, declared asset mismatches, income discrepancies and geographic conflicts. Without live agency integrations and independently validated outcomes, these are review prompts—not verified detections or calibrated fraud probabilities.
+Kenya has experienced significant fraud losses through ghost patients, fake facilities, and upcoding in the health insurance system. Parliamentary and media reports have cited figures in the range of **KSh 11 billion** (attributed to a six-month period reported to parliamentary health committees, Oct 2024 – Apr 2025 timeframe; the author has not independently verified the precise figure from primary SHA financial statements). The closure of over 1,000 facilities has been reported in connection with these investigations. The prototype includes an **18-rule consistency-review heuristic** intended to illustrate potential checks such as household-composition inconsistencies, declared asset mismatches, income discrepancies, and geographic conflicts. Without live agency integrations and independently validated outcomes, these are **review prompts — not verified fraud detections or calibrated fraud probabilities**.
 
 ---
 
@@ -248,7 +248,7 @@ The proposed architecture illustrates how triangulated data could be governed if
 2. **KRA PIN Type Granularity:** Granular tax identifiers (`kraPinType`) differentiate formal payroll employees (`PAYE`) from self-declared informal business owners (`BUSINESS`), applying appropriate confidence weighting to income records.
 3. **Disaster Recovery & Fallback Protocol:** During API outages or when assessing cash-based citizens lacking a digital footprint:
    - **Secondary Proxy Layer:** The algorithm shifts weighting to verified physical capital (land, livestock, commercial assets) while preserving baseline demographic allowances.
-   - **Digital Ghost Protocol:** Indigent citizens with zero digital and physical footprints are assigned a provisional KSh 300 base tier and routed for **mandatory verification by a Community Health Promoter (CHP)** within 90 days, providing an accountable offline safety net inspired by Indonesia's village verification model.
+   - **Proposed offline-assistance pathway:** Households with zero digital and physical footprints and low declared income receive the KSh 300 minimum contribution rate and a recommended referral for **Community Health Promoter (CHP) in-person verification**. The prototype flags such cases for follow-up but does **not** automatically designate any household as indigent, does not create an SHA case, and does not issue a Regulation 19 financial-assistance determination. Any offline safety-net protocol inspired by models such as Indonesia's village verification system would require separate statutory and administrative design.
 
 ### System Architecture
 
