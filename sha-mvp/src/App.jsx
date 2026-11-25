@@ -3099,25 +3099,25 @@ export default function SHADemo() {
               />
             ) : results ? (
               <div>
-                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12, marginBottom:20, padding:"12px 18px", background:S.surface, border:`1px solid ${S.border}`, borderRadius:10}}>
-                  <div>
-                    <span style={{fontSize:11, fontWeight:700, textTransform:"uppercase", color:S.blue, letterSpacing:"0.5px"}}>
-                      Guided Demonstration · Final Itemised Calculation Receipt & Challenge
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12, marginBottom:16, padding:"8px 14px", background:"#ffffff", border:`1px solid #cbd5e1`, borderRadius:4}}>
+                  <div style={{display:"flex", alignItems:"center", gap:8}}>
+                    <span style={{fontSize:11, fontWeight:700, textTransform:"uppercase", color:S.muted, letterSpacing:"0.5px"}}>
+                      Household:
                     </span>
-                    <div style={{fontSize:14, fontWeight:700, color:S.text, marginTop:2}}>
-                      Household Assessment: {inputs.county || "Declared County"} · {inputs.householdSize || 1} Members
-                    </div>
+                    <span style={{fontSize:12, fontWeight:700, color:S.text}}>
+                      {inputs.activeScenario || "Custom Household Entry"}
+                    </span>
                   </div>
-                  <div style={{display:"flex", gap:10}}>
+                  <div style={{display:"flex", gap:8}}>
                     <button
                       type="button"
                       onClick={() => setResults(null)}
                       style={{
-                        padding:"8px 14px",
-                        background:S.surface,
-                        border:`1px solid ${S.borderUp}`,
-                        borderRadius:6,
-                        fontSize:12,
+                        padding:"6px 12px",
+                        background:"#ffffff",
+                        border:`1px solid #cbd5e1`,
+                        borderRadius:4,
+                        fontSize:11,
                         fontWeight:600,
                         color:S.text,
                         cursor:"pointer"
@@ -3129,17 +3129,17 @@ export default function SHADemo() {
                       type="button"
                       onClick={() => setViewMode("workspace")}
                       style={{
-                        padding:"8px 14px",
-                        background:S.faint,
-                        border:`1px solid ${S.border}`,
-                        borderRadius:6,
-                        fontSize:12,
+                        padding:"6px 12px",
+                        background:"#f8fafc",
+                        border:`1px solid #cbd5e1`,
+                        borderRadius:4,
+                        fontSize:11,
                         fontWeight:600,
                         color:S.blue,
                         cursor:"pointer"
                       }}
                     >
-                      Explore in Full Workspace →
+                      Return to Full Workspace →
                     </button>
                   </div>
                 </div>

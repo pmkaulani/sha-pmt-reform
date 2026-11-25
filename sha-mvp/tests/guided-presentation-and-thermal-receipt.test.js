@@ -609,3 +609,207 @@ test("Phase 11 (11-14): Evidence status, immutability, payment separation, and v
   assert.equal(receipt.paymentReceipt, undefined, "13. Calculation receipt must not contain payment acknowledgement");
   assert.ok(receipt.disclaimer.includes("No payment has been made"));
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. EXCEL-STYLE STATEMENT, DISPLAY INTEGRITY & NO HARDFALLBACKS
+// ─────────────────────────────────────────────────────────────────────────────
+
+test("Integrity: Zero deductions display as zero or not applied, never sample defaults", () => {
+  // Test case with zero living adjustments (e.g. experimental policy deductions disabled)
+  const inputs = {
+    monthlyNetEarnedIncome: 25000,
+    county: "Kisumu",
+    householdSize: 1,
+    headAge: 35,
+    headGender: "M",
+    assets: [],
+    vehicles: [],
+    landParcels: [],
+    incomeSources: [
+      { id: "s-wage", sourceType: "WAGE_EMPLOYMENT", amountReceivedKsh: 300000, monthsObserved: 12 }
+    ]
+  };
+
+  // calculateProposedModel without enableExperimentalPolicyAdjustments
+  const modelRes = calculateProposedModel(inputs, { enableExperimentalPolicyAdjustments: false });
+
+  const sampleResults = {
+    d: inputs,
+    next: {
+      ...modelRes,
+      incomeAssessmentSnapshot: {
+        calculationStatus: "CALCULATED_STANDARD",
+        lines: [
+          {
+            sourceId: "s-wage",
+            bucket: "EARNED",
+            totalReceivedKsh: 300000,
+            totalReportedCostsKsh: 0,
+            reportedNetKsh: 300000,
+            averageMonthlyNetKsh: 25000,
+            observationMonths: 12,
+            provenance: "MEMBER_DECLARATION"
+          }
+        ]
+      }
+    }
+  };
+
+  const receipt = buildReceiptViewModel(sampleResults);
+
+  // Must NOT fall back to 120,000 or 76,800
+  assert.equal(receipt.colAdjustment.isApplied, false);
+  assert.equal(receipt.colAdjustment.amount, 0);
+  assert.equal(receipt.colAdjustment.status, "Not applied");
+  assert.notEqual(receipt.colAdjustment.amount, 120000);
+
+  assert.equal(receipt.depAdjustment.isApplied, false);
+  assert.equal(receipt.depAdjustment.amount, 0);
+  assert.equal(receipt.depAdjustment.status, "Not applied");
+  assert.notEqual(receipt.depAdjustment.amount, 76800);
+
+  assert.equal(receipt.totalAdjustmentsKsh, 0);
+  // Adjusted Gross Income equals raw annual base
+  assert.equal(receipt.reconciliation.adjustedGrossIncomeKsh, 300000);
+  assert.notEqual(receipt.reconciliation.adjustedGrossIncomeKsh, 163200);
+
+  // Monthly contribution is 300,000 * 0.0275 / 12 = 687.5 -> 688
+  assert.equal(receipt.contribution.finalMonthlyEquivalent, 688);
+  assert.notEqual(receipt.contribution.finalMonthlyEquivalent, 374);
+});
+
+test("Integrity: Missing household fields return null / Not recorded, never invented defaults", () => {
+  const inputs = {
+    monthlyNetEarnedIncome: 10000,
+    // Note: dwellingType, wallMaterial, waterSource, lightingEnergy, county are intentionally omitted
+    householdSize: 2,
+    headAge: 40,
+    headGender: "F",
+    assets: [],
+    vehicles: [],
+    landParcels: []
+  };
+
+  const modelRes = calculateProposedModel(inputs);
+  const sampleResults = {
+    d: inputs,
+    next: {
+      ...modelRes,
+      incomeAssessmentSnapshot: { calculationStatus: "CALCULATED_STANDARD", lines: [] }
+    }
+  };
+
+  const receipt = buildReceiptViewModel(sampleResults);
+
+  // Must be null, NEVER default to "Bungalow", "Stone", "Public tap", "Electricity", "Nakuru"
+  assert.equal(receipt.household.dwellingType, null, "Must not default to Bungalow");
+  assert.equal(receipt.household.wallMaterial, null, "Must not default to Stone");
+  assert.equal(receipt.household.waterSource, null, "Must not default to Public tap");
+  assert.equal(receipt.household.lightingEnergy, null, "Must not default to Electricity");
+  assert.equal(receipt.household.county, null, "Must not default to Nakuru");
+
+  // Evidence items must reflect "Not recorded"
+  const dwellingEv = receipt.evidenceItems.find(e => e.category === "Housing / Dwelling");
+  assert.ok(dwellingEv.value.includes("Not recorded") || dwellingEv.verification.includes("Not recorded"));
+
+  const energyEv = receipt.evidenceItems.find(e => e.category === "Water & Energy");
+  assert.ok(energyEv.value.includes("Not recorded") || energyEv.verification.includes("Not recorded"));
+});
+
+test("Integrity: Dependants come from actual assessment information, not householdSize - 1 assumption", () => {
+  const inputs = {
+    monthlyNetEarnedIncome: 20000,
+    householdSize: 5,
+    dependantCount: 2, // Explicitly 2 dependants (e.g. 3 adults, 2 children)
+    headAge: 45,
+    headGender: "M",
+    assets: [],
+    vehicles: [],
+    landParcels: []
+  };
+
+  const modelRes = calculateProposedModel(inputs);
+  const sampleResults = {
+    d: inputs,
+    next: {
+      ...modelRes,
+      incomeAssessmentSnapshot: { calculationStatus: "CALCULATED_STANDARD", lines: [] }
+    }
+  };
+
+  const receipt = buildReceiptViewModel(sampleResults);
+  assert.equal(receipt.household.dependantCount, 2, "Must preserve explicit recorded dependant count");
+  assert.notEqual(receipt.household.dependantCount, 4, "Must not blindly calculate householdSize - 1");
+});
+
+test("Integrity: All actual engine figures reconcile exactly in view model", () => {
+  const inputs = {
+    county: "Nakuru",
+    householdSize: 5,
+    headAge: 38,
+    headGender: "F",
+    assets: [],
+    vehicles: [],
+    landParcels: [],
+    monthlyNetEarnedIncome: 30000,
+    incomeSources: [
+      {
+        id: "src-wanjiru",
+        sourceType: "SELF_EMPLOYMENT",
+        label: "Retail Market Trader",
+        amountReceivedKsh: 540000,
+        directCostsKsh: 180000,
+        monthsObserved: 12
+      }
+    ]
+  };
+
+  const modelRes = calculateProposedModel(inputs, { enableExperimentalPolicyAdjustments: true });
+  const sampleResults = {
+    d: inputs,
+    next: {
+      ...modelRes,
+      incomeAssessmentSnapshot: {
+        calculationStatus: "CALCULATED_STANDARD",
+        lines: [
+          {
+            sourceId: "src-wanjiru",
+            bucket: "EARNED",
+            totalReceivedKsh: 540000,
+            totalReportedCostsKsh: 180000,
+            reportedNetKsh: 360000,
+            averageMonthlyNetKsh: 30000,
+            observationMonths: 12,
+            provenance: "MEMBER_DECLARATION"
+          }
+        ]
+      }
+    }
+  };
+
+  const receipt = buildReceiptViewModel(sampleResults);
+
+  // Totals
+  assert.equal(receipt.totals.totalGrossAnnualKsh, 540000);
+  assert.equal(receipt.totals.totalExpensesAnnualKsh, 180000);
+  assert.equal(receipt.totals.totalNetAnnualKsh, 360000);
+
+  // Living Adjustments
+  assert.equal(receipt.colAdjustment.amount, 120000);
+  assert.equal(receipt.depAdjustment.amount, 76800);
+  assert.equal(receipt.totalAdjustmentsKsh, 196800);
+
+  // Reconciliation Ladder
+  assert.equal(receipt.reconciliation.annualNetEarnedBase, 360000);
+  assert.equal(receipt.reconciliation.remainingBaseAfterCol, 240000);
+  assert.equal(receipt.reconciliation.adjustedGrossIncomeKsh, 163200);
+  assert.equal(receipt.reconciliation.isReconciled, true);
+  assert.equal(receipt.reconciliation.baseReconciliationDifference, 0);
+  assert.equal(receipt.reconciliation.preFloorReconciliationDifference, 0);
+
+  // Final Contribution
+  assert.equal(receipt.contribution.finalMonthlyEquivalent, 374);
+  assert.equal(receipt.contribution.illustrativeAnnualEquivalent, 4488);
+  assert.equal(receipt.contribution.minimumContributionFloorApplied, false);
+});
+
