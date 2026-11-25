@@ -75,9 +75,12 @@ test("calculates casual labour and rental income with allowable costs", () => {
   ]);
 
   assert.equal(result.isValid, true);
-  assert.equal(result.canPopulatePrototypeEarnedIncomeBase, true);
-  assert.equal(result.monthlyEarnedNetKsh, 20000);
-  assert.equal(result.annualisedEarnedNetKsh, 240000);
+  // 6-month casual income triggers SHORT_WINDOW_PROVISIONAL: visible for review, but cannot enter contribution model
+  assert.equal(result.canPopulatePrototypeEarnedIncomeBase, false);
+  assert.equal(result.calculationStatus, "BLOCKED_SHORT_WINDOW_REVIEW");
+  assert.equal(result.monthlyEarnedNetKsh, null);
+  assert.equal(result.reviewOnlyMonthlyEarnedNetKsh, 20000);
+  assert.equal(result.reviewOnlyAnnualisedEarnedNetKsh, 240000);
 });
 
 // ─── 2. REFERENCE PERIOD & OBSERVATION WINDOW TESTS ───────────────────────────
@@ -116,8 +119,10 @@ test("2. Different source observation windows calculate correct duration from ex
   ]);
 
   assert.equal(result.isValid, true);
-  assert.equal(result.monthlyEarnedNetKsh, 35000);
-  assert.ok(result.reviewFlags.some(f => f.code === "SHORT_WINDOW_PROVISIONAL"));
+  assert.equal(result.canPopulatePrototypeEarnedIncomeBase, false);
+  assert.equal(result.monthlyEarnedNetKsh, null);
+  assert.equal(result.calculationStatus, "BLOCKED_PERIOD_ALIGNMENT");
+  assert.ok(result.reviewFlags.some(f => f.code === "ASSESSMENT_PERIOD_MISMATCH"));
 });
 
 test("3. Missing periods and invalid observation dates are rejected", () => {
@@ -258,8 +263,11 @@ test("8. Reimbursement and expense double-counting safeguard flags potential off
   ]);
 
   assert.equal(result.monthlyNonEarnedFlowsKsh, 2500); // 30,000 / 12
-  const offsetFlag = result.reviewFlags.find(f => f.code === "REIMBURSEMENT_EXPENSE_OFFSET");
-  assert.ok(offsetFlag, "Reimbursement offset flag must be raised when expenses and reimbursements co-occur");
+  const offsetFlag = result.reviewFlags.find(f => f.code === "REIMBURSEMENT_RECONCILIATION_REQUIRED");
+  assert.ok(offsetFlag, "Reimbursement reconciliation flag must be raised when expenses and reimbursements co-occur");
+  assert.equal(result.hasUnresolvedReimbursements, true);
+  assert.equal(result.canPopulatePrototypeEarnedIncomeBase, false);
+  assert.equal(result.calculationStatus, "BLOCKED_MANUAL_REVIEW");
 });
 
 test("9. Seasonal income with incomplete annual coverage requires manual review", () => {
@@ -302,9 +310,13 @@ test("remittances remain visible in policy review bucket and do not enter earned
     source({ id: "remittance", sourceType: "REMITTANCES", amountReceivedKsh: 60000 }),
   ]);
 
-  assert.equal(result.monthlyEarnedNetKsh, 18000);
-  assert.equal(result.monthlyPolicyReviewResourcesKsh, 5000);
+  // Unresolved remittances make assessment provisional, setting monthlyEarnedNetKsh = null
   assert.equal(result.requiresPolicyDecision, true);
+  assert.equal(result.canPopulatePrototypeEarnedIncomeBase, false);
+  assert.equal(result.calculationStatus, "PROVISIONAL_PENDING_POLICY");
+  assert.equal(result.monthlyEarnedNetKsh, null);
+  assert.equal(result.reviewOnlyMonthlyEarnedNetKsh, 18000);
+  assert.equal(result.monthlyPolicyReviewResourcesKsh, 5000);
 });
 
 test("group funds are classified as fiduciary flow and not earner's personal income", () => {

@@ -459,5 +459,5 @@ test("Data Readiness 20: Model-versioning continues to identify originalAgi and 
   assert.ok(versions.originalAgi);
   assert.ok(versions.declaredIncome);
   assert.equal(versions.originalAgi.id, "asset-liquidity-agi-v2.1");
-  assert.equal(versions.declaredIncome.id, "declared-income-agi-v1");
+  assert.equal(versions.declaredIncome.id, "declared-income-agi-v1.1");
 });

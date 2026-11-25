@@ -16,6 +16,7 @@ import {
 
 import {
   calculateHouseholdIncome,
+  createZeroEarnedIncomeAssessment,
   validateIncomeSources,
   reproduceHouseholdIncome,
   INCOME_SOURCE_RULES,
@@ -79,9 +80,16 @@ test("Criterion 2: a household can continue with no earned income", () => {
     },
   ]);
   assert.equal(assistanceOnlyCalc.isValid, true);
-  assert.equal(assistanceOnlyCalc.canPopulatePrototypeEarnedIncomeBase, true);
-  assert.equal(assistanceOnlyCalc.monthlyEarnedNetKsh, 0);
-  assert.equal(assistanceOnlyCalc.annualisedEarnedNetKsh, 0);
+  assert.equal(assistanceOnlyCalc.canPopulatePrototypeEarnedIncomeBase, false);
+  assert.equal(assistanceOnlyCalc.calculationStatus, "PROVISIONAL_PENDING_POLICY");
+  assert.equal(assistanceOnlyCalc.monthlyEarnedNetKsh, null);
+  assert.equal(assistanceOnlyCalc.reviewOnlyMonthlyEarnedNetKsh, 0);
+
+  // Pure zero earned income declaration
+  const pureZero = createZeroEarnedIncomeAssessment();
+  assert.equal(pureZero.canPopulatePrototypeEarnedIncomeBase, true);
+  assert.equal(pureZero.monthlyEarnedNetKsh, 0);
+  assert.equal(pureZero.annualisedEarnedNetKsh, 0);
 
   // C. Algorithm simulation input validation permits 0 monthly net earned income
   const validation = validateAssessmentInputs({
@@ -94,10 +102,12 @@ test("Criterion 2: a household can continue with no earned income", () => {
   assert.equal(validation.isValid, true);
   assert.equal(validation.errors.length, 0);
 
-  // D. Proposed rules engine applies the KSh 300 statutory minimum floor
+  // D. Proposed rules engine applies the KSh 300 statutory minimum floor without declaring indigence
   const contribution = calculateCurrentModelContribution(0);
   assert.equal(contribution.monthly, 300);
-  assert.equal(contribution.isIndigent, true);
+  assert.equal(contribution.isIndigent, null);
+  assert.equal(contribution.minimumContributionFloorApplied, true);
+  assert.equal(contribution.contributionClassification, "MINIMUM_CONTRIBUTION_FLOOR");
 });
 
 // ─── 3. MULTIPLE INCOME SOURCES REPRESENTATION ───────────────────────────────
@@ -277,10 +287,14 @@ test("Criterion 8: other financial flows remain strictly separate from earned in
 
   const calc = calculateHouseholdIncome(sources);
   assert.equal(calc.isValid, true);
+  assert.equal(calc.canPopulatePrototypeEarnedIncomeBase, false);
+  assert.equal(calc.calculationStatus, "PROVISIONAL_PENDING_POLICY");
 
   // Earned income monthly: 120000 / 12 = 10000. None of the other flows may enter this total!
-  assert.equal(calc.monthlyEarnedNetKsh, 10000);
-  assert.equal(calc.annualisedEarnedNetKsh, 120000);
+  // Provisional transfer policy blocks final earned calculation, preserving review-only subtotal.
+  assert.equal(calc.monthlyEarnedNetKsh, null);
+  assert.equal(calc.reviewOnlyMonthlyEarnedNetKsh, 10000);
+  assert.equal(calc.reviewOnlyAnnualisedEarnedNetKsh, 120000);
 
   // Other flows tracked in their distinct prototype policy buckets
   assert.equal(calc.monthlyPolicyReviewResourcesKsh, (60000 + 24000) / 12); // 7000
@@ -317,7 +331,7 @@ test("Criterion 9: the review summary displays MEMBER_REPORTED status and protot
 
   assert.equal(review.status, "MEMBER_REPORTED");
   assert.equal(review.provenance, "Unverified household declaration");
-  assert.equal(review.calculationVersion, "household-income-ledger-v1.1");
+  assert.equal(review.calculationVersion, "household-income-ledger-v1.2");
   assert.ok(review.disclaimer.includes("not an official SHA means-testing assessment") || review.disclaimer.includes("not an official SHA determination"));
   assert.equal(review.household.county, "Kisumu");
   assert.equal(review.household.householdSize, 4);

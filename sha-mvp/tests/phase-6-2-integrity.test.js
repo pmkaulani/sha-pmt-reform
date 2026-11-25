@@ -383,7 +383,7 @@ test("Phase 6.2 — Assessment Flow: Provisional short-window sources (3-11 mont
   const assessment = calculateHouseholdIncome(incomeLedger);
   assert.equal(assessment.isValid, true);
   assert.equal(assessment.hasProvisionalShortWindowSources, true);
-  assert.equal(assessment.annualisationReliability, "PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION");
+  assert.equal(assessment.annualisationReliability, "NOT_APPROVED_FOR_CLASSIFICATION");
 });
 
 test("Phase 6.2 — Assessment Flow: Allowable costs carry research policy disclaimer", () => {

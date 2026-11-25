@@ -26,7 +26,8 @@ import {
   INCOME_SOURCE_RULES,
   OPERATING_EXPENSE_CATEGORIES,
   calculateMonthsFromDates,
-  resolveEffectiveIncomeSources
+  resolveEffectiveIncomeSources,
+  DEFAULT_COMMON_ASSESSMENT_PERIOD
 } from "./lib/household-income.js";
 import {
   MEMBER_ASSESSMENT_STEPS,
@@ -725,6 +726,18 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                           ]}
                         />
                       </div>
+                      {src.includedInSourceId && (
+                        <div style={{marginTop:8}}>
+                          <FieldNumber
+                            label="Declared partial overlap amount (KSh) — optional"
+                            value={src.overlapAmountKsh}
+                            onChange={v=>updListItem("incomeSources", originalIndex, "overlapAmountKsh", v)}
+                            min={0}
+                            allowNull={true}
+                            note="Leave blank if 100% of this source is duplicated in the parent source."
+                          />
+                        </div>
+                      )}
 
                       {/* Observation Period */}
                       <div className="grid-3" style={{gap:10, marginTop:10}}>
@@ -926,6 +939,69 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                               No itemised expenses added. Direct costs will be treated as KSh 0 unless line items are added.
                             </div>
                           )}
+                          {/* Business Inventory & Cost of Goods Sold */}
+                          {(src.sourceType === "SELF_EMPLOYMENT" || (src.expenses || []).some(e => e.category === "STOCK_PURCHASES") || src.openingStockKsh || src.closingStockKsh) && (
+                            <div style={{marginTop:12,padding:12,background:S.surface,borderRadius:8,border:`1px solid ${S.borderUp}`}}>
+                              <div style={{fontSize:12,fontWeight:750,color:S.text,marginBottom:4}}>
+                                Business Inventory & Cost of Goods Sold (COGS)
+                              </div>
+                              <div style={{fontSize:11,color:S.muted,marginBottom:10,lineHeight:1.4}}>
+                                Statutory accounting principle: <em>Cost of goods sold = Opening stock + Stock purchases - Closing stock</em>. Do not deduct unsold closing stock as consumed operating expenses.
+                              </div>
+                              <div className="grid-3" style={{gap:10}}>
+                                <FieldNumber
+                                  label="Opening Stock (KSh)"
+                                  value={src.openingStockKsh}
+                                  onChange={v=>updListItem("incomeSources", originalIndex, "openingStockKsh", v)}
+                                  min={0}
+                                  allowNull={true}
+                                  note="Inventory value at start of period"
+                                />
+                                <FieldNumber
+                                  label="Stock Purchases (KSh)"
+                                  value={(src.expenses || []).filter(e => e.category === "STOCK_PURCHASES").reduce((s, e) => s + (Number(e.amountKsh) || 0), 0)}
+                                  readOnly={true}
+                                  note="Sum from stock purchase line items"
+                                />
+                                <FieldNumber
+                                  label="Closing Stock (KSh)"
+                                  value={src.closingStockKsh}
+                                  onChange={v=>updListItem("incomeSources", originalIndex, "closingStockKsh", v)}
+                                  min={0}
+                                  allowNull={true}
+                                  note="Inventory value at end of period"
+                                />
+                              </div>
+                              {(()=>{
+                                const open = Number(src.openingStockKsh);
+                                const close = Number(src.closingStockKsh);
+                                const purchases = (src.expenses || []).filter(e => e.category === "STOCK_PURCHASES").reduce((s, e) => s + (Number(e.amountKsh) || 0), 0);
+                                if (purchases > 0) {
+                                  if (isNaN(open) || isNaN(close) || src.openingStockKsh === null || src.closingStockKsh === null || src.openingStockKsh === undefined || src.closingStockKsh === undefined) {
+                                    return (
+                                      <div style={{marginTop:8,fontSize:11,color:"#B45309",background:"#FEF3C7",padding:"6px 10px",borderRadius:4}}>
+                                        ⚠️ Stock purchases of KSh {purchases.toLocaleString()} declared. Please specify opening and closing stock to resolve Cost of Goods Sold.
+                                      </div>
+                                    );
+                                  } else if (close > open + purchases) {
+                                    return (
+                                      <div style={{marginTop:8,fontSize:11,color:"#DC2626",background:"#FEE2E2",padding:"6px 10px",borderRadius:4}}>
+                                        ❌ Invalid: Closing stock (KSh {close.toLocaleString()}) cannot exceed opening stock plus purchases (KSh {(open + purchases).toLocaleString()}).
+                                      </div>
+                                    );
+                                  } else {
+                                    const cogs = open + purchases - close;
+                                    return (
+                                      <div style={{marginTop:8,fontSize:11,color:"#15803D",background:"#DCFCE7",padding:"6px 10px",borderRadius:4}}>
+                                        ✓ Calculated Cost of Goods Sold: <strong>KSh {cogs.toLocaleString()}</strong> (Opening {open.toLocaleString()} + Purchases {purchases.toLocaleString()} - Closing {close.toLocaleString()})
+                                      </div>
+                                    );
+                                  }
+                                }
+                                return null;
+                              })()}
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -961,20 +1037,49 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
               <div style={{padding:16,background:S.faint,borderRadius:8,border:`1px dashed ${S.borderUp}`}}>
                 <div style={{fontSize:13,fontWeight:600,color:S.text,marginBottom:4}}>No itemised earned income sources added yet</div>
                 <div style={{fontSize:12,color:S.muted,lineHeight:1.5,marginBottom:12}}>
-                  You can enter a direct monthly net earned income baseline below (standard for demonstration presets), or click "+ Add earned income source" above.
+                  {activeScenario === "Custom"
+                    ? "Custom assessments require structured income sources or an explicit zero-earned-income declaration. Click '+ Add earned income source' above or declare no earned income."
+                    : "You can enter a direct monthly net earned income baseline below (standard for demonstration presets), or click '+ Add earned income source' above."}
                 </div>
-                <div style={{background:S.surface,padding:12,borderRadius:6,border:`1px solid ${formError?S.terraBd:S.border}`}}>
-                  <FieldNumber
-                    label="Declared Monthly Net Earned Income (KSh) — Direct / Preset Base"
-                    value={d.monthlyNetEarnedIncome}
-                    onChange={v=>upd("monthlyNetEarnedIncome",v)}
-                    min={0}
-                    step={500}
-                    allowNull={true}
-                    error={formError}
-                    note="Direct entry baseline. Adding structured sources above will supersede this field."
-                  />
-                </div>
+                {activeScenario !== "Custom" ? (
+                  <div style={{background:S.surface,padding:12,borderRadius:6,border:`1px solid ${formError?S.terraBd:S.border}`}}>
+                    <FieldNumber
+                      label="Declared Monthly Net Earned Income (KSh) — DEMO ONLY Direct / Preset Base"
+                      value={d.monthlyNetEarnedIncome}
+                      onChange={v=>upd("monthlyNetEarnedIncome",v)}
+                      min={0}
+                      step={500}
+                      allowNull={true}
+                      error={formError}
+                      note="DEMO ONLY: Direct entry baseline for demonstration personas. Adding structured sources will supersede this field."
+                    />
+                  </div>
+                ) : (
+                  <div style={{background:S.surface,padding:12,borderRadius:6,border:`1px solid ${S.borderUp}`}}>
+                    <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:S.muted,cursor:"pointer"}}>
+                      <input
+                        type="checkbox"
+                        checked={d.allowDemoDirectEntry === true}
+                        onChange={e=>upd("allowDemoDirectEntry", e.target.checked)}
+                      />
+                      <span>Enable direct income entry (DEMO ONLY bypass — unverified shortcut)</span>
+                    </label>
+                    {d.allowDemoDirectEntry && (
+                      <div style={{marginTop:8}}>
+                        <FieldNumber
+                          label="Declared Monthly Net Earned Income (KSh) — DEMO ONLY"
+                          value={d.monthlyNetEarnedIncome}
+                          onChange={v=>upd("monthlyNetEarnedIncome",v)}
+                          min={0}
+                          step={500}
+                          allowNull={true}
+                          error={formError}
+                          note="DEMO ONLY: This shortcut bypasses structured ledger verification and cannot be used for genuine livelihood assessments."
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1106,6 +1211,18 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                       ]}
                     />
                   </div>
+                  {src.includedInSourceId && (
+                    <div style={{marginTop:8}}>
+                      <FieldNumber
+                        label="Declared partial overlap amount (KSh) — optional"
+                        value={src.overlapAmountKsh}
+                        onChange={v=>updListItem("incomeSources", originalIndex, "overlapAmountKsh", v)}
+                        min={0}
+                        allowNull={true}
+                        note="Leave blank if 100% of this flow is duplicated in the parent source."
+                      />
+                    </div>
+                  )}
 
                   {/* Observation Period */}
                   <div className="grid-3" style={{gap:10, marginTop:10}}>
@@ -1261,23 +1378,31 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
         const effectiveSources = resolveEffectiveIncomeSources(d.incomeSources || [], d.hasNoEarnedIncome);
         const hasStructuredSources = Array.isArray(effectiveSources) && effectiveSources.length > 0;
         const liveIncomeSnapshot = hasStructuredSources
-          ? calculateHouseholdIncome(effectiveSources)
+          ? calculateHouseholdIncome(effectiveSources, DEFAULT_COMMON_ASSESSMENT_PERIOD)
           : (d.hasNoEarnedIncome
-              ? createZeroEarnedIncomeAssessment()
+              ? createZeroEarnedIncomeAssessment(DEFAULT_COMMON_ASSESSMENT_PERIOD)
               : {
                   isValid: true,
                   calculationStatus: "CALCULATED_STANDARD",
                   canPopulatePrototypeEarnedIncomeBase: true,
                   monthlyEarnedNetKsh: Number(d.monthlyNetEarnedIncome || 0),
+                  reviewOnlyMonthlyEarnedNetKsh: Number(d.monthlyNetEarnedIncome || 0),
                   annualisedEarnedNetKsh: Number(d.monthlyNetEarnedIncome || 0) * 12,
+                  reviewOnlyAnnualisedEarnedNetKsh: Number(d.monthlyNetEarnedIncome || 0) * 12,
                   lines: [],
-                  reviewFlags: [],
+                  reviewFlags: [
+                    {
+                      code: "DIRECT_ENTRY_DEMO_BASELINE",
+                      message: "Direct monthly net income baseline entered without structured ledger decomposition (DEMO ONLY)."
+                    }
+                  ],
                   duplicateRelationships: [],
                   monthlyPolicyReviewResourcesKsh: 0,
                   monthlyNonEarnedFlowsKsh: 0,
                   monthlyFiduciaryFlowsKsh: 0,
                   requiresManualReview: false,
                   requiresPolicyDecision: false,
+                  assessmentInputMode: "DIRECT_ENTRY_DEMO_ONLY",
                   calculationVersion: "direct-entry-baseline-v1.1"
                 });
         const reviewData = buildAssessmentReview({
@@ -1287,7 +1412,11 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
         });
 
         const isProvisionalPolicy = liveIncomeSnapshot.calculationStatus === "PROVISIONAL_PENDING_POLICY";
-        const isBlockedReview = liveIncomeSnapshot.requiresManualReview || liveIncomeSnapshot.calculationStatus === "BLOCKED_MANUAL_REVIEW";
+        const isBlockedReview =
+          liveIncomeSnapshot.canPopulatePrototypeEarnedIncomeBase === false ||
+          liveIncomeSnapshot.calculationStatus?.startsWith("BLOCKED_");
+        const canShowContributionPreview =
+          liveIncomeSnapshot.canPopulatePrototypeEarnedIncomeBase === true;
 
         return (
           <div style={{display:"grid",gap:16}}>
@@ -1368,15 +1497,28 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                       <div>
                         <strong>{line.label}</strong>
                         {line.isDuplicate && <span style={{marginLeft:6,fontSize:10,color:S.amber,fontWeight:700}}>(Duplicate excluded)</span>}
+                        {line.isPartialDuplicate && <span style={{marginLeft:6,fontSize:10,color:S.blue,fontWeight:700}}>(Partial duplicate deducted)</span>}
                         <div style={{fontSize:11,color:S.muted}}>
-                          Gross: KSh {line.totalReceivedKsh.toLocaleString()} · Costs: KSh {line.totalReportedCostsKsh.toLocaleString()} ({line.observationMonths} mo)
+                          Gross: KSh {line.totalReceivedKsh.toLocaleString()}
+                          {line.countedReceivedKsh !== undefined && line.countedReceivedKsh !== line.totalReceivedKsh && ` (Counted: KSh ${line.countedReceivedKsh.toLocaleString()})`}
+                          {` · Costs: KSh ${line.totalReportedCostsKsh.toLocaleString()} (${line.observationMonths} mo)`}
                         </div>
+                        {line.costOfGoodsSoldKsh !== null && (
+                          <div style={{fontSize:11,color:S.muted}}>
+                            COGS: KSh {line.costOfGoodsSoldKsh.toLocaleString()} (Opening {line.openingStockKsh || 0} + Purchases {line.stockPurchasesKsh || 0} - Closing {line.closingStockKsh || 0})
+                          </div>
+                        )}
+                        {line.overlapAmountKsh !== null && line.overlapAmountKsh > 0 && (
+                          <div style={{fontSize:11,color:"#B45309"}}>
+                            Overlap deducted: KSh {line.overlapAmountKsh.toLocaleString()} (Net counted: KSh {line.countedReceivedKsh.toLocaleString()})
+                          </div>
+                        )}
                       </div>
                       <div style={{textAlign:"right"}}>
                         <div style={{fontWeight:700,color:line.isDuplicate?S.muted:S.text}}>
                           {line.isDuplicate ? "Excluded from earned total" : `KSh ${line.averageMonthlyNetKsh.toLocaleString()}/mo`}
                         </div>
-                        <div style={{fontSize:10,color:line.periodStatus==="FULL_YEAR"?S.sage:S.amber}}>
+                        <div style={{fontSize:10,color:line.periodStatus==="FULL_ANNUAL"?S.sage:S.amber}}>
                           {line.periodStatus}
                         </div>
                       </div>
@@ -1385,9 +1527,9 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                   <div style={{marginTop:4,paddingTop:8,borderTop:`1px solid ${S.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",fontWeight:700,fontSize:13}}>
                     <span>Earned Net Subtotal:</span>
                     <span style={{color:S.blue}}>
-                      {liveIncomeSnapshot.monthlyEarnedNetKsh !== null
-                        ? `KSh ${liveIncomeSnapshot.monthlyEarnedNetKsh.toLocaleString()}/mo (Annualised: KSh ${liveIncomeSnapshot.annualisedEarnedNetKsh.toLocaleString()})`
-                        : "Manual review required"}
+                      {liveIncomeSnapshot.canPopulatePrototypeEarnedIncomeBase
+                        ? `KSh ${(liveIncomeSnapshot.monthlyEarnedNetKsh || 0).toLocaleString()}/mo (Annualised: KSh ${(liveIncomeSnapshot.annualisedEarnedNetKsh || 0).toLocaleString()})`
+                        : `KSh ${(liveIncomeSnapshot.reviewOnlyMonthlyEarnedNetKsh || 0).toLocaleString()}/mo (Review only — not approved for classification)`}
                     </span>
                   </div>
                 </div>
@@ -1478,21 +1620,29 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                 Illustrative Calculation Preview
               </div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginTop:6}}>
-                <div style={{fontSize:22,fontWeight:800,color:S.sage}}>
-                  {liveIncomeSnapshot.requiresManualReview
-                    ? "Manual review required"
-                    : (()=>{
-                        const earnedBase = liveIncomeSnapshot.annualisedEarnedNetKsh ?? ((d.monthlyNetEarnedIncome || 0) * 12);
-                        const est = calculateCurrentModelContribution(earnedBase);
-                        return `KSh ${est.monthly.toLocaleString()}/month`;
-                      })()}
+                <div style={{fontSize:22,fontWeight:800,color: canShowContributionPreview ? S.sage : S.terra}}>
+                  {!canShowContributionPreview ? (
+                    <div>
+                      Assessment cannot proceed. Resolve the review flags first.
+                    </div>
+                  ) : (
+                    (()=>{
+                      const earnedBase = liveIncomeSnapshot.annualisedEarnedNetKsh ?? ((d.monthlyNetEarnedIncome || 0) * 12);
+                      const est = calculateCurrentModelContribution(earnedBase);
+                      return `KSh ${est.monthly.toLocaleString()}/month`;
+                    })()
+                  )}
                 </div>
-                <div style={{fontSize:11,color:S.muted}}>
-                  Indicative pre-adjustment base: KSh {(liveIncomeSnapshot.annualisedEarnedNetKsh ?? ((d.monthlyNetEarnedIncome || 0)*12)).toLocaleString()}
-                </div>
+                {canShowContributionPreview && (
+                  <div style={{fontSize:11,color:S.muted}}>
+                    Indicative pre-adjustment base: KSh {(liveIncomeSnapshot.annualisedEarnedNetKsh ?? ((d.monthlyNetEarnedIncome || 0)*12)).toLocaleString()}
+                  </div>
+                )}
               </div>
               <div style={{fontSize:11,color:S.muted,marginTop:6,fontStyle:"italic",lineHeight:1.4}}>
-                Illustrative prototype calculation — not an official SHA assessment. Applies the statutory 2.75% rate and KSh 300 minimum floor.
+                {!canShowContributionPreview
+                  ? `Status: ${liveIncomeSnapshot.calculationStatus}. Reported provisional earned subtotal: KSh ${(liveIncomeSnapshot.reviewOnlyMonthlyEarnedNetKsh || 0).toLocaleString()}/mo (visible for review only, not eligible for contribution model).`
+                  : "Illustrative prototype calculation — not an official SHA assessment. Applies the statutory 2.75% rate and KSh 300 minimum floor."}
               </div>
             </div>
 
@@ -1577,21 +1727,21 @@ function ComparisonTab({results, adminParams}) {
       {/* Big numbers */}
       <div className="grid-2">
         {[
-          {label:"Author-created illustrative comparator — not SHA's instrument",monthly:cur.monthly,income:cur.annualIncome,tier:cur.tier,indigent:cur.isIndigent,color:S.terra,bdColor:S.terraBd,bgColor:S.terraD,note:null},
-          {label:"Proposed · AGI rules engine",monthly:nxt.monthly,income:nxt.annualIncome,tier:nxt.tier,indigent:nxt.isIndigent,color:S.sage,bdColor:S.sageBd,bgColor:S.sageD,note:null},
+          {label:"Author-created illustrative comparator — not SHA's instrument",monthly:cur.monthly,income:cur.annualIncome,tier:cur.tier,floorApplied:cur.minimumContributionFloorApplied ?? (cur.monthly === 300),color:S.terra,bdColor:S.terraBd,bgColor:S.terraD,note:null},
+          {label:"Proposed · AGI rules engine",monthly:nxt.monthly,income:nxt.annualIncome,tier:nxt.tier,floorApplied:nxt.minimumContributionFloorApplied ?? (nxt.monthly === 300),color:S.sage,bdColor:S.sageBd,bgColor:S.sageD,note:null},
         ].map(box=>(
           <div key={box.label} style={{background:box.bgColor,border:`1px solid ${box.bdColor}`,borderRadius:12,padding:24,boxShadow:"0 1px 3px rgba(0,0,0,0.02)"}}>
             <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:box.color,marginBottom:16}}>{box.label}</div>
-            <div className="big-number-val" style={{fontFamily:"'Inter',sans-serif",fontSize:box.indigent?22:42,fontWeight:800,color:box.color,lineHeight:1.15,letterSpacing:box.indigent?"0px":"-1px"}}>
-              {box.indigent
+            <div className="big-number-val" style={{fontFamily:"'Inter',sans-serif",fontSize:box.floorApplied?22:42,fontWeight:800,color:box.color,lineHeight:1.15,letterSpacing:box.floorApplied?"0px":"-1px"}}>
+              {box.floorApplied
                 ? "KSh 300 minimum contribution rule"
                 : `KSh ${box.monthly.toLocaleString()}`
               }
             </div>
             <div style={{fontSize:13,color:S.muted,marginTop:6,fontWeight:500}}>per month</div>
-            {box.indigent && (
+            {box.floorApplied && (
               <p style={{fontSize:12,color:S.muted,lineHeight:1.5,marginTop:8}}>
-                The minimum contribution result is generated by the prototype's illustrative rules. It is not an official SHA indigence determination or government subsidy approval.
+                The minimum contribution result applies Regulation 18(2)'s statutory floor (KSh 300/mo). It is not an official SHA indigence determination or government subsidy approval under Regulation 19.
               </p>
             )}
             <div style={{marginTop:20,paddingTop:16,borderTop:`1px solid ${box.bdColor}`}}>
@@ -1600,7 +1750,7 @@ function ComparisonTab({results, adminParams}) {
             </div>
             <div style={{marginTop:16,display:"flex",gap:8,flexWrap:"wrap"}}>
               <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"4px 10px",borderRadius:4,background:S.surface,border:`1px solid ${box.bdColor}`,color:box.color}}>{box.tier} TIER</span>
-              {box.indigent&&<span style={{fontSize:10,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"4px 10px",borderRadius:4,background:S.sage,color:"#FFF"}}>PROTOTYPE MINIMUM CONTRIBUTION RULE (KSh 300 Floor)</span>}
+              {box.floorApplied&&<span style={{fontSize:10,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"4px 10px",borderRadius:4,background:S.sage,color:"#FFF"}}>STATUTORY MINIMUM RULE (Reg. 18(2) KSh 300 Floor)</span>}
               {box.note&&<span style={{fontSize:10,fontWeight:600,letterSpacing:"0.5px",padding:"4px 10px",borderRadius:4,background:S.amber,color:"#FFF",display:"flex",alignItems:"center",gap:4}}><ShieldCheck size={12}/>{box.note}</span>}
             </div>
           </div>
@@ -1775,7 +1925,7 @@ function USSDTab({results}) {
       {t:"SHA — My Account",y:true},{t:"—".repeat(22),y:false},
       {t:`County: ${results.d.county}`,y:false},
       {t:`Tier: ${nxt.tier}`,y:false},
-      {t:`Status: ${nxt.isIndigent?"MINIMUM RULE (KSh 300)":"ACTIVE"}`,col:nxt.isIndigent?"#4ADE80":"#4ADE80"},
+      {t:`Status: ${nxt.minimumContributionFloorApplied?"MINIMUM RULE (KSh 300)":"ACTIVE"}`,col:nxt.minimumContributionFloorApplied?"#4ADE80":"#4ADE80"},
       {t:`Monthly: KSh ${nxt.monthly}`,col:"#4ADE80"},{t:"",y:false},
       {t:"1. Why this amount?",y:false},{t:"2. Pay now",y:false},{t:"0. Back",y:false},
     ]},
@@ -1884,25 +2034,25 @@ function MetricsTab() {
     return () => clearTimeout(id);
   }, []);
 
-  const excRate = errorRates ? `${errorRates.exclusionRate}%` : '…';
-  const incRate = errorRates ? `${errorRates.inclusionRate}%` : '…';
+  const excRate = errorRates ? `${errorRates.floorDisagreementRate}%` : '…';
+  const incRate = errorRates ? `${errorRates.rateDisagreementRate}%` : '…';
   const payRatio = errorRates ? `${errorRates.payoutRatio}%` : '…';
-  const excNum = errorRates ? errorRates.exclusionRate : 0;
-  const incNum = errorRates ? errorRates.inclusionRate : 0;
+  const excNum = errorRates ? errorRates.floorDisagreementRate : 0;
+  const incNum = errorRates ? errorRates.rateDisagreementRate : 0;
   const simNote = 'Synthetic demonstration only: both prototype calculations run over 500 generated households. The proposed model is a comparison reference, not independently verified ground truth.';
 
   const metrics=[
-    {label:"Disagreement: proposed model classifies indigent",cur:excRate,tgt:"Design target: < 10%",desc:`Households the proposed rules engine classifies as indigent while the illustrative baseline does not. ${simNote} The external Lighthouse Reports subgroup figure is a separate published finding, not an output of this simulation.`},
-    {label:"Disagreement: baseline classifies indigent",cur:incRate,tgt:"Design target: < 10%",desc:`Households the illustrative baseline classifies as indigent while the proposed rules engine does not. ${simNote}`},
+    {label:"Model disagreement: proposed applies floor",cur:excRate,tgt:"Design target: < 10%",desc:`Households where the proposed model applies the KSh 300 minimum contribution floor while the illustrative baseline calculates a higher rate-based amount. ${simNote} This is a comparison between models, not proof of real-world targeting error or statutory indigence.`},
+    {label:"Model disagreement: baseline applies floor",cur:incRate,tgt:"Design target: < 10%",desc:`Households where the illustrative baseline applies the minimum floor while the proposed model calculates a higher rate-based amount. ${simNote}`},
     {label:"Group disparity check",cur:"Synthetic test only",tgt:"Design target: ≤ 3 pp",desc:"The current test measures a model-disagreement proxy, not formal equalized odds. Real outcome labels and adequately sized groups are required."},
-    {label:"Monthly Payout Ratio",cur:payRatio,tgt:"< 100%",desc:`KSh in indigent subsidies owed vs KSh collected from contributions, under the current model's classifications. ${simNote}`},
+    {label:"Monthly Contribution Ratio",cur:payRatio,tgt:"Comparative",desc:`Aggregate proposed model monthly contributions as a percentage of illustrative baseline contributions across the 500 generated households. ${simNote}`},
     {label:"Active Payers",cur:"22.7%",tgt:"> 60%",desc:"5 Million of 22 Million registered members — parliamentary oversight figure"},
     {label:"Inference Latency",cur:"~3 s",tgt:"< 500 ms",desc:"Time required to compute classification result"},
     {label:"USSD Gateway Uptime (*147#)",cur:"Intermittent",tgt:"99.99%",desc:"Feature phone access reliability"},
     {label:"Systemic Fraud Losses (6 mos)",cur:"KSh 11 B",tgt:"< KSh 1 B / yr",desc:"Ghost patients, fake facilities, upcoding — official DCI/parliamentary figure, not from this app's own fraud engine (see Bias & Compliance tab for that separate, engine-computed figure)"},
   ];
   const barData=[
-    {name:"Exclusion %",cur:excNum,tgt:10},{name:"Inclusion %",cur:incNum,tgt:10},
+    {name:"Floor Disagree %",cur:excNum,tgt:10},{name:"Rate Disagree %",cur:incNum,tgt:10},
     {name:"Active Payers %",cur:22.7,tgt:60},{name:"Fraud KSh B",cur:22,tgt:2},
   ];
   return (
@@ -2563,7 +2713,8 @@ export default function SHADemo() {
       effectiveSources.length > 0
     ) {
       incomeAssessment = calculateHouseholdIncome(
-        effectiveSources
+        effectiveSources,
+        DEFAULT_COMMON_ASSESSMENT_PERIOD
       );
 
       if (!incomeAssessment.isValid) {
@@ -2577,7 +2728,7 @@ export default function SHADemo() {
 
         setFormError(
           firstFlag?.message ||
-          "This income profile requires manual review."
+          "This assessment requires review before a contribution calculation can proceed."
         );
 
         setStep(3);
@@ -2591,12 +2742,33 @@ export default function SHADemo() {
           inputs.hasNoEarnedIncome ? 0 : incomeAssessment.monthlyEarnedNetKsh,
 
         incomeAssessmentSnapshot: incomeAssessment,
+        assessmentInputMode: "STRUCTURED_LEDGER",
       };
     } else if (inputs.hasNoEarnedIncome) {
       assessmentInputs = {
         ...assessmentInputs,
         monthlyNetEarnedIncome: 0,
         incomeAssessmentSnapshot: createZeroEarnedIncomeAssessment(),
+        assessmentInputMode: "ZERO_DECLARED",
+      };
+    } else {
+      if (activeScenario === "Custom" && inputs.allowDemoDirectEntry !== true) {
+        setFormError(
+          "Custom assessments must declare structured earning sources or confirm zero earned income. Direct income entry is an unverified demo bypass."
+        );
+        setStep(1);
+        return;
+      }
+      assessmentInputs = {
+        ...assessmentInputs,
+        assessmentInputMode: "DEMO_DIRECT_ENTRY",
+        incomeAssessmentSnapshot: {
+          calculationStatus: "DEMO_DIRECT_ENTRY",
+          canPopulatePrototypeEarnedIncomeBase: true,
+          isDemoDirectEntry: true,
+          monthlyEarnedNetKsh: assessmentInputs.monthlyNetEarnedIncome || 0,
+          annualisedEarnedNetKsh: (assessmentInputs.monthlyNetEarnedIncome || 0) * 12,
+        },
       };
     }
 
@@ -2616,14 +2788,12 @@ export default function SHADemo() {
     setClassifying(true);
     setTimeout(()=>{
       const lassoAnnual = calculateCurrentModel(assessmentInputs);
-      // FIX (audit v2): was duplicated inline here (with a `< 131000` vs the
-      // proposed model's `<= 131000`, an off-by-one). Now calls the single
-      // shared function in AlgorithmSimulation.js so there's one source of
-      // truth for both the boundary and the 2.75%/12 formula.
+      // Calls the single shared function in AlgorithmSimulation.js
+      // for both the 2.75%/12 formula and statutory KSh 300 floor.
       const curRaw = calculateCurrentModelContribution(lassoAnnual);
       const cur = {
         ...curRaw,
-        tier: curRaw.isIndigent ? "LOW" : lassoAnnual <= 450000 ? "MIDDLE" : "HIGH" // display label kept as-is; BANDS.tier used internally
+        tier: curRaw.minimumContributionFloorApplied ? "LOW" : lassoAnnual <= 450000 ? "MIDDLE" : "HIGH"
       };
       
       const modelVersions = calculateProposedModelVersions(assessmentInputs, adminParams);

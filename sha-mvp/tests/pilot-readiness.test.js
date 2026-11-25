@@ -387,7 +387,7 @@ test("Phase 6 Criterion 15: Existing model-versioning and assessment tests conti
   assert.ok(versioning.originalAgi);
   assert.ok(versioning.declaredIncome);
   assert.equal(versioning.originalAgi.id, "asset-liquidity-agi-v2.1");
-  assert.equal(versioning.declaredIncome.id, "declared-income-agi-v1");
+  assert.equal(versioning.declaredIncome.id, "declared-income-agi-v1.1");
   assert.ok(versioning.originalAgi.result.monthlyContribution >= 300);
   assert.ok(versioning.declaredIncome.result.monthlyContribution >= 300);
 });

@@ -113,6 +113,8 @@ test("Integration 1: Multi-source informal livelihood executes complete pipeline
       amountReceivedKsh: 35000,
       monthsObserved: 12,
       directCostsKsh: 12000,
+      openingStockKsh: 2000,
+      closingStockKsh: 2000,
       expenses: [
         { category: "STOCK_PURCHASES", amountKsh: 8000, isAllowablePrototype: true },
         { category: "RENT_UTILITIES", amountKsh: 4000, isAllowablePrototype: true }
@@ -249,9 +251,10 @@ test("Integration 2: Explicit zero-earned-income produces valid qualified state 
 
   const versions = calculateProposedModelVersions(assessmentInputs);
   assert.equal(versions.declaredIncome.result.estimatedAnnualIncome, 0);
-  // Evaluated contribution is statutory floor (Regulation 17(2): KSh 300/mo minimum)
+  // Evaluated contribution is statutory floor (Regulation 18(2): KSh 300/mo minimum)
   assert.equal(versions.declaredIncome.result.monthlyContribution, 300);
-  assert.equal(versions.declaredIncome.result.isIndigent, true);
+  assert.equal(versions.declaredIncome.result.isIndigent, null);
+  assert.equal(versions.declaredIncome.result.minimumContributionFloorApplied, true);
 
   // Review summary captures zero-income state
   const review = buildAssessmentReview({
@@ -288,7 +291,10 @@ test("Integration 3: Unearned transfers trigger PROVISIONAL_PENDING_POLICY witho
 
   const assessment = calculateHouseholdIncome(transferLedger);
   assert.equal(assessment.isValid, true);
-  assert.equal(assessment.monthlyEarnedNetKsh, 0); // Earned base is strictly 0
+  // Provisional transfer policy blocks final earned calculation, preserving review-only subtotal
+  assert.equal(assessment.canPopulatePrototypeEarnedIncomeBase, false);
+  assert.equal(assessment.monthlyEarnedNetKsh, null);
+  assert.equal(assessment.reviewOnlyMonthlyEarnedNetKsh, 0);
   assert.equal(assessment.monthlyPolicyReviewResourcesKsh, 417); // (2000 + 3000) / 12 = 417
   assert.equal(assessment.requiresPolicyDecision, true);
   assert.equal(assessment.calculationStatus, "PROVISIONAL_PENDING_POLICY");
@@ -323,9 +329,11 @@ test("Integration 4: Short observation window (3-11 months) flags provisional ex
 
   const assessment = calculateHouseholdIncome(shortWindowLedger);
   assert.equal(assessment.isValid, true);
-  assert.equal(assessment.monthlyEarnedNetKsh, 5000);
+  assert.equal(assessment.canPopulatePrototypeEarnedIncomeBase, false);
+  assert.equal(assessment.monthlyEarnedNetKsh, null);
+  assert.equal(assessment.reviewOnlyMonthlyEarnedNetKsh, 5000);
   assert.equal(assessment.hasProvisionalShortWindowSources, true);
-  assert.equal(assessment.annualisationReliability, "PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION");
+  assert.equal(assessment.annualisationReliability, "NOT_APPROVED_FOR_CLASSIFICATION");
 
   const review = buildAssessmentReview({
     inputs: { county: "Nairobi", householdSize: 2 },
@@ -334,7 +342,7 @@ test("Integration 4: Short observation window (3-11 months) flags provisional ex
   });
 
   assert.equal(review.hasProvisionalShortWindowSources, true);
-  assert.equal(review.annualisationReliability, "PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION");
+  assert.equal(review.annualisationReliability, "NOT_APPROVED_FOR_CLASSIFICATION");
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

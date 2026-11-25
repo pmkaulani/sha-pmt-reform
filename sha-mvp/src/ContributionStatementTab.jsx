@@ -226,13 +226,13 @@ export default function ContributionStatementTab({ results, demoPaymentEntries =
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 600, color: "#64748B", textTransform: "uppercase" }}>Prototype Tier Classification</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: next.isIndigent ? "#059669" : "#0284C7" }}>
-              {next.isIndigent ? "Minimum Contribution Assessment (Reg. 18(2) Minimum Rule: KSh 300 Floor)" : `Standard Assessment Tier (${next.tier || "Standard"})`}
+            <div style={{ fontSize: 14, fontWeight: 700, color: next.minimumContributionFloorApplied ? "#059669" : "#0284C7" }}>
+              {next.minimumContributionFloorApplied ? "Minimum Contribution Assessment (Reg. 18(2) Minimum Rule: KSh 300 Floor)" : `Standard Assessment Tier (${next.tier || "Standard"})`}
             </div>
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 600, color: "#64748B", textTransform: "uppercase" }}>Evaluated Monthly Contribution</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: next.isIndigent ? "#059669" : "#0F172A" }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: next.minimumContributionFloorApplied ? "#059669" : "#0F172A" }}>
               KSh {money(monthlyDue)}/mo
             </div>
             <div style={{ fontSize: 10, color: d.incomeAssessmentSnapshot?.hasProvisionalShortWindowSources ? "#DC2626" : "#64748B", fontWeight: d.incomeAssessmentSnapshot?.hasProvisionalShortWindowSources ? 600 : 400 }}>

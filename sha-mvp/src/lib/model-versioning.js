@@ -10,19 +10,23 @@ import {
 export const MODEL_VERSION_METADATA = Object.freeze({
   originalAgi: Object.freeze({
     id: "asset-liquidity-agi-v2.1",
-    version: "2.1",
-    label: "Original asset- and liquidity-aware AGI",
+    version: "2.1 historical snapshot",
+    label: "Original asset- and liquidity-aware AGI (historical)",
     sourceCommit: "c1a5a09cdfff15035c5bf012acc3ff932786e87a",
     baseMeaning: "A constructed assessment base using retained liquidity, eligible declared flows, capital-asset valuations and adjustments.",
-    methodology: "Retained balances and seasonal liquidity; chama/fiduciary treatment; remittance and debt adjustments; SACCO capital; commercial vehicles and motorcycles; rental activity; location-adjusted land and livestock; household and vulnerability deductions."
+    methodology: "Historical research snapshot: retained balances and seasonal liquidity; chama/fiduciary treatment; remittance and debt adjustments; SACCO capital; commercial vehicles and motorcycles; rental activity; location-adjusted land and livestock; household and vulnerability deductions.",
+    institutionalApprovalStatus: "HISTORICAL_RESEARCH_SNAPSHOT_UNAPPROVED",
+    notes: "Recovered historical research snapshot; indigence rules and deductions represent historical experimental assumptions and not approved statutory eligibility decisions."
   }),
   declaredIncome: Object.freeze({
-    id: "declared-income-agi-v1",
-    version: "1.0 experiment",
-    label: "Declared-income AGI variant",
-    sourceCommit: "bb34fca61573c97085c6e753a1d7a09b069774df",
-    baseMeaning: "Annualised declared net earned household income. Assets, retained balances, transaction activity and debt are contextual verification signals rather than direct additions to that base.",
-    methodology: "Declared monthly net earnings × 12; illustrative cost-of-living, rent, dependency and vulnerability adjustments; contextual asset and liquidity indicators."
+    id: "declared-income-agi-v1.1",
+    version: "1.1 hardened",
+    label: "Hardened declared-income AGI engine",
+    sourceCommit: "recovery/restore-original-agi-v2.1",
+    baseMeaning: "Annualised declared net earned household income from resolved sources. Assets, retained balances, transaction activity and debt are contextual verification signals rather than direct additions to that base.",
+    methodology: "Declared monthly net earnings × 12 with strict income ledger integrity; unapproved policy deductions isolated and default-disabled; separation of contribution floor from statutory indigence; contextual asset and liquidity indicators.",
+    institutionalApprovalStatus: "RESEARCH_PROTOTYPE_UNAPPROVED",
+    isOperationalPolicyApproved: false
   })
 });
 

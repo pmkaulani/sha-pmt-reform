@@ -311,7 +311,7 @@ export function getIllustrativeImpactSimulation(draft) {
     // with the challenge. A saved draft never silently changes algorithms.
     const savedModelVersionId = draft.modelVersionId ||
       draft.prototypeComparisonSnapshot?.modelVersionId ||
-      "declared-income-agi-v1";
+      "declared-income-agi-v1.1";
     const savedModelParameters = draft.modelParameterSnapshot ||
       draft.prototypeComparisonSnapshot?.modelParameterSnapshot ||
       {};
@@ -319,7 +319,7 @@ export function getIllustrativeImpactSimulation(draft) {
     const calculateSavedModel = (snapshot) => {
       const versions = calculateProposedModelVersions(snapshot, savedModelParameters);
       if (savedModelVersionId === versions.originalAgi.id) return versions.originalAgi.result;
-      if (savedModelVersionId === versions.declaredIncome.id) return versions.declaredIncome.result;
+      if (savedModelVersionId === versions.declaredIncome.id || savedModelVersionId === "declared-income-agi-v1") return versions.declaredIncome.result;
       throw new Error(`Saved model version is not available: ${savedModelVersionId}`);
     };
 
@@ -351,8 +351,10 @@ export function getIllustrativeImpactSimulation(draft) {
       correctedAGIKsh: correctedModelResult.adjustedGrossIncome,
       originalTier: originalModelResult.tier,
       correctedTier: correctedModelResult.tier,
-      originalIsIndigent: originalModelResult.isIndigent,
-      correctedIsIndigent: correctedModelResult.isIndigent
+      originalMinimumContributionFloorApplied: originalModelResult.minimumContributionFloorApplied ?? null,
+      correctedMinimumContributionFloorApplied: correctedModelResult.minimumContributionFloorApplied ?? null,
+      originalIsIndigent: null,
+      correctedIsIndigent: null
     };
   } catch (err) {
     return {

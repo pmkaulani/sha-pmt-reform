@@ -60,14 +60,14 @@ export function validateAssessmentInputs(d) {
 }
 
 export const BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: true, tier: 'Low-Income (Reg. 18(2) Minimum Contribution Rule: KSh 300 Floor)' },
-  { min: 131001, max: 450000, isIndigent: false, tier: 'Standard' }, // Reg. 18(1) 2.75% reference parameter
-  { min: 450001, max: Infinity, isIndigent: false, tier: 'Upper' }, // Reg. 18(1) 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
+  { min: 0, max: 131000, monthly: 300, isIndigent: null, tier: 'Low-Income (Reg. 18(2) Minimum Contribution Rule: KSh 300 Floor)' },
+  { min: 131001, max: 450000, isIndigent: null, tier: 'Standard' }, // Reg. 18(1) 2.75% reference parameter
+  { min: 450001, max: Infinity, isIndigent: null, tier: 'Upper' }, // Reg. 18(1) 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
 ];
 
 export const PROPOSED_BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: true }, // Reg. 18(2) reference minimum contribution (KSh 300 floor for non-salaried households)
-  { min: 131001, max: Infinity, isIndigent: false }, // Reg. 18(1) 2.75% rate applied to evaluated AGI (prototype policy model; requires validation against Regulation 21(6) Fifth Schedule means-testing instrument)
+  { min: 0, max: 131000, monthly: 300, isIndigent: null }, // Reg. 18(2) reference minimum contribution (KSh 300 floor for non-salaried households)
+  { min: 131001, max: Infinity, isIndigent: null }, // Reg. 18(1) 2.75% rate applied to evaluated AGI
 ];
 
 const ASAL_COUNTIES = {
@@ -163,11 +163,23 @@ export function calculateCurrentModel(d) {
  * into an actual monthly-contribution object, the same shape the proposed
  * model already returns.
  */
-export function calculateCurrentModelContribution(lassoAnnual) {
-  const band = BANDS.find(b => lassoAnnual <= b.max) ?? BANDS[BANDS.length - 1];
-  const isIndigent = band.isIndigent === true;
-  const monthly = isIndigent ? band.monthly : Math.max(300, Math.round((lassoAnnual * 0.0275) / 12));
-  return { annualIncome: lassoAnnual, monthly, isIndigent, tier: band.tier };
+export function calculateCurrentModelContribution(annualIncome) {
+  const rawMonthly =
+    (Number(annualIncome) * 0.0275) / 12;
+
+  const monthly = Math.max(300, Math.round(rawMonthly));
+
+  return {
+    annualIncome,
+    monthly,
+    minimumContributionFloorApplied: rawMonthly < 300,
+    contributionClassification: rawMonthly < 300
+      ? "MINIMUM_CONTRIBUTION_FLOOR"
+      : "RATE_BASED_CONTRIBUTION",
+    isIndigent: null,
+    financialAssistanceStatus: "NOT_ASSESSED",
+    tier: rawMonthly < 300 ? "LOW" : (annualIncome <= 450000 ? "MIDDLE" : "HIGH")
+  };
 }
 
 /**
@@ -408,9 +420,12 @@ export function calculateProposedModel(d, adminParams = {}) {
   }
 
   // --- ILLUSTRATIVE HOUSEHOLD ADJUSTMENTS & ADJUSTED GROSS INCOME (AGI) ---
+  const enableExperimentalPolicyAdjustments =
+    adminParams.enableExperimentalPolicyAdjustments === true;
+
   let preFloorAdjustedGrossIncome = annualBaseTotal;
 
-  // 1. Cost of Living Allowance
+  // 1. Cost of Living Allowance & Rent Deduction
   const urbanTier = URBAN_TIER_1.includes(d.county) ? 'TIER_1'
     : URBAN_TIER_2.includes(d.county) ? 'TIER_2' : 'RURAL';
 
@@ -419,45 +434,52 @@ export function calculateProposedModel(d, adminParams = {}) {
     TIER_2: adminParams.tier2CostOfLiving,
     RURAL: adminParams.ruralCostOfLiving,
   };
-  const baseCol = colOverrides[urbanTier] !== undefined
-    ? colOverrides[urbanTier]
-    : COST_OF_LIVING[urbanTier];
 
-  let colDeduction;
-  let colReason;
-  if (d.ownershipStatus === 'RENTED' && d.monthlyRent > 0) {
-    const tier1Cap = adminParams.tier1RentCap ?? DEFAULT_MAX_RENT.TIER_1;
-    const tier2Cap = adminParams.tier2RentCap ?? DEFAULT_MAX_RENT.TIER_2;
-    const ruralCap = adminParams.ruralRentCap ?? DEFAULT_MAX_RENT.RURAL;
-    
-    const maxRent = urbanTier === 'TIER_1' ? tier1Cap : urbanTier === 'TIER_2' ? tier2Cap : ruralCap;
-    const cappedRent = Math.min(d.monthlyRent, maxRent);
-    
-    colDeduction = Math.max(baseCol, cappedRent) * 12;
-    colReason = `Renter in ${urbanTier} — capped at KSh ${maxRent.toLocaleString()}/mo`;
-    postBaseDeductions.push({
-      name: 'Rent-Adjusted Cost of Living',
-      amount: colDeduction,
-      category: 'COST_OF_LIVING',
-      reason: colReason,
-      explanation: colReason
-    });
-  } else {
-    colDeduction = baseCol * 12;
-    colReason = `Basic survival threshold for ${urbanTier}`;
-    postBaseDeductions.push({
-      name: 'Cost of Living Allowance',
-      amount: colDeduction,
-      category: 'COST_OF_LIVING',
-      reason: colReason,
-      explanation: colReason
-    });
+  const baseCol = enableExperimentalPolicyAdjustments
+    ? (
+        colOverrides[urbanTier] !== undefined
+          ? colOverrides[urbanTier]
+          : COST_OF_LIVING[urbanTier]
+      )
+    : 0;
+
+  let colDeduction = 0;
+  if (enableExperimentalPolicyAdjustments) {
+    let colReason;
+    if (d.ownershipStatus === 'RENTED' && d.monthlyRent > 0) {
+      const tier1Cap = adminParams.tier1RentCap ?? DEFAULT_MAX_RENT.TIER_1;
+      const tier2Cap = adminParams.tier2RentCap ?? DEFAULT_MAX_RENT.TIER_2;
+      const ruralCap = adminParams.ruralRentCap ?? DEFAULT_MAX_RENT.RURAL;
+
+      const maxRent = urbanTier === 'TIER_1' ? tier1Cap : urbanTier === 'TIER_2' ? tier2Cap : ruralCap;
+      const cappedRent = Math.min(d.monthlyRent, maxRent);
+
+      colDeduction = Math.max(baseCol, cappedRent) * 12;
+      colReason = `Renter in ${urbanTier} — capped at KSh ${maxRent.toLocaleString()}/mo`;
+      postBaseDeductions.push({
+        name: 'Rent-Adjusted Cost of Living',
+        amount: colDeduction,
+        category: 'COST_OF_LIVING',
+        reason: colReason,
+        explanation: colReason
+      });
+    } else {
+      colDeduction = baseCol * 12;
+      colReason = `Basic survival threshold for ${urbanTier}`;
+      postBaseDeductions.push({
+        name: 'Cost of Living Allowance',
+        amount: colDeduction,
+        category: 'COST_OF_LIVING',
+        reason: colReason,
+        explanation: colReason
+      });
+    }
+    preFloorAdjustedGrossIncome -= colDeduction;
   }
-  preFloorAdjustedGrossIncome -= colDeduction;
 
   // 2. Dependency Allowance
   let depDeduction = 0;
-  if (d.householdSize > 1) {
+  if (enableExperimentalPolicyAdjustments && d.householdSize > 1) {
     let dependencyRatio = (d.householdSize - 1) * 0.08; // 8% deduction per dependent
     const cap = ASAL_COUNTIES[d.county] ? 0.40 : 0.35;
     dependencyRatio = Math.min(dependencyRatio, cap);
@@ -475,7 +497,7 @@ export function calculateProposedModel(d, adminParams = {}) {
 
   // 3. Catastrophic Health Expenditure (CHE) / Chronic Illness Adjustment
   let cheDeduction = 0;
-  if (d.hasChronicIllness) {
+  if (enableExperimentalPolicyAdjustments && d.hasChronicIllness) {
     cheDeduction = Math.round(Math.max(0, preFloorAdjustedGrossIncome) * 0.4);
     const cheReason = 'Chronic Illness Burden (40% adjustment: illustrative prototype policy assumption — requires SHA validation)';
     postBaseDeductions.push({
@@ -491,7 +513,7 @@ export function calculateProposedModel(d, adminParams = {}) {
 
   // 4. Registered Disability Adjustment (Illustrative Assumption)
   let disabilityDeduction = 0;
-  if (d.hasRegisteredDisability) {
+  if (enableExperimentalPolicyAdjustments && d.hasRegisteredDisability) {
     disabilityDeduction = Math.round(Math.max(0, preFloorAdjustedGrossIncome) * 0.3);
     const disReason = 'Registered Person with Disability (30% adjustment: illustrative prototype policy assumption — requires SHA validation)';
     postBaseDeductions.push({
@@ -550,9 +572,62 @@ export function calculateProposedModel(d, adminParams = {}) {
     ]
   };
 
-  // --- OVERRIDES & POLICY CONSTRAINTS ---
-  let isIndigent = false;
-  if (d.receivesAid || d.isRefugee) isIndigent = true;
+  // --- STATUTORY CONTRIBUTION AND FINANCIAL ASSISTANCE ASSESSMENT ---
+  const annualContributionBeforeMinimum =
+    (adjustedGrossIncome * 0.0275) / 12;
+
+  const roundedContribution =
+    Math.round(annualContributionBeforeMinimum);
+
+  const monthlyContribution =
+    Math.max(300, roundedContribution);
+
+  const minimumContributionFloorApplied =
+    annualContributionBeforeMinimum < 300;
+
+  // These circumstances may warrant examination, but they do not
+  // automatically establish statutory indigence.
+  const financialAssistanceReviewReasons = [];
+
+  if (d.receivesAid) {
+    financialAssistanceReviewReasons.push(
+      "SOCIAL_ASSISTANCE_REPORTED"
+    );
+  }
+
+  if (d.isRefugee) {
+    financialAssistanceReviewReasons.push(
+      "REFUGEE_OR_DISPLACED_STATUS_REQUIRES_REVIEW"
+    );
+  }
+
+  if (d.headAge >= 65 && effectiveBalance < 5000) {
+    financialAssistanceReviewReasons.push(
+      "OLDER_PERSON_FINANCIAL_CIRCUMSTANCES_REQUIRE_REVIEW"
+    );
+  }
+
+  if (d.headAge < 21 && d.householdSize > 1) {
+    financialAssistanceReviewReasons.push(
+      "YOUNG_HOUSEHOLD_HEAD_REQUIRES_REVIEW"
+    );
+  }
+
+  const financialAssistanceStatus =
+    financialAssistanceReviewReasons.length > 0
+      ? "REQUIRES_AUTHORISED_REVIEW"
+      : "NOT_ASSESSED";
+
+  if (minimumContributionFloorApplied) {
+    factors.push({
+      name: 'Minimum Contribution Rule',
+      impact: 'Medium',
+      direction: 'down',
+      description: 'Calculated contribution below statutory minimum (KSh 300/mo) under Regulation 18(2) — minimum contribution floor applied',
+      isFlaw: false
+    });
+  }
+
   if (d.headAge >= 65) {
     if (deriveVehicleList(d).length > 0) {
       requiresChpVerification = true;
@@ -564,32 +639,6 @@ export function calculateProposedModel(d, adminParams = {}) {
         isFlaw: false
       });
     }
-    if (effectiveBalance < 5000) {
-      isIndigent = true;
-      factors.push({ name: 'Age Override', impact: 'High', direction: 'down', description: 'Pensioner Trap bypass', isFlaw: false });
-    }
-  }
-  if (d.headAge < 21 && d.householdSize > 1) {
-    isIndigent = true;
-    factors.push({ name: 'Child-Headed Household', impact: 'High', direction: 'down', description: 'Minor override', isFlaw: false });
-  }
-
-  const INDIGENT_THRESHOLD = 131000;
-  if (!isIndigent && adjustedGrossIncome <= INDIGENT_THRESHOLD) {
-    isIndigent = true;
-    factors.push({ name: 'Pro-Poor Constraint', impact: 'Medium', direction: 'down', description: 'AGI below illustrative low-income threshold (KSh 131,000) — minimum contribution rule applied under Regulation 18(2)', isFlaw: false });
-  }
-
-  // Meta-Flaw 30: 2.75% Rate Assumption
-  let monthlyContribution = 0;
-  let tier = "LOW";
-  
-  if (isIndigent) {
-    monthlyContribution = 300; // Minimum contribution rule under Regulation 18(2) (KSh 300/mo floor)
-  } else {
-    monthlyContribution = Math.max(300, Math.round((adjustedGrossIncome * 0.0275) / 12));
-    if (adjustedGrossIncome > 450000) tier = "HIGH";
-    else tier = "MIDDLE";
   }
 
   // Fallback Protocol: Digital Ghost Detection
@@ -599,9 +648,9 @@ export function calculateProposedModel(d, adminParams = {}) {
     isDigitalGhost = true;
   }
   
-  if (isDigitalGhost && isIndigent) {
+  if (isDigitalGhost && minimumContributionFloorApplied) {
     requiresChpVerification = true;
-    factors.push({ name: 'Digital Ghost / CHP Protocol', impact: 'High', direction: 'neutral', description: 'Zero digital footprint. Provisional low-income classification pending physical CHP verification within 90 days.', isFlaw: false });
+    factors.push({ name: 'Digital Ghost / CHP Protocol', impact: 'High', direction: 'neutral', description: 'Zero digital footprint. Provisional minimum contribution classification pending physical CHP verification within 90 days.', isFlaw: false });
   }
 
   // Consent Withheld Pathway (DPA 2019 compliance)
@@ -609,6 +658,17 @@ export function calculateProposedModel(d, adminParams = {}) {
     requiresChpVerification = true;
     factors.push({ name: 'Consent Withheld — Manual Review', impact: 'High', direction: 'neutral', description: 'Citizen exercised DPA §32 right to withhold data consent. Routed to CHP manual verification. No algorithmic penalty applied.', isFlaw: false });
   }
+
+  let tier = "MIDDLE";
+  if (minimumContributionFloorApplied) {
+    tier = "LOW";
+  } else if (adjustedGrossIncome > 450000) {
+    tier = "HIGH";
+  }
+
+  const policyAssumptionMode = enableExperimentalPolicyAdjustments
+    ? "ILLUSTRATIVE_RESEARCH_ADJUSTMENTS_ENABLED"
+    : "UNAPPROVED_ADJUSTMENTS_DISABLED";
 
   const evidenceCoverage = {
     householdIncome:
@@ -637,9 +697,25 @@ export function calculateProposedModel(d, adminParams = {}) {
     estimatedAnnualIncome: annualBaseTotal,
     adjustedGrossIncome: adjustedGrossIncome,
     monthlyContribution: monthlyContribution,
-    band: isIndigent ? 1 : 2,
+    band: minimumContributionFloorApplied ? 1 : 2,
     tier: tier,
-    isIndigent: isIndigent,
+
+    // Do not falsely declare indigence based on the contribution floor.
+    isIndigent: null,
+
+    minimumContributionFloorApplied,
+    contributionRate: 0.0275,
+    minimumMonthlyContribution: 300,
+    contributionClassification: minimumContributionFloorApplied
+      ? "MINIMUM_CONTRIBUTION_FLOOR"
+      : "RATE_BASED_CONTRIBUTION",
+
+    financialAssistanceStatus,
+    financialAssistanceReviewReasons,
+
+    policyAssumptionMode,
+    isOperationalPolicyApproved: false,
+
     isDigitalGhost: isDigitalGhost,
     requiresChpVerification: requiresChpVerification,
     factors: factors,
@@ -1755,37 +1831,37 @@ export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'co
   const groups = {};
   assessments.forEach(a => {
     const key = a.inputs[groupingKey] || 'UNKNOWN';
-    if (!groups[key]) groups[key] = { total: 0, falsePositives: 0 };
+    if (!groups[key]) groups[key] = { total: 0, disagreements: 0 };
     groups[key].total++;
-    // A "false positive" here means: proposed model says indigent, current
-    // (Lasso) model said non-indigent. See docstring — this is disparity in
-    // the old model's overcharging pattern, not a ground-truth FPR.
-    const shouldBeIndigent = a.proposedResult?.isIndigent === true;
-    const wasChargedAsNonIndigent = a.currentResult?.isIndigent === false;
-    if (shouldBeIndigent && wasChargedAsNonIndigent) {
-      groups[key].falsePositives++;
+    // Disagreement here means: proposed model applied floor while current model charged rate-based
+    const propFloor = a.proposedResult?.minimumContributionFloorApplied === true || a.proposedResult?.monthlyContribution === 300;
+    const curRateBased = a.currentResult?.minimumContributionFloorApplied === false || a.currentResult?.monthly > 300;
+    if (propFloor && curRateBased) {
+      groups[key].disagreements++;
     }
   });
 
-  // Calculate False Positive Rate (FPR) per group, gated on sample size
+  // Calculate disagreement rate per group, gated on sample size
   const groupResults = {};
   const excludedGroups = [];
-  let maxFPR = 0;
-  let minFPR = 1;
+  let maxRate = 0;
+  let minRate = 1;
   Object.entries(groups).forEach(([key, data]) => {
-    const fpr = data.total > 0 ? data.falsePositives / data.total : 0;
+    const rate = data.total > 0 ? data.disagreements / data.total : 0;
     const entry = {
       total: data.total,
-      falsePositives: data.falsePositives,
-      falsePositiveRate: Math.round(fpr * 10000) / 100 // percentage with 2 decimals
+      disagreements: data.disagreements,
+      disagreementRate: Math.round(rate * 10000) / 100,
+      falsePositives: data.disagreements,
+      falsePositiveRate: Math.round(rate * 10000) / 100 // deprecated alias
     };
     if (data.total < minGroupSize) {
       excludedGroups.push({ key, ...entry, reason: `Below minGroupSize (${minGroupSize}) — excluded to avoid noise-driven disparity` });
       return;
     }
     groupResults[key] = entry;
-    if (fpr > maxFPR) maxFPR = fpr;
-    if (fpr < minFPR) minFPR = fpr;
+    if (rate > maxRate) maxRate = rate;
+    if (rate < minRate) minRate = rate;
   });
 
   const groupCount = Object.keys(groupResults).length;
@@ -1793,10 +1869,11 @@ export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'co
     return { passed: false, maxDisparity: 0, threshold: 3.0, groupResults, excludedGroups, groupCount: 0, report: `No ${groupingKey} group reached minGroupSize (${minGroupSize}); disparity cannot be assessed yet.` };
   }
 
-  const maxDisparity = Math.round((maxFPR - minFPR) * 10000) / 100;
-  const passed = maxDisparity <= 3.0; // 3% threshold — matches docstring now
+  const maxDisparity = Math.round((maxRate - minRate) * 10000) / 100;
+  const passed = maxDisparity <= 3.0; // 3% design target
 
   return {
+    evaluationType: "SYNTHETIC_DEMO_ONLY",
     passed,
     maxDisparity,
     threshold: 3.0,
@@ -1804,8 +1881,8 @@ export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'co
     excludedGroups,
     groupCount,
     report: passed
-      ? `PASS: Maximum current-model-overcharge disparity across ${groupingKey} groups (N≥${minGroupSize}) is ${maxDisparity}% (≤3% threshold)`
-      : `FAIL: Maximum current-model-overcharge disparity across ${groupingKey} groups (N≥${minGroupSize}) is ${maxDisparity}% (>3% threshold). Algorithm must be recalibrated before deployment.`
+      ? `SYNTHETIC DEMO: Maximum model disagreement disparity across ${groupingKey} groups (N≥${minGroupSize}) is ${maxDisparity}% (≤3% design target)`
+      : `SYNTHETIC DEMO: Maximum model disagreement disparity across ${groupingKey} groups (N≥${minGroupSize}) is ${maxDisparity}% (>3% design target)`
   };
 }
 
@@ -1932,14 +2009,18 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
       currentModel: {
         annualIncome: currentResult.annualIncome || currentResult,
         monthlyContribution: currentResult.monthly || currentResult.monthlyContribution,
-        isIndigent: currentResult.isIndigent,
+        minimumContributionFloorApplied: currentResult.minimumContributionFloorApplied ?? null,
+        contributionClassification: currentResult.contributionClassification ?? null,
+        isIndigent: null,
         tier: currentResult.tier
       },
       proposedModel: {
-        version: modelVersions?.declaredIncome?.id || proposedResult?.modelVersion || 'declared-income-agi-v1',
+        version: modelVersions?.declaredIncome?.id || proposedResult?.modelVersion || 'declared-income-agi-v1.1',
         adjustedGrossIncome: proposedResult.adjustedGrossIncome,
         monthlyContribution: proposedResult.monthly || proposedResult.monthlyContribution,
-        isIndigent: proposedResult.isIndigent,
+        minimumContributionFloorApplied: proposedResult.minimumContributionFloorApplied ?? null,
+        contributionClassification: proposedResult.contributionClassification ?? null,
+        isIndigent: null,
         tier: proposedResult.tier
       },
       proposedModelVersions: modelVersions ? {
@@ -1959,7 +2040,8 @@ export function createAuditRecord(inputs, currentResult, proposedResult, fraudRi
           estimatedAnnualIncome: modelVersions.declaredIncome.result.estimatedAnnualIncome,
           adjustedGrossIncome: modelVersions.declaredIncome.result.adjustedGrossIncome,
           monthlyContribution: modelVersions.declaredIncome.result.monthlyContribution,
-          isIndigent: modelVersions.declaredIncome.result.isIndigent
+          minimumContributionFloorApplied: modelVersions.declaredIncome.result.minimumContributionFloorApplied,
+          isIndigent: null
         }
       } : null
     },
@@ -2098,46 +2180,56 @@ export function generateSyntheticPopulation(n = 300, adminParams = {}) {
 
 /**
  * Runs both models over a synthetic population and computes population-level
- * error rates — the numbers that belong in the Bias & Compliance / Metrics
- * tabs. Uses the proposed model as the "truth" reference (it's this project's
- * own best estimate of correct classification) and counts where the current
- * model disagrees.
+ * model disagreement metrics for simulation and scenario demonstration.
  *
- * Exclusion error: household that the proposed model marks as indigent
- *   (should receive subsidy) but the current model does not → wrongly denied.
- * Inclusion error: household that the current model marks as indigent but
- *   the proposed model does not → wrongly subsidised.
- * Monthly payout ratio: total current-model contributions collected vs total
- *   benefits paid out at the indigent flat rate (KSh 300/mo × indigent count).
+ * IMPORTANT METHODOLOGICAL NOTICE:
+ * This function compares two algorithmic candidate models on synthetic data.
+ * It does NOT measure true classification error, targeting accuracy, or real-world
+ * exclusion/inclusion error against verified ground truth. The proposed model
+ * cannot serve as ground truth for evaluating itself or another model.
+ *
+ * Output is strictly labelled SYNTHETIC_DEMO_ONLY.
  *
  * @param {number} n  Population size (default 500 for stable percentages)
- * @returns {{ exclusionRate: number, inclusionRate: number, payoutRatio: number,
- *             n: number, excludedCount: number, includedCount: number }}
+ * @returns {Object} Synthetic disagreement metrics
  */
 export function calculatePopulationErrorRates(n = 500) {
   const pop = generateSyntheticPopulation(n);
-  let excluded = 0; // proposed=indigent, current=not
-  let included = 0; // proposed=not-indigent, current=indigent
-  let totalContributions = 0;
-  let totalPayouts = 0;
+  let floorDisagreement = 0; // proposed on floor, current above floor
+  let rateDisagreement = 0;  // proposed above floor, current on floor
+  let totalDisagreements = 0;
+  let totalCurrentContributions = 0;
+  let totalProposedContributions = 0;
 
   for (const { currentResult, proposedResult } of pop) {
-    const curIndigent = currentResult.isIndigent;
-    const propIndigent = proposedResult.isIndigent;
-    if (propIndigent && !curIndigent) excluded++;
-    if (!propIndigent && curIndigent) included++;
-    totalContributions += currentResult.monthly;
-    totalPayouts += propIndigent ? 300 : 0; // cost of covering those who should be covered
+    const curFloor = currentResult.minimumContributionFloorApplied === true || currentResult.monthly === 300;
+    const propFloor = proposedResult.minimumContributionFloorApplied === true || proposedResult.monthlyContribution === 300;
+    if (propFloor && !curFloor) floorDisagreement++;
+    if (!propFloor && curFloor) rateDisagreement++;
+    if (currentResult.monthly !== proposedResult.monthlyContribution) totalDisagreements++;
+    totalCurrentContributions += currentResult.monthly;
+    totalProposedContributions += proposedResult.monthlyContribution;
   }
 
+  const disagreementRate = Math.round((totalDisagreements / n) * 1000) / 10;
+  const floorDisagreementRate = Math.round((floorDisagreement / n) * 1000) / 10;
+  const rateDisagreementRate = Math.round((rateDisagreement / n) * 1000) / 10;
+
   return {
+    evaluationType: "SYNTHETIC_DEMO_ONLY",
     n,
-    excludedCount: excluded,
-    includedCount: included,
-    exclusionRate: Math.round((excluded / n) * 1000) / 10, // 1 decimal place
-    inclusionRate: Math.round((included / n) * 1000) / 10,
-    payoutRatio: totalContributions > 0
-      ? Math.round((totalPayouts / totalContributions) * 1000) / 10
+    totalDisagreements,
+    disagreementRate,
+    floorDisagreementCount: floorDisagreement,
+    floorDisagreementRate,
+    rateDisagreementCount: rateDisagreement,
+    rateDisagreementRate,
+    // Scenario comparison aliases
+    exclusionRate: floorDisagreementRate,
+    inclusionRate: rateDisagreementRate,
+    payoutRatio: totalCurrentContributions > 0
+      ? Math.round((totalProposedContributions / totalCurrentContributions) * 1000) / 10
       : 0,
+    disclaimer: "SYNTHETIC_DEMO_ONLY: Model comparisons on synthetic personas reflect algorithmic differences between candidate formulations, NOT verified real-world targeting error or statutory indigence classification."
   };
 }

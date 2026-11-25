@@ -175,6 +175,12 @@ export const OPERATING_EXPENSE_CATEGORIES = Object.freeze({
   }
 });
 
+export const DEFAULT_COMMON_ASSESSMENT_PERIOD = Object.freeze({
+  windowMonths: 12,
+  label: "Previous 12 completed months",
+  basis: "MEMBER_REPORTED_ROLLING_12_MONTH_WINDOW"
+});
+
 const roundKsh = (value) => Math.round(value);
 
 function readAmount(value) {
@@ -195,24 +201,142 @@ function readAmount(value) {
   return number;
 }
 
+function parseDateOnly(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+
+  // Reject invalid dates such as 2026-02-31.
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== value
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
 /**
- * Calculates observation months from explicit start and end dates.
- * Returns null if dates are invalid or inverted.
- * Does not arbitrarily truncate periods longer than 12 months.
+ * Counts inclusive calendar months in a date range.
+ * Example: 2026-01-01 through 2026-06-30 = 6 months.
  */
 export function calculateMonthsFromDates(startDate, endDate) {
-  if (!startDate || !endDate) return null;
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
-  if (start > end) return null;
+  const start = parseDateOnly(startDate);
+  const end = parseDateOnly(endDate);
 
-  // Real calendar months difference
-  const yearDiff = end.getFullYear() - start.getFullYear();
-  const monthDiff = end.getMonth() - start.getMonth();
-  const dayDiff = (end.getDate() - start.getDate()) / 30;
-  const totalMonths = Math.max(1, Math.round(yearDiff * 12 + monthDiff + dayDiff));
-  return totalMonths;
+  if (!start || !end || start > end) {
+    return null;
+  }
+
+  return (
+    (end.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+    end.getUTCMonth() -
+    start.getUTCMonth() +
+    1
+  );
+}
+
+export function checkIncomePeriodAlignment(sources) {
+  const activeEarnedSources = sources.filter(source => {
+    const rule = INCOME_SOURCE_RULES[source.sourceType];
+
+    return (
+      source.isActive !== false &&
+      rule?.bucket === "EARNED"
+    );
+  });
+
+  const datedSources = activeEarnedSources.filter(source =>
+    source.observationStartDate && source.observationEndDate
+  );
+
+  if (
+    datedSources.length > 0 &&
+    datedSources.length !== activeEarnedSources.length
+  ) {
+    return "Some earned-income sources have dates while others do not. Their observation periods cannot be confirmed as aligned.";
+  }
+
+  const periodKeys = new Set(
+    datedSources.map(source =>
+      `${source.observationStartDate}|${source.observationEndDate}`
+    )
+  );
+
+  if (periodKeys.size > 1) {
+    return "Earned-income sources cover different date ranges. Use the same assessment reference period before combining them.";
+  }
+
+  return null;
+}
+
+function calculateBusinessExpenseTotals(source, itemisedExpenses) {
+  const stockPurchasesKsh = itemisedExpenses
+    .filter(exp => exp.category === "STOCK_PURCHASES")
+    .reduce((sum, exp) => sum + exp.amountKsh, 0);
+
+  const otherOperatingCostsKsh = itemisedExpenses
+    .filter(exp => exp.category !== "STOCK_PURCHASES")
+    .filter(exp => exp.isAllowablePrototype)
+    .reduce((sum, exp) => sum + exp.amountKsh, 0);
+
+  const openingStockKsh = readAmount(source.openingStockKsh);
+  const closingStockKsh = readAmount(source.closingStockKsh);
+
+  if (stockPurchasesKsh === 0) {
+    return {
+      isResolved: true,
+      stockPurchasesKsh: 0,
+      costOfGoodsSoldKsh: 0,
+      otherOperatingCostsKsh,
+      totalCostsKsh: otherOperatingCostsKsh,
+      openingStockKsh,
+      closingStockKsh
+    };
+  }
+
+  // Do not silently deduct every purchase where stock remains unsold.
+  if (openingStockKsh === null || closingStockKsh === null) {
+    return {
+      isResolved: false,
+      stockPurchasesKsh,
+      costOfGoodsSoldKsh: null,
+      otherOperatingCostsKsh,
+      totalCostsKsh: otherOperatingCostsKsh,
+      openingStockKsh,
+      closingStockKsh,
+      unresolvedReason: "MISSING_INVENTORY_VALUES"
+    };
+  }
+
+  const costOfGoodsSoldKsh =
+    openingStockKsh + stockPurchasesKsh - closingStockKsh;
+
+  if (costOfGoodsSoldKsh < 0) {
+    return {
+      isResolved: false,
+      stockPurchasesKsh,
+      costOfGoodsSoldKsh: null,
+      otherOperatingCostsKsh,
+      totalCostsKsh: otherOperatingCostsKsh,
+      openingStockKsh,
+      closingStockKsh,
+      unresolvedReason: "CLOSING_STOCK_EXCEEDS_AVAILABLE"
+    };
+  }
+
+  return {
+    isResolved: true,
+    stockPurchasesKsh,
+    costOfGoodsSoldKsh,
+    otherOperatingCostsKsh,
+    totalCostsKsh: costOfGoodsSoldKsh + otherOperatingCostsKsh,
+    openingStockKsh,
+    closingStockKsh
+  };
 }
 
 /**
@@ -244,8 +368,8 @@ export function resolveEffectiveIncomeSources(incomeSources = [], hasNoEarnedInc
  * Validates the full array of income sources, including:
  * - Common assessment reference periods
  * - Date ranges and manual duration contradiction checks
- * - Itemised operating expenses
- * - Duplicate relationships via `includedInSourceId`
+ * - Itemised operating expenses and inventory constraints
+ * - Duplicate relationships via `includedInSourceId` and `overlapAmountKsh`
  * - Non-circular references
  */
 export function validateIncomeSources(sources, commonAssessmentPeriod = null) {
@@ -260,9 +384,9 @@ export function validateIncomeSources(sources, commonAssessmentPeriod = null) {
 
   if (commonAssessmentPeriod) {
     if (commonAssessmentPeriod.startDate && commonAssessmentPeriod.endDate) {
-      const s = new Date(commonAssessmentPeriod.startDate);
-      const e = new Date(commonAssessmentPeriod.endDate);
-      if (isNaN(s.getTime()) || isNaN(e.getTime())) {
+      const s = parseDateOnly(commonAssessmentPeriod.startDate);
+      const e = parseDateOnly(commonAssessmentPeriod.endDate);
+      if (!s || !e) {
         errors.push("Assessment reference period dates are invalid.");
       } else if (s > e) {
         errors.push("Assessment reference period start date cannot be after end date.");
@@ -302,9 +426,9 @@ export function validateIncomeSources(sources, commonAssessmentPeriod = null) {
     // Observation period calculation: dates take precedence when present
     let months = null;
     if (source.observationStartDate && source.observationEndDate) {
-      const s = new Date(source.observationStartDate);
-      const e = new Date(source.observationEndDate);
-      if (isNaN(s.getTime()) || isNaN(e.getTime())) {
+      const s = parseDateOnly(source.observationStartDate);
+      const e = parseDateOnly(source.observationEndDate);
+      if (!s || !e) {
         errors.push(`${prefix}: Observation start date or end date is invalid.`);
       } else if (s > e) {
         errors.push(`${prefix}: Observation start date must be before end date.`);
@@ -374,14 +498,49 @@ export function validateIncomeSources(sources, commonAssessmentPeriod = null) {
       }
     }
 
+    // Inventory validation
+    const hasOpeningStock = source.openingStockKsh !== undefined && source.openingStockKsh !== null && String(source.openingStockKsh).trim() !== "";
+    const hasClosingStock = source.closingStockKsh !== undefined && source.closingStockKsh !== null && String(source.closingStockKsh).trim() !== "";
+
+    if (hasOpeningStock && readAmount(source.openingStockKsh) === null) {
+      errors.push(`${prefix}: Opening stock must be a valid non-negative KSh amount.`);
+    }
+    if (hasClosingStock && readAmount(source.closingStockKsh) === null) {
+      errors.push(`${prefix}: Closing stock must be a valid non-negative KSh amount.`);
+    }
+
+    if (hasOpeningStock && hasClosingStock) {
+      const openAmt = readAmount(source.openingStockKsh);
+      const closeAmt = readAmount(source.closingStockKsh);
+      const stockPurchasesAmt = Array.isArray(source.expenses)
+        ? source.expenses.filter(e => e.category === "STOCK_PURCHASES").reduce((s, e) => s + (Number(e.amountKsh) || 0), 0)
+        : 0;
+      if (openAmt !== null && closeAmt !== null && closeAmt > openAmt + stockPurchasesAmt) {
+        errors.push(`${prefix}: Closing stock (KSh ${closeAmt.toLocaleString()}) cannot exceed opening stock plus purchases (KSh ${(openAmt + stockPurchasesAmt).toLocaleString()}).`);
+      }
+    }
+
     // Duplicate relationship validation (`includedInSourceId`)
     if (source.includedInSourceId) {
       const parentId = String(source.includedInSourceId).trim();
       if (parentId === id) {
         errors.push(`${prefix}: Self-reference error: Source cannot refer to itself as parent.`);
       }
-    } else if (source.alreadyIncludedElsewhere === true && !source.includedInSourceId) {
-      errors.push(`${prefix}: Source is marked as included elsewhere but does not specify a parent source ID.`);
+      if (source.overlapAmountKsh !== undefined && source.overlapAmountKsh !== null && String(source.overlapAmountKsh).trim() !== "") {
+        const overlapAmt = readAmount(source.overlapAmountKsh);
+        if (overlapAmt === null) {
+          errors.push(`${prefix}: Overlap amount must be a valid non-negative KSh amount.`);
+        } else if (received !== null && overlapAmt > received) {
+          errors.push(`${prefix}: Declared overlap amount (KSh ${overlapAmt.toLocaleString()}) cannot exceed total received amount (KSh ${received.toLocaleString()}).`);
+        }
+      }
+    } else {
+      if (source.alreadyIncludedElsewhere === true && !source.includedInSourceId) {
+        errors.push(`${prefix}: Source is marked as included elsewhere but does not specify a parent source ID.`);
+      }
+      if (source.overlapAmountKsh !== undefined && source.overlapAmountKsh !== null && String(source.overlapAmountKsh).trim() !== "") {
+        errors.push(`${prefix}: An overlap amount was declared but no parent source ID was specified.`);
+      }
     }
   });
 
@@ -416,9 +575,9 @@ export function validateIncomeSources(sources, commonAssessmentPeriod = null) {
 /**
  * Calculates household income across all reported sources.
  * Enforces period alignment, duplicate deduction safeguards, expense itemisation,
- * and reimbursement reconciliation.
+ * stock accounting (COGS), and reimbursement reconciliation.
  */
-export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null) {
+export function calculateHouseholdIncome(sources, commonAssessmentPeriod = DEFAULT_COMMON_ASSESSMENT_PERIOD) {
   const validation = validateIncomeSources(sources, commonAssessmentPeriod);
 
   if (!validation.isValid) {
@@ -431,13 +590,38 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
       reviewFlags: [],
       duplicateRelationships: [],
       monthlyEarnedNetKsh: null,
+      reviewOnlyMonthlyEarnedNetKsh: null,
       annualisedEarnedNetKsh: null,
+      reviewOnlyAnnualisedEarnedNetKsh: null,
       monthlyPolicyReviewResourcesKsh: null,
       monthlyNonEarnedFlowsKsh: null,
       monthlyFiduciaryFlowsKsh: null,
       requiresManualReview: false,
       requiresPolicyDecision: false,
-      calculationVersion: "household-income-ledger-v1.1",
+      calculationVersion: "household-income-ledger-v1.2",
+    };
+  }
+
+  const periodAlignmentError = checkIncomePeriodAlignment(sources);
+
+  if (periodAlignmentError) {
+    return {
+      isValid: true,
+      calculationStatus: "BLOCKED_PERIOD_ALIGNMENT",
+      canPopulatePrototypeEarnedIncomeBase: false,
+      requiresManualReview: true,
+      monthlyEarnedNetKsh: null,
+      reviewOnlyMonthlyEarnedNetKsh: null,
+      annualisedEarnedNetKsh: null,
+      reviewOnlyAnnualisedEarnedNetKsh: null,
+      reviewFlags: [{
+        code: "ASSESSMENT_PERIOD_MISMATCH",
+        message: periodAlignmentError
+      }],
+      errors: [],
+      lines: [],
+      duplicateRelationships: [],
+      calculationVersion: "household-income-ledger-v1.2"
     };
   }
 
@@ -476,6 +660,12 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
     // Calculate total expenses from itemised ledger or legacy field
     let itemisedExpenses = [];
     let costs = 0;
+    let costOfGoodsSoldKsh = null;
+    let stockPurchasesKsh = 0;
+    let otherOperatingCostsKsh = 0;
+    let openingStockKsh = readAmount(source.openingStockKsh);
+    let closingStockKsh = readAmount(source.closingStockKsh);
+    let inventoryReviewRequired = false;
 
     if (rule.costsAllowed) {
       if (Array.isArray(source.expenses) && source.expenses.length > 0) {
@@ -487,16 +677,41 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
           isAllowablePrototype: OPERATING_EXPENSE_CATEGORIES[e.category]?.isAllowablePrototype !== false,
           description: e.description || ""
         }));
-        costs = itemisedExpenses.reduce((sum, e) => sum + (e.isAllowablePrototype ? e.amountKsh : 0), 0);
+
+        const hasStockPurchases = itemisedExpenses.some(e => e.category === "STOCK_PURCHASES");
+
+        if (hasStockPurchases || openingStockKsh !== null || closingStockKsh !== null) {
+          const expenseTotals = calculateBusinessExpenseTotals(source, itemisedExpenses);
+          stockPurchasesKsh = expenseTotals.stockPurchasesKsh;
+          costOfGoodsSoldKsh = expenseTotals.costOfGoodsSoldKsh;
+          otherOperatingCostsKsh = expenseTotals.otherOperatingCostsKsh;
+          costs = expenseTotals.totalCostsKsh;
+
+          if (!expenseTotals.isResolved) {
+            inventoryReviewRequired = true;
+            requiresManualReview = true;
+            reviewFlags.push({
+              code: "INVENTORY_RECONCILIATION_REQUIRED",
+              sourceId: source.id,
+              message: expenseTotals.unresolvedReason === "MISSING_INVENTORY_VALUES"
+                ? `${rule.label} declared stock purchases of KSh ${stockPurchasesKsh.toLocaleString()} but opening or closing inventory values were not provided. Cost of goods sold cannot be verified; manual inventory review required.`
+                : `${rule.label} declared closing stock exceeding opening stock plus stock purchases. Cost of goods sold cannot be negative.`
+            });
+          }
+        } else {
+          costs = itemisedExpenses.reduce((sum, e) => sum + (e.isAllowablePrototype ? e.amountKsh : 0), 0);
+          otherOperatingCostsKsh = costs;
+        }
       } else if (source.directCostsKsh !== undefined && source.directCostsKsh !== null) {
         costs = Number(source.directCostsKsh);
+        otherOperatingCostsKsh = costs;
         itemisedExpenses = [{
           id: `exp-legacy-${source.id}`,
           category: "OTHER_OPERATING",
           categoryLabel: OPERATING_EXPENSE_CATEGORIES.OTHER_OPERATING.label,
           amountKsh: costs,
           isAllowablePrototype: true,
-          description: "Reported direct operating costs"
+          description: "Reported direct operating costs (member-declared and unverified)"
         }];
       }
       if (source.isActive !== false) {
@@ -504,36 +719,73 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
       }
     }
 
-    const reportedNet = received - costs;
-    const monthlyReceived = received / months;
-    const monthlyCosts = costs / months;
-    const monthlyNet = reportedNet / months;
-
     // Inactive handling (e.g. zero-earned-income declared while retaining draft records)
     const isInactive = source.isActive === false;
 
     // Duplicate relationship handling (`includedInSourceId` takes precedence over legacy boolean)
     let isDuplicate = false;
+    let isPartialDuplicate = false;
     let parentSourceId = null;
+    let duplicateOverlapAmountKsh = 0;
+    let countedReceivedKsh = received;
 
     if (source.includedInSourceId) {
       parentSourceId = String(source.includedInSourceId).trim();
-      isDuplicate = true;
       const parentSource = sourceMap.get(parentSourceId);
       const parentLabel = parentSource
         ? (INCOME_SOURCE_RULES[parentSource.sourceType]?.label || parentSource.sourceType)
         : parentSourceId;
-      duplicateRelationships.push({
-        childSourceId: source.id,
-        duplicateSourceId: source.id,
-        duplicateSourceLabel: rule.label,
-        parentSourceId: parentSourceId,
-        parentSourceLabel: parentLabel,
-        reason: "Declared as included in parent source"
-      });
+
+      const hasDeclaredOverlap =
+        source.overlapAmountKsh !== undefined &&
+        source.overlapAmountKsh !== null &&
+        String(source.overlapAmountKsh).trim() !== "";
+
+      duplicateOverlapAmountKsh = hasDeclaredOverlap
+        ? (readAmount(source.overlapAmountKsh) ?? received)
+        : received;
+
+      if (duplicateOverlapAmountKsh >= received) {
+        isDuplicate = true;
+        isPartialDuplicate = false;
+        countedReceivedKsh = 0;
+        duplicateRelationships.push({
+          childSourceId: source.id,
+          duplicateSourceId: source.id,
+          duplicateSourceLabel: rule.label,
+          parentSourceId: parentSourceId,
+          parentSourceLabel: parentLabel,
+          overlapAmountKsh: received,
+          isPartial: false,
+          treatment: "Full duplicate: entire source excluded from earned income.",
+          reason: "Declared as included in parent source"
+        });
+      } else {
+        isDuplicate = false;
+        isPartialDuplicate = true;
+        countedReceivedKsh = Math.max(0, received - duplicateOverlapAmountKsh);
+        duplicateRelationships.push({
+          childSourceId: source.id,
+          duplicateSourceId: source.id,
+          duplicateSourceLabel: rule.label,
+          parentSourceId: parentSourceId,
+          parentSourceLabel: parentLabel,
+          overlapAmountKsh: duplicateOverlapAmountKsh,
+          isPartial: true,
+          treatment: `Deducted declared partial overlap of KSh ${duplicateOverlapAmountKsh.toLocaleString()}; remaining KSh ${countedReceivedKsh.toLocaleString()} counted.`,
+          reason: "Declared partial overlap with parent source"
+        });
+      }
     } else if (source.alreadyIncludedElsewhere === true) {
       isDuplicate = true;
+      duplicateOverlapAmountKsh = received;
+      countedReceivedKsh = 0;
     }
+
+    const reportedNet = countedReceivedKsh - costs;
+    const monthlyReceived = countedReceivedKsh / months;
+    const monthlyCosts = costs / months;
+    const monthlyNet = reportedNet / months;
 
     let countedInEarnedIncome = false;
 
@@ -543,33 +795,46 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
     } else if (rule.bucket === "EARNED" && !isDuplicate) {
       monthlyEarnedTotal += monthlyNet;
       countedInEarnedIncome = true;
-    } else if (isDuplicate) {
-      const parentName = parentSourceId && sourceMap.has(parentSourceId)
-        ? `${INCOME_SOURCE_RULES[sourceMap.get(parentSourceId).sourceType]?.label || parentSourceId} (ID: ${parentSourceId})`
-        : "another declared source";
+    }
 
+    const parentName = parentSourceId && sourceMap.has(parentSourceId)
+      ? `${INCOME_SOURCE_RULES[sourceMap.get(parentSourceId).sourceType]?.label || parentSourceId} (ID: ${parentSourceId})`
+      : "another declared source";
+
+    if (isDuplicate) {
       reviewFlags.push({
         code: "DUPLICATE_SOURCE_NOT_COUNTED",
         sourceId: source.id,
         parentSourceId: parentSourceId,
         message: `${rule.label} (ID: ${source.id}) was identified as already included in ${parentName}. It was not added to the earned income base.`,
       });
-    } else if (rule.bucket === "POLICY_REVIEW") {
-      monthlyPolicyReviewTotal += monthlyReceived;
-      requiresPolicyDecision = true;
-
+    } else if (isPartialDuplicate) {
       reviewFlags.push({
-        code: "TRANSFER_TREATMENT_REQUIRES_POLICY",
+        code: "PARTIAL_DUPLICATE_OVERLAP_DEDUCTED",
         sourceId: source.id,
-        message: `${rule.label} is displayed separately. Its treatment in the final means-testing income definition requires an approved SHA policy rule.`,
+        parentSourceId: parentSourceId,
+        message: `${rule.label} (ID: ${source.id}) declared a partial overlap of KSh ${duplicateOverlapAmountKsh.toLocaleString()} with ${parentName}. Only the unshared amount (KSh ${countedReceivedKsh.toLocaleString()}) was counted in the assessment.`,
       });
-    } else if (rule.bucket === "NON_EARNED_FLOW") {
-      monthlyNonEarnedTotal += monthlyReceived;
-      if (source.sourceType === "REIMBURSEMENT") {
-        totalReportedReimbursements += received;
+    }
+
+    if (!isInactive) {
+      if (rule.bucket === "POLICY_REVIEW") {
+        monthlyPolicyReviewTotal += monthlyReceived;
+        requiresPolicyDecision = true;
+
+        reviewFlags.push({
+          code: "TRANSFER_TREATMENT_REQUIRES_POLICY",
+          sourceId: source.id,
+          message: `${rule.label} is displayed separately. Its treatment in the final means-testing income definition requires an approved SHA policy rule.`,
+        });
+      } else if (rule.bucket === "NON_EARNED_FLOW") {
+        monthlyNonEarnedTotal += monthlyReceived;
+        if (source.sourceType === "REIMBURSEMENT") {
+          totalReportedReimbursements += received;
+        }
+      } else if (rule.bucket === "FIDUCIARY_FLOW") {
+        monthlyFiduciaryTotal += monthlyReceived;
       }
-    } else if (rule.bucket === "FIDUCIARY_FLOW") {
-      monthlyFiduciaryTotal += monthlyReceived;
     }
 
     // Observation period safeguards (only for active sources)
@@ -577,7 +842,9 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
     let periodStatus = "FULL_ANNUAL";
 
     if (!isInactive) {
-      if (months > 12) {
+      if (inventoryReviewRequired) {
+        periodStatus = "INVENTORY_RECONCILIATION_REQUIRED";
+      } else if (months > 12) {
         periodStatus = "EXTENDED_PERIOD";
         reviewFlags.push({
           code: "EXTENDED_OBSERVATION_PERIOD",
@@ -647,14 +914,24 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
       reportedNetKsh: roundKsh(reportedNet),
       itemisedExpenses,
 
+      openingStockKsh,
+      closingStockKsh,
+      stockPurchasesKsh: roundKsh(stockPurchasesKsh),
+      costOfGoodsSoldKsh: costOfGoodsSoldKsh !== null ? roundKsh(costOfGoodsSoldKsh) : null,
+      otherOperatingCostsKsh: roundKsh(otherOperatingCostsKsh),
+
+      overlapAmountKsh: duplicateOverlapAmountKsh > 0 ? roundKsh(duplicateOverlapAmountKsh) : null,
+      countedReceivedKsh: roundKsh(countedReceivedKsh),
+
       averageMonthlyReceivedKsh: roundKsh(monthlyReceived),
       averageMonthlyCostsKsh: roundKsh(monthlyCosts),
       averageMonthlyNetKsh: roundKsh(monthlyNet),
 
       countedInEarnedIncome,
       isDuplicate,
+      isPartialDuplicate,
       includedInSourceId: parentSourceId,
-      alreadyIncludedElsewhere: isDuplicate,
+      alreadyIncludedElsewhere: isDuplicate || isPartialDuplicate,
 
       isActive: !isInactive,
       inactiveReason: isInactive ? (source.inactiveReason || "ZERO_EARNED_INCOME_DECLARED") : null,
@@ -665,22 +942,55 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
   });
 
   // Safeguard: Reimbursement double-counting check
-  if (totalReportedReimbursements > 0 && totalDeductedBusinessExpenses > 0) {
+  const hasUnresolvedReimbursements =
+    totalReportedReimbursements > 0 &&
+    totalDeductedBusinessExpenses > 0;
+
+  if (hasUnresolvedReimbursements) {
+    requiresManualReview = true;
+
     reviewFlags.push({
-      code: "REIMBURSEMENT_EXPENSE_OFFSET",
-      message: `Reimbursements of KSh ${totalReportedReimbursements.toLocaleString()} were received while business expenses of KSh ${totalDeductedBusinessExpenses.toLocaleString()} were deducted. Ensure reimbursed expenses are not deducted from business income.`,
+      code: "REIMBURSEMENT_RECONCILIATION_REQUIRED",
+      message:
+        "Reported reimbursements coexist with deducted operating expenses. " +
+        "Confirm whether any reimbursed expense has already been deducted " +
+        "before this income assessment can proceed."
+    });
+
+    lines.forEach(l => {
+      if (l.sourceType === "REIMBURSEMENT") {
+        l.periodStatus = "REIMBURSEMENT_RECONCILIATION_REQUIRED";
+      }
     });
   }
 
-  const canPopulatePrototypeEarnedIncomeBase = !requiresManualReview;
+  const hasProvisionalShortWindowSources = lines.some(
+    line => line.periodStatus === "SHORT_WINDOW_PROVISIONAL"
+  );
+
+  const hasInventoryReview = lines.some(
+    line => line.periodStatus === "INVENTORY_RECONCILIATION_REQUIRED"
+  );
+
+  const canPopulatePrototypeEarnedIncomeBase =
+    !requiresManualReview &&
+    !hasProvisionalShortWindowSources &&
+    !hasInventoryReview &&
+    !hasUnresolvedReimbursements &&
+    !requiresPolicyDecision;
+
+  const reviewOnlyMonthlyEarnedNetKsh = roundKsh(monthlyEarnedTotal);
 
   const monthlyEarnedNetKsh = canPopulatePrototypeEarnedIncomeBase
-    ? roundKsh(monthlyEarnedTotal)
+    ? reviewOnlyMonthlyEarnedNetKsh
     : null;
 
   let calculationStatus = "CALCULATED_STANDARD";
-  if (requiresManualReview) {
+
+  if (requiresManualReview || hasInventoryReview || hasUnresolvedReimbursements) {
     calculationStatus = "BLOCKED_MANUAL_REVIEW";
+  } else if (hasProvisionalShortWindowSources) {
+    calculationStatus = "BLOCKED_SHORT_WINDOW_REVIEW";
   } else if (requiresPolicyDecision) {
     calculationStatus = "PROVISIONAL_PENDING_POLICY";
   }
@@ -689,27 +999,28 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
 
   return {
     isValid: true,
-    calculationVersion: "household-income-ledger-v1.1",
+    calculationVersion: "household-income-ledger-v1.2",
     timestamp: new Date().toISOString(),
 
     calculationStatus,
     canPopulatePrototypeEarnedIncomeBase,
 
-    commonAssessmentPeriod: commonAssessmentPeriod || {
-      windowMonths: 12,
-      note: "Standard 12-month rolling assessment window (prototype design parameter; requires formal SHA policy confirmation)",
-    },
+    commonAssessmentPeriod: commonAssessmentPeriod || DEFAULT_COMMON_ASSESSMENT_PERIOD,
 
     lines,
     duplicateRelationships,
     reproducibleInputSnapshot: snapshot,
 
     monthlyEarnedNetKsh,
+    reviewOnlyMonthlyEarnedNetKsh,
 
     annualisedEarnedNetKsh:
       monthlyEarnedNetKsh === null
         ? null
         : roundKsh(monthlyEarnedNetKsh * 12),
+
+    reviewOnlyAnnualisedEarnedNetKsh:
+      roundKsh(reviewOnlyMonthlyEarnedNetKsh * 12),
 
     monthlyPolicyReviewResourcesKsh: roundKsh(monthlyPolicyReviewTotal),
     monthlyNonEarnedFlowsKsh: roundKsh(monthlyNonEarnedTotal),
@@ -723,15 +1034,18 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
 
     reviewFlags,
 
-    hasProvisionalShortWindowSources: lines.some(l => l.periodStatus === "SHORT_WINDOW_PROVISIONAL"),
-    annualisationReliability: lines.some(l => l.periodStatus === "SHORT_WINDOW_PROVISIONAL")
-      ? "PROVISIONAL_SHORT_WINDOW_EXTRAPOLATION"
-      : (canPopulatePrototypeEarnedIncomeBase ? "STANDARD_ANNUAL_ESTIMATE" : "UNRELIABLE_MANUAL_REVIEW_REQUIRED"),
+    hasProvisionalShortWindowSources,
+    hasInventoryReview,
+    hasUnresolvedReimbursements,
+
+    annualisationReliability: !canPopulatePrototypeEarnedIncomeBase
+      ? "NOT_APPROVED_FOR_CLASSIFICATION"
+      : "STANDARD_ANNUAL_ESTIMATE",
 
     allowableCostsPolicyNotice: "Reported operating cost deductions represent research prototype assumptions for informal-sector net earnings. Formal deduction categories, caps, and verification guidelines require statutory approval by SHA and MoH.",
-    reimbursementReconciliationNotice: totalReportedReimbursements > 0
-      ? "Reimbursements detected. Comprehensive reconciliation requires explicit itemised expense-to-reimbursement mapping to avoid double recovery."
-      : "No reimbursements reported.",
+    reimbursementReconciliationNotice: hasUnresolvedReimbursements
+      ? "Reimbursements detected alongside deducted operating expenses. Assessment blocked pending reconciliation to prevent double recovery."
+      : (totalReportedReimbursements > 0 ? "Reimbursements reported with no deducted operating expenses." : "No reimbursements reported."),
 
     calculationScope: "PROTOTYPE_EARNED_INCOME_SUBTOTAL_ONLY",
 
@@ -747,20 +1061,19 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = null)
 export function createZeroEarnedIncomeAssessment(commonAssessmentPeriod = null) {
   return {
     isValid: true,
-    calculationVersion: "household-income-ledger-v1.1",
+    calculationVersion: "household-income-ledger-v1.2",
     timestamp: new Date().toISOString(),
     calculationStatus: "CALCULATED_EXPLICIT_ZERO_EARNED",
     canPopulatePrototypeEarnedIncomeBase: true,
     hasDeclaredNoEarnedIncome: true,
-    commonAssessmentPeriod: commonAssessmentPeriod || {
-      windowMonths: 12,
-      note: "Standard 12-month rolling assessment window (formal standard requires SHA policy confirmation)",
-    },
+    commonAssessmentPeriod: commonAssessmentPeriod || DEFAULT_COMMON_ASSESSMENT_PERIOD,
     lines: [],
     duplicateRelationships: [],
     reproducibleInputSnapshot: [],
     monthlyEarnedNetKsh: 0,
+    reviewOnlyMonthlyEarnedNetKsh: 0,
     annualisedEarnedNetKsh: 0,
+    reviewOnlyAnnualisedEarnedNetKsh: 0,
     monthlyPolicyReviewResourcesKsh: 0,
     monthlyNonEarnedFlowsKsh: 0,
     monthlyFiduciaryFlowsKsh: 0,
@@ -774,6 +1087,8 @@ export function createZeroEarnedIncomeAssessment(commonAssessmentPeriod = null) 
       }
     ],
     hasProvisionalShortWindowSources: false,
+    hasInventoryReview: false,
+    hasUnresolvedReimbursements: false,
     annualisationReliability: "EXPLICIT_ZERO_ANNUAL_ESTIMATE",
     allowableCostsPolicyNotice: "Operating expense rules reflect research assumptions. Official deduction allowances require SHA approval.",
     reimbursementReconciliationNotice: "No reimbursements reported.",

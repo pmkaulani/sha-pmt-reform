@@ -55,7 +55,9 @@ test("an elderly household with a vehicle declaration routes to manual review wi
   assert.equal(result.requiresChpVerification, true, "vehicle ownership for elderly household requires CHP verification");
   assert.equal(result.estimatedAnnualIncome, 0, "luxury vehicle must not be added into earned income base");
   assert.equal(result.adjustedGrossIncome, 0, "AGI remains at zero floor after deductions");
-  assert.equal(result.isIndigent, true, "low earned income qualifies for subsidized band pending verification");
+  assert.equal(result.isIndigent, null, "statutory indigence cannot be assigned automatically by prototype floor");
+  assert.equal(result.minimumContributionFloorApplied, true, "low earned income qualifies for KSh 300 minimum contribution floor");
+  assert.equal(result.financialAssistanceStatus, "REQUIRES_AUTHORISED_REVIEW", "older person circumstances route to authorised financial review");
 });
 
 test("zero low-season balance follows the CHP review path without crashing", () => {

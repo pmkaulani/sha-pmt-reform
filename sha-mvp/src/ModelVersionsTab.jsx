@@ -55,7 +55,7 @@ function ModelPanel({ model, original }) {
         <Stat label="Monthly contribution" value={money(result.monthlyContribution)} accent={original ? COLORS.green : COLORS.blue} />
         <Stat label="Adjusted gross income" value={money(result.adjustedGrossIncome)} />
         <Stat label={original ? "Constructed annual base" : "Annualised declared earnings"} value={money(result.estimatedAnnualIncome)} />
-        <Stat label="Classification" value={result.isIndigent ? "Low-income band" : "Standard / upper"} note="Illustrative classification" />
+        <Stat label="Classification" value={result.minimumContributionFloorApplied ? "Minimum floor (KSh 300)" : "Rate-based (2.75%)"} note="Statutory classification rule" />
         <Stat
           label="Evidence status"
           value="User-reported"

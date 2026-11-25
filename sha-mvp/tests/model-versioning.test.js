@@ -47,7 +47,7 @@ test("both proposed AGI versions run independently against the same household sn
   const versions = calculateProposedModelVersions(household());
 
   assert.equal(versions.originalAgi.id, "asset-liquidity-agi-v2.1");
-  assert.equal(versions.declaredIncome.id, "declared-income-agi-v1");
+  assert.equal(versions.declaredIncome.id, "declared-income-agi-v1.1");
   assert.equal(typeof versions.originalAgi.result.adjustedGrossIncome, "number");
   assert.equal(typeof versions.declaredIncome.result.adjustedGrossIncome, "number");
   assert.equal(typeof versions.originalAgi.result.monthlyContribution, "number");

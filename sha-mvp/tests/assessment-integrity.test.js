@@ -138,6 +138,8 @@ test("Scenario 4: Multiple itemised expenses under a single source across distin
     sourceType: "SELF_EMPLOYMENT",
     monthsObserved: 12,
     amountReceivedKsh: 300000,
+    openingStockKsh: 20000,
+    closingStockKsh: 20000,
     expenses: [
       { id: "exp-1", category: "STOCK_PURCHASES", amountKsh: 100000, description: "Goods for resale" },
       { id: "exp-2", category: "TRANSPORT", amountKsh: 20000, description: "Matatu freight" },
@@ -154,7 +156,7 @@ test("Scenario 4: Multiple itemised expenses under a single source across distin
   assert.equal(calc.isValid, true);
   const line = calc.lines[0];
   assert.equal(line.itemisedExpenses.length, 8);
-  // Total expenses: 100k + 20k + 30k + 10k + 15k + 5k + 5k + 5k = 190,000
+  // Total expenses: COGS(20k+100k-20k=100k) + 20k + 30k + 10k + 15k + 5k + 5k + 5k = 190,000
   assert.equal(line.totalReportedCostsKsh, 190000);
   // Net: 300,000 - 190,000 = 110,000 / 12 = 9166.67 -> 9167
   assert.equal(line.reportedNetKsh, 110000);
@@ -197,8 +199,8 @@ test("Scenario 5: Invalid and inverted date periods are rejected", () => {
 
 // ─── SCENARIO 6 ───────────────────────────────────────────────────────────────
 test("Scenario 6: Observation periods longer than 12 months are averaged over full window and flagged", () => {
-  // 18 months: 2025-01-01 to 2026-07-01
-  const m = calculateMonthsFromDates("2025-01-01", "2026-07-01");
+  // 18 months: 2025-01-01 to 2026-06-30 (inclusive calendar months)
+  const m = calculateMonthsFromDates("2025-01-01", "2026-06-30");
   assert.equal(m, 18);
 
   const source = {
@@ -207,7 +209,7 @@ test("Scenario 6: Observation periods longer than 12 months are averaged over fu
     amountReceivedKsh: 180000,
     directCostsKsh: 0,
     observationStartDate: "2025-01-01",
-    observationEndDate: "2026-07-01",
+    observationEndDate: "2026-06-30",
     monthsObserved: 18
   };
 
@@ -251,8 +253,11 @@ test("Scenario 7: Different source observation windows calculate independent mon
   // Source 2: 120,000 / 12 = 10,000/mo (FULL_ANNUAL)
   assert.equal(calc.lines[1].averageMonthlyNetKsh, 10000);
   assert.equal(calc.lines[1].periodStatus, "FULL_ANNUAL");
-  // Total earned: 5,000 + 10,000 = 15,000
-  assert.equal(calc.monthlyEarnedNetKsh, 15000);
+  // Provisional short window leaves review-only subtotal visible (15,000) but blocks final classification
+  assert.equal(calc.canPopulatePrototypeEarnedIncomeBase, false);
+  assert.equal(calc.monthlyEarnedNetKsh, null);
+  assert.equal(calc.reviewOnlyMonthlyEarnedNetKsh, 15000);
+  assert.equal(calc.calculationStatus, "BLOCKED_SHORT_WINDOW_REVIEW");
 });
 
 // ─── SCENARIO 8 ───────────────────────────────────────────────────────────────
@@ -371,7 +376,10 @@ test("Scenario 12: Reimbursements received while deducting business costs trigge
 
   const calc = calculateHouseholdIncome(sources);
   assert.equal(calc.isValid, true);
-  assert.ok(calc.reviewFlags.some(f => f.code === "REIMBURSEMENT_EXPENSE_OFFSET"));
+  assert.equal(calc.hasUnresolvedReimbursements, true);
+  assert.equal(calc.canPopulatePrototypeEarnedIncomeBase, false);
+  assert.equal(calc.calculationStatus, "BLOCKED_MANUAL_REVIEW");
+  assert.ok(calc.reviewFlags.some(f => f.code === "REIMBURSEMENT_RECONCILIATION_REQUIRED"));
 });
 
 // ─── SCENARIO 13 ──────────────────────────────────────────────────────────────
@@ -396,9 +404,10 @@ test("Scenario 13: Policy-review flows set PROVISIONAL_PENDING_POLICY without bl
   assert.equal(calc.isValid, true);
   assert.equal(calc.requiresPolicyDecision, true);
   assert.equal(calc.requiresManualReview, false);
-  assert.equal(calc.canPopulatePrototypeEarnedIncomeBase, true);
+  assert.equal(calc.canPopulatePrototypeEarnedIncomeBase, false);
   assert.equal(calc.calculationStatus, "PROVISIONAL_PENDING_POLICY");
-  assert.equal(calc.monthlyEarnedNetKsh, 10000);
+  assert.equal(calc.monthlyEarnedNetKsh, null);
+  assert.equal(calc.reviewOnlyMonthlyEarnedNetKsh, 10000);
   assert.equal(calc.monthlyPolicyReviewResourcesKsh, 3000);
   assert.ok(calc.policyDecisionSummary.includes("SHA policy rules"));
 });

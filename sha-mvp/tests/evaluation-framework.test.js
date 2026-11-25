@@ -400,5 +400,5 @@ test("Evaluation Criterion 19: The original AGI v2.1 formula remains unchanged b
   assert.ok(versioning.originalAgi);
   assert.ok(versioning.declaredIncome);
   assert.equal(versioning.originalAgi.id, "asset-liquidity-agi-v2.1");
-  assert.equal(versioning.declaredIncome.id, "declared-income-agi-v1");
+  assert.equal(versioning.declaredIncome.id, "declared-income-agi-v1.1");
 });

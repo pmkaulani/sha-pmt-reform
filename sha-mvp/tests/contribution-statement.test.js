@@ -51,12 +51,20 @@ test("zero net earned income is handled correctly by the zero floor", () => {
     monthlyNetEarnedIncome: 0,
   };
 
-  const result = calculateProposedModel(zeroIncomeHousehold);
+  // Statutory reference mode (default off for experimental deductions)
+  const defaultResult = calculateProposedModel(zeroIncomeHousehold);
+  assert.equal(defaultResult.estimatedAnnualIncome, 0, "annual earned base must be 0");
+  assert.equal(defaultResult.adjustedGrossIncome, 0, "AGI cannot go negative; must be clamped to 0 floor");
+  assert.equal(defaultResult.monthlyContribution, 300, "zero income household gets statutory minimum contribution assumption of KSh 300");
+  assert.equal(defaultResult.policyAssumptionMode, "UNAPPROVED_ADJUSTMENTS_DISABLED");
+
+  // When experimental deductions are explicitly enabled
+  const result = calculateProposedModel(zeroIncomeHousehold, { enableExperimentalPolicyAdjustments: true });
   const rec = result.calculationBreakdown.reconciliation;
 
   assert.equal(result.estimatedAnnualIncome, 0, "annual earned base must be 0");
   assert.equal(result.adjustedGrossIncome, 0, "AGI cannot go negative; must be clamped to 0 floor");
-  assert.equal(result.monthlyContribution, 300, "zero income household gets illustrative minimum contribution assumption of KSh 300");
+  assert.equal(result.monthlyContribution, 300, "zero income household gets statutory minimum contribution assumption of KSh 300");
   assert.ok(rec.zeroFloorAdjustment > 0, "zero floor adjustment absorbs deductions that exceed income");
   assert.equal(rec.baseReconciliationDifference, 0);
   assert.equal(rec.preFloorReconciliationDifference, 0);
@@ -343,7 +351,7 @@ test("reconciliation arithmetic independently verifies negative pre-floor with z
     householdSize: 5,
   };
 
-  const result = calculateProposedModel(lowIncomeHousehold);
+  const result = calculateProposedModel(lowIncomeHousehold, { enableExperimentalPolicyAdjustments: true });
   const rec = result.calculationBreakdown.reconciliation;
 
   assert.ok(rec.preFloorAdjustedGrossIncome < 0, "pre-floor income must be negative when deductions exceed income");
@@ -367,7 +375,7 @@ test("reconciliation handles multiple layered deductions accurately", () => {
     hasRegisteredDisability: true,
   };
 
-  const result = calculateProposedModel(multiDeductionHousehold);
+  const result = calculateProposedModel(multiDeductionHousehold, { enableExperimentalPolicyAdjustments: true });
   const rec = result.calculationBreakdown.reconciliation;
   const deductions = result.calculationBreakdown.postBaseDeductions;
 

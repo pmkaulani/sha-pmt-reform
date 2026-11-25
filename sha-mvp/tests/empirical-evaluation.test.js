@@ -445,7 +445,7 @@ test("Phase 5 Criterion 19: Model versions and source provenance remain reproduc
 
   const versions = calculateProposedModelVersions(benchInput);
   assert.equal(versions.originalAgi.id, "asset-liquidity-agi-v2.1");
-  assert.equal(versions.declaredIncome.id, "declared-income-agi-v1");
+  assert.equal(versions.declaredIncome.id, "declared-income-agi-v1.1");
   assert.ok(versions.originalAgi.result.monthlyContribution >= 300);
   assert.ok(versions.declaredIncome.result.monthlyContribution >= 300);
 });

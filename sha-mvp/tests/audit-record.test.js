@@ -39,14 +39,14 @@ test("assessment record is clearly local, not a fabricated SHA submission", () =
   assert.equal(record.assessmentId, undefined);
   assert.equal(record.status, "LOCAL_DEMONSTRATION");
   assert.equal(record.isOfficialSubmission, false);
-  assert.equal(record.algorithmVersion, "declared-income-agi-v1");
+  assert.equal(record.algorithmVersion, "declared-income-agi-v1.1");
 
   assert.equal(record.assessmentInputSnapshot.monthlyNetEarnedIncome, 18000);
   assert.equal(record.assessmentInputSnapshot.msisdn, undefined);
   assert.deepEqual(record.modelParametersSnapshot, adminParams);
 
   assert.equal(record.outputs.proposedModelVersions.originalAgi.id, "asset-liquidity-agi-v2.1");
-  assert.equal(record.outputs.proposedModelVersions.declaredIncome.id, "declared-income-agi-v1");
+  assert.equal(record.outputs.proposedModelVersions.declaredIncome.id, "declared-income-agi-v1.1");
   assert.equal(
     record.outputs.proposedModelVersions.originalAgi.monthlyContribution,
     modelVersions.originalAgi.result.monthlyContribution
