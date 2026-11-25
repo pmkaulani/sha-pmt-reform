@@ -4,9 +4,10 @@ import {
   Radio, Tv, Refrigerator, Laptop, Smartphone, Phone, 
   Bike, Car, ShieldCheck, Info, CheckCircle2, AlertTriangle, Fingerprint, ChevronDown, Settings
 } from "lucide-react";
-import { calculateCurrentModel, calculateCurrentModelContribution, calculateFraudRisk, analyzeSector, calculateFairnessMetrics, PRESETS, createAuditRecord, generateRevenueStressTest, testCurrentModelDisparityByCounty, generateFraudStatistics, generateSyntheticPopulation, calculatePopulationErrorRates, validateAssessmentInputs } from "./lib/AlgorithmSimulation.js";
+import { calculateCurrentModel, calculateCurrentModelContribution, calculateFraudRisk, analyzeSector, calculateFairnessMetrics, calculateModelOutputDifference, calculateIllustrativeRevenueScenario, PRESETS, createAuditRecord, generateRevenueStressTest, testCurrentModelDisparityByCounty, generateFraudStatistics, generateSyntheticPopulation, calculatePopulationErrorRates, validateAssessmentInputs } from "./lib/AlgorithmSimulation.js";
 import { calculateProposedModelVersions } from "./lib/model-versioning.js";
 import ModelVersionsTab from "./ModelVersionsTab.jsx";
+import DemoCalculationReceipt from "./DemoCalculationReceipt.jsx";
 import { logger } from "./lib/Logger.js";
 import AppealPreparationTab from "./AppealPreparationTab.jsx";
 import ContributionStatementTab from "./ContributionStatementTab.jsx";
@@ -946,7 +947,7 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                                 Business Inventory & Cost of Goods Sold (COGS)
                               </div>
                               <div style={{fontSize:11,color:S.muted,marginBottom:10,lineHeight:1.4}}>
-                                Statutory accounting principle: <em>Cost of goods sold = Opening stock + Stock purchases - Closing stock</em>. Do not deduct unsold closing stock as consumed operating expenses.
+                                Standard inventory accounting treatment: <em>Cost of goods sold = Opening stock + Stock purchases - Closing stock</em>. Do not deduct unsold closing stock as consumed operating expenses.
                               </div>
                               <div className="grid-3" style={{gap:10}}>
                                 <FieldNumber
@@ -1221,6 +1222,38 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
                         allowNull={true}
                         note="Leave blank if 100% of this flow is duplicated in the parent source."
                       />
+                    </div>
+                  )}
+
+                  {src.sourceType === "REIMBURSEMENT" && (
+                    <div style={{marginTop:8,padding:10,background:S.surfaceUp,borderRadius:6,border:`1px solid ${S.border}`}}>
+                      <FieldSelect
+                        label="Reimbursement Source Link (Double-Deduction Safeguard)"
+                        value={src.isPersonalReimbursement ? "PERSONAL" : (src.targetSourceId || "")}
+                        onChange={v=>{
+                          if (v === "PERSONAL") {
+                            updListItem("incomeSources", originalIndex, "isPersonalReimbursement", true);
+                            updListItem("incomeSources", originalIndex, "targetSourceId", null);
+                          } else {
+                            updListItem("incomeSources", originalIndex, "isPersonalReimbursement", false);
+                            updListItem("incomeSources", originalIndex, "targetSourceId", v || null);
+                          }
+                        }}
+                        options={[
+                          ["", "Unspecified / General reimbursement (requires review if business expenses exist)"],
+                          ["PERSONAL", "Personal / Medical reimbursement (unrelated to business expenses)"],
+                          ...allSources.filter(s => {
+                            const r = INCOME_SOURCE_RULES[s.sourceType];
+                            return r?.bucket === "EARNED";
+                          }).map(s => [
+                            s.id,
+                            `Linked to business source: ${INCOME_SOURCE_RULES[s.sourceType]?.label || s.sourceType} (ID: ${s.id})`
+                          ])
+                        ]}
+                      />
+                      <div style={{fontSize:11,color:S.muted,marginTop:4}}>
+                        Linking to a business source with operating expenses requires reconciliation to confirm no expenses were double-recovered. Unrelated personal reimbursements do not block business expenses.
+                      </div>
                     </div>
                   )}
 
@@ -1646,6 +1679,16 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
               </div>
             </div>
 
+            {/* Review Confirmation Prompt */}
+            <div style={{padding: 16, background: S.blueD, border: `1px solid ${S.blueBd}`, borderRadius: 8}}>
+              <div style={{fontSize: 14, fontWeight: 700, color: S.blue, marginBottom: 4}}>
+                Is everything correct, or would you like to change anything?
+              </div>
+              <div style={{fontSize: 12, color: S.text, lineHeight: 1.5}}>
+                Review the entered details above across Household, Earned Income, and Other Money. If any detail needs adjustment, click <strong>Edit</strong> on that section. When you are satisfied that all records are complete, confirm below to compute the itemised assessment.
+              </div>
+            </div>
+
             {/* Demo Acknowledgment Checkbox */}
             <div style={{padding: 14, background: S.faint, borderRadius: 8, border: `1px solid ${S.border}`}}>
               <label style={{display:"flex", alignItems:"flex-start", gap:10, fontSize:13, fontWeight:500, color:S.text, cursor:"pointer"}}>
@@ -1691,14 +1734,19 @@ function FormPanel({d,upd,toggleAsset,step,setStep,onClassify,classifying,hasAck
             {step === 0 ? "Continue to Earned Income →" : step === 1 ? "Continue to Other Money →" : "Continue to Review →"}
           </button>
         ) : (
-          <button
-            type="button"
-            onClick={onClassify}
-            disabled={classifying || !hasAcknowledgedDemo}
-            style={{padding:"10px 24px",borderRadius:6,border:"none",background:classifying||!hasAcknowledgedDemo?S.borderUp:S.sage,color:classifying||!hasAcknowledgedDemo?S.muted:"#FFF",fontSize:14,fontWeight:600,cursor:classifying||!hasAcknowledgedDemo?"default":"pointer",fontFamily:"inherit",boxShadow:classifying||!hasAcknowledgedDemo?"none":"0 2px 4px rgba(5,150,105,0.2)",transition:"all .2s",whiteSpace:"nowrap"}}
-          >
-            {classifying ? "Computing…" : "Run Classification →"}
-          </button>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+            <button
+              type="button"
+              onClick={onClassify}
+              disabled={classifying || !hasAcknowledgedDemo}
+              style={{padding:"12px 28px",borderRadius:6,border:"none",background:classifying||!hasAcknowledgedDemo?S.borderUp:S.sage,color:classifying||!hasAcknowledgedDemo?S.muted:"#FFF",fontSize:14,fontWeight:700,cursor:classifying||!hasAcknowledgedDemo?"default":"pointer",fontFamily:"inherit",boxShadow:classifying||!hasAcknowledgedDemo?"none":"0 2px 4px rgba(5,150,105,0.2)",transition:"all .2s",whiteSpace:"nowrap"}}
+            >
+              {classifying ? "Computing…" : "Confirm details and calculate →"}
+            </button>
+            <div style={{fontSize:11,color:S.muted,maxWidth:340,textAlign:"right",lineHeight:1.3}}>
+              Demonstration calculation only: uses the prototype algorithm and frozen reference parameters. This does not submit an application or bind SHA.
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -2044,16 +2092,14 @@ function MetricsTab() {
   const metrics=[
     {label:"Model disagreement: proposed applies floor",cur:excRate,tgt:"Design target: < 10%",desc:`Households where the proposed model applies the KSh 300 minimum contribution floor while the illustrative baseline calculates a higher rate-based amount. ${simNote} This is a comparison between models, not proof of real-world targeting error or statutory indigence.`},
     {label:"Model disagreement: baseline applies floor",cur:incRate,tgt:"Design target: < 10%",desc:`Households where the illustrative baseline applies the minimum floor while the proposed model calculates a higher rate-based amount. ${simNote}`},
-    {label:"Group disparity check",cur:"Synthetic test only",tgt:"Design target: ≤ 3 pp",desc:"The current test measures a model-disagreement proxy, not formal equalized odds. Real outcome labels and adequately sized groups are required."},
+    {label:"Group disparity check",cur:"Synthetic diagnostic only",tgt:"Design target: ≤ 3 pp",desc:"Measures synthetic model disagreement disparity across groups. Real outcome labels and official administrative records are required for statutory compliance testing."},
     {label:"Monthly Contribution Ratio",cur:payRatio,tgt:"Comparative",desc:`Aggregate proposed model monthly contributions as a percentage of illustrative baseline contributions across the 500 generated households. ${simNote}`},
-    {label:"Active Payers",cur:"22.7%",tgt:"> 60%",desc:"5 Million of 22 Million registered members — parliamentary oversight figure"},
-    {label:"Inference Latency",cur:"~3 s",tgt:"< 500 ms",desc:"Time required to compute classification result"},
-    {label:"USSD Gateway Uptime (*147#)",cur:"Intermittent",tgt:"99.99%",desc:"Feature phone access reliability"},
-    {label:"Systemic Fraud Losses (6 mos)",cur:"KSh 11 B",tgt:"< KSh 1 B / yr",desc:"Ghost patients, fake facilities, upcoding — official DCI/parliamentary figure, not from this app's own fraud engine (see Bias & Compliance tab for that separate, engine-computed figure)"},
+    {label:"Active Payers (Parliamentary Oversight)",cur:"22.7%",tgt:"> 60%",desc:"5 Million of 22 Million registered members — parliamentary oversight reference figure"},
   ];
   const barData=[
-    {name:"Floor Disagree %",cur:excNum,tgt:10},{name:"Rate Disagree %",cur:incNum,tgt:10},
-    {name:"Active Payers %",cur:22.7,tgt:60},{name:"Fraud KSh B",cur:22,tgt:2},
+    {name:"Floor Disagree %",cur:excNum,tgt:10},
+    {name:"Rate Disagree %",cur:incNum,tgt:10},
+    {name:"Active Payers %",cur:22.7,tgt:60},
   ];
   return (
     <div style={{display:"flex",flexDirection:"column",gap:24}}>
@@ -2148,7 +2194,7 @@ function MetricsTab() {
           </div>
         </div>
         <div style={{marginTop:16,padding:12,background:S.blueD,borderRadius:6,border:`1px solid ${S.blueBd}`,fontSize:12,color:S.text,lineHeight:1.5}}>
-          <strong style={{color:S.blue}}>Key Insight:</strong> The proposed system collects a <strong>lower average premium</strong> (KSh 520 vs KSh 1,500) but achieves <strong>dramatically higher compliance</strong> — {(targetScenario.enrolledPopulation/1e6).toFixed(1)} million citizens willingly paying a fair amount, versus only 5 million under the current punitive system. At 60% compliance (matching Rwanda's CBHI benchmark), projected annual revenue reaches KSh {targetScenario.annualRevenueBillions}B — breakeven requires ≥{revenue.breakeven.requiredComplianceRate} compliance. This is the insurance equivalent of the Laffer Curve — beyond a certain premium threshold, higher prices reduce total collection.
+          <strong style={{color:S.blue}}>Scenario Summary:</strong> Across an estimated 15.5M informal workers at KSh 520/month average contribution and 60% illustrative participation, annual collection calculates to KSh {targetScenario.annualRevenueBillions}B. This is a transparent mathematical arithmetic scenario only and does not predict official collections or account for unverified subsidy expenditure.
         </div>
       </div>
     </div>
@@ -2156,69 +2202,89 @@ function MetricsTab() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FAIRNESS ANALYSIS TAB
+// MODEL OUTPUT DIFFERENCES TAB
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FairnessTab({results}) {
-  if (!results.fairnessMetrics || !results.sectorAnalysis) return <div>Fairness analysis unavailable</div>;
-  
-  const f = results.fairnessMetrics;
+  const mod = results.modelOutputDifference || results.fairnessMetrics;
   const s = results.sectorAnalysis;
-  
-  const fairnessColor = f.fairnessScore >= 80 ? S.sage : f.fairnessScore >= 50 ? S.blue : S.terra;
-  const fairnessBgColor = f.fairnessScore >= 80 ? S.sageD : f.fairnessScore >= 50 ? S.blueD : S.terraD;
+  if (!mod || !s) return <div>Model output difference analysis unavailable</div>;
+
+  const diffKsh = mod.differenceKsh || 0;
+  const absDiff = Math.abs(diffKsh);
+  const isBaselineHigher = diffKsh > 0;
+  const isProposedHigher = diffKsh < 0;
+
+  const diffColor = isBaselineHigher ? S.blue : isProposedHigher ? S.amber : S.sage;
+  const diffBgColor = isBaselineHigher ? S.blueD : isProposedHigher ? S.amberD : S.sageD;
 
   return (
     <div style={{display:"grid",gap:24}}>
       <div>
-        <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Fairness & Equity Analysis</div>
+        <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:10}}>Model Output Differences</div>
         <div style={{fontSize:14,color:S.muted,lineHeight:1.6}}>
-          This prototype compares two calculated amounts and displays a heuristic comparison indicator. It does not establish that a household has been fairly or unfairly assessed, nor does it measure population-level discrimination by itself.
+          This panel compares the mathematical output of the illustrative baseline model against the proposed declared-income AGI model. This is an algorithmic comparison between two prototype specifications, NOT an empirical measure of actual overcharge or population-level fairness.
         </div>
       </div>
 
-      {/* Comparison indicator (heuristic) */}
-      <div style={{padding:"24px",background:fairnessBgColor,border:`2px solid ${fairnessColor}`,borderRadius:12}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+      {/* Primary Comparison Card */}
+      <div style={{padding:"24px",background:diffBgColor,border:`2px solid ${diffColor}`,borderRadius:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16,flexWrap:"wrap",gap:12}}>
           <div>
-            <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:fairnessColor,marginBottom:8}}>Comparison indicator (heuristic)</div>
-            <div className="big-number-val" style={{fontSize:42,fontWeight:800,color:fairnessColor,lineHeight:1}}>{Math.round(f.fairnessScore)}/100</div>
+            <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:diffColor,marginBottom:6}}>
+              Calculated Output Difference
+            </div>
+            <div className="big-number-val" style={{fontSize:38,fontWeight:800,color:diffColor,lineHeight:1}}>
+              {diffKsh > 0 ? `+KSh ${absDiff.toLocaleString()}` : diffKsh < 0 ? `−KSh ${absDiff.toLocaleString()}` : "KSh 0"}
+              <span style={{fontSize:18,fontWeight:500,color:S.muted,marginLeft:8}}>/month</span>
+            </div>
           </div>
           <div style={{textAlign:"right"}}>
-            <div style={{fontSize:13,fontWeight:600,color:f.overchargePercent > 50 ? S.terra : f.overchargePercent > 20 ? S.blue : S.sage}}>
-              {f.overchargePercent > 0 ? 'BASELINE HIGHER' : f.overchargePercent < -5 ? 'PROPOSED HIGHER' : 'SIMILAR RESULTS'}
-            </div>
-            <div style={{fontSize:12,color:S.muted,marginTop:4}}>
-              {f.overchargePercent > 0 ? `+KSh ${Math.round(f.overchargeAmount)}` : f.overchargePercent < -5 ? `−KSh ${Math.round(Math.abs(f.overchargeAmount))}` : 'No difference shown in this comparison'}
+            <span style={{display:"inline-block",fontSize:12,fontWeight:700,padding:"4px 12px",borderRadius:20,background:S.surface,border:`1px solid ${diffColor}`,color:diffColor}}>
+              {mod.direction || (isBaselineHigher ? "BASELINE HIGHER" : isProposedHigher ? "PROPOSED HIGHER" : "IDENTICAL OUTPUT")}
+            </span>
+            <div style={{fontSize:12,color:S.muted,marginTop:6}}>
+              {mod.percentageDifference ? `${Math.abs(mod.percentageDifference).toFixed(1)}% variance relative to baseline` : "No variance"}
             </div>
           </div>
         </div>
-        <div style={{fontSize:13,color:S.text,fontWeight:500}}>
-          {f.recommendation}
+        <div style={{fontSize:13,color:S.text,fontWeight:500,lineHeight:1.5}}>
+          {mod.summary || "Both models calculate identical monthly contributions."}
         </div>
       </div>
 
-      {/* Equity Gap Analysis */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+      {/* Model Breakdown Comparison */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(240px, 1fr))",gap:16}}>
         <div style={{padding:"20px",background:S.surface,border:`1px solid ${S.border}`,borderRadius:10}}>
-          <div style={{fontSize:12,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:12}}>Calculation difference</div>
-          <div style={{fontSize:32,fontWeight:800,color:f.equityGap > 30 ? S.terra : f.equityGap > 10 ? S.blue : S.sage}}>{f.equityGap.toFixed(1)}%</div>
-          <div style={{fontSize:11,color:S.muted,marginTop:8}}>Difference between the two prototype calculations</div>
+          <div style={{fontSize:11,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:8}}>Illustrative Baseline Calculation</div>
+          <div style={{fontSize:28,fontWeight:800,color:S.text}}>KSh {(mod.currentMonthlyContributionKsh || 0).toLocaleString()}<span style={{fontSize:14,fontWeight:500,color:S.muted}}>/mo</span></div>
+          <div style={{fontSize:12,color:S.muted,marginTop:6}}>
+            Annual assessed income base: KSh {(mod.breakdown?.baselineAnnualAssessedKsh || 0).toLocaleString()}
+          </div>
+          <div style={{fontSize:11,color:S.muted,marginTop:4}}>
+            Floor status: {mod.breakdown?.baselineMonthlyFloorApplied ? "KSh 300 floor applied" : "2.75% rate-based"}
+          </div>
         </div>
+
         <div style={{padding:"20px",background:S.surface,border:`1px solid ${S.border}`,borderRadius:10}}>
-          <div style={{fontSize:12,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:12}}>Compliance estimate</div>
-          <div style={{fontSize:32,fontWeight:800,color:S.blue}}>Not calibrated</div>
-          <div style={{fontSize:11,color:S.muted,marginTop:8}}>No independently validated compliance model is connected.</div>
+          <div style={{fontSize:11,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:8}}>Proposed Declared-Income Model</div>
+          <div style={{fontSize:28,fontWeight:800,color:S.blue}}>KSh {(mod.proposedMonthlyContributionKsh || 0).toLocaleString()}<span style={{fontSize:14,fontWeight:500,color:S.muted}}>/mo</span></div>
+          <div style={{fontSize:12,color:S.muted,marginTop:6}}>
+            Annual estimated income base: KSh {(mod.breakdown?.proposedAnnualEstimatedKsh || 0).toLocaleString()}
+          </div>
+          <div style={{fontSize:11,color:S.muted,marginTop:4}}>
+            Floor status: {mod.breakdown?.proposedMonthlyFloorApplied ? "KSh 300 floor applied" : "2.75% rate-based"}
+          </div>
         </div>
       </div>
 
-      {/* Sector Analysis */}
+      {/* Sector Context */}
       <div style={{padding:"20px",background:S.surface,border:`1px solid ${S.border}`,borderRadius:10}}>
-        <div style={{fontSize:14,fontWeight:600,color:S.text,marginBottom:16}}>Livelihood Sector: {s.sector}</div>
+        <div style={{fontSize:14,fontWeight:700,color:S.text,marginBottom:14}}>Demographic & Livelihood Sector: {s.sector}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
           <div>
             <div style={{fontSize:11,fontWeight:600,color:S.muted,textTransform:"uppercase",marginBottom:4}}>Sector Resilience</div>
-            <div style={{fontSize:24,fontWeight:800,color:s.sustainability === 'HIGH' ? S.sage : s.sustainability === 'MEDIUM' ? S.blue : S.terra}}>{s.sustainability}</div>
+            <div style={{fontSize:20,fontWeight:800,color:s.sustainability === 'HIGH' ? S.sage : s.sustainability === 'MEDIUM' ? S.blue : S.terra}}>{s.sustainability}</div>
           </div>
           <div>
             <div style={{fontSize:11,fontWeight:600,color:S.muted,textTransform:"uppercase",marginBottom:4}}>Sector Score</div>
@@ -2231,12 +2297,11 @@ function FairnessTab({results}) {
           </div>
         </div>
 
-        {/* Vulnerabilities */}
         {s.vulnerabilities.length > 0 && (
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:12,fontWeight:600,color:S.terra,marginBottom:8}}>Vulnerabilities</div>
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:12,fontWeight:600,color:S.terra,marginBottom:6}}>Declared Vulnerabilities</div>
             {s.vulnerabilities.map((v, i) => (
-              <div key={i} style={{fontSize:12,color:S.muted,marginBottom:4,display:"flex",gap:8,alignItems:"flex-start"}}>
+              <div key={i} style={{fontSize:12,color:S.muted,marginBottom:3,display:"flex",gap:6}}>
                 <span style={{color:S.terra}}>⚠</span>
                 <span>{v}</span>
               </div>
@@ -2244,12 +2309,11 @@ function FairnessTab({results}) {
           </div>
         )}
 
-        {/* Opportunities */}
         {s.opportunities.length > 0 && (
           <div>
-            <div style={{fontSize:12,fontWeight:600,color:S.sage,marginBottom:8}}>Policy Opportunities</div>
+            <div style={{fontSize:12,fontWeight:600,color:S.sage,marginBottom:6}}>Policy Safeguards</div>
             {s.opportunities.map((o, i) => (
-              <div key={i} style={{fontSize:12,color:S.muted,marginBottom:4,display:"flex",gap:8,alignItems:"flex-start"}}>
+              <div key={i} style={{fontSize:12,color:S.muted,marginBottom:3,display:"flex",gap:6}}>
                 <span style={{color:S.sage}}>✓</span>
                 <span>{o}</span>
               </div>
@@ -2258,36 +2322,9 @@ function FairnessTab({results}) {
         )}
       </div>
 
-      {/* Fairness Principles */}
-      <div style={{padding:"20px",background:S.blueD,border:`1px solid ${S.blueBd}`,borderRadius:10}}>
-        <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.blue,marginBottom:12}}>SHA Fairness Principles</div>
-        <div style={{display:"grid",gap:10}}>
-          {[
-            {principle:"Proportionality",desc:"Contributions match demonstrated income (not proxy indicators)"},
-            {principle:"Progressivity",desc:"Higher earners pay higher rates; poorest are subsidized"},
-            {principle:"Transparency",desc:"Every deduction is documented and appealable"},
-            {principle:"Anti-Discrimination",desc:"No systematic bias against gender, age, location, or sector"},
-            {principle:"Behavioral Incentives",desc:"System rewards formalization and financial inclusion"}
-          ].map((item,i)=>(
-            <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start"}}>
-              <CheckCircle2 size={16} color={S.blue} style={{marginTop:3,flexShrink:0}}/>
-              <div>
-                <div style={{fontSize:12,fontWeight:600,color:S.text}}>{item.principle}</div>
-                <div style={{fontSize:11,color:S.muted,marginTop:2}}>{item.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Impact Summary */}
-      <div style={{padding:"20px",background:S.surfaceUp,border:`1px solid ${S.border}`,borderRadius:10}}>
-        <div style={{fontSize:12,fontWeight:700,color:S.muted,textTransform:"uppercase",marginBottom:12}}>Assessment Impact</div>
-        <div style={{display:"grid",gap:8,fontSize:13,color:S.text}}>
-          <div><strong>Monthly Model Difference:</strong> KSh {Math.round(Math.abs(f.overchargeAmount || 0))} ({f.overchargeAmount > 0 ? "Illustrative comparator is higher" : f.overchargeAmount < 0 ? "Proposed calculation is higher" : "Calculations match"})</div>
-          <div><strong>Annual Model Difference:</strong> KSh {Math.round(Math.abs((f.overchargeAmount || 0) * 12))}</div>
-          <div><strong>Sector Context:</strong> {s.recommendation}</div>
-        </div>
+      {/* Disclaimers & Governance */}
+      <div style={{padding:"16px",background:S.surfaceUp,border:`1px solid ${S.borderUp}`,borderRadius:8,fontSize:12,color:S.muted,lineHeight:1.5}}>
+        <strong>Evaluation Notice:</strong> {mod.caveat || "Synthetic model comparison only; not a measure of actual overcharge or empirical fairness."} Official means-testing calibration requires independent survey data and formal Ministry of Health policy approval.
       </div>
     </div>
   );
@@ -2557,12 +2594,14 @@ export default function SHADemo() {
   const upd=(k,v)=>{
     setInputs(p=>({...p,[k]:v}));
     setFormError(null);
+    setResults(null);
     if(demoPaymentEntries.length > 0) setDemoPaymentEntries([]);
     if(activeScenario!=="Custom") setActiveScenario("Custom");
   };
   const toggleAsset=(a)=>{
     setInputs(p=>({...p,assets:p.assets.includes(a)?p.assets.filter(x=>x!==a):[...p.assets,a]}));
     setFormError(null);
+    setResults(null);
     if(demoPaymentEntries.length > 0) setDemoPaymentEntries([]);
     if(activeScenario!=="Custom") setActiveScenario("Custom");
   };
@@ -2571,18 +2610,21 @@ export default function SHADemo() {
   const addListItem=(key,template)=>{
     setInputs(p=>({...p,[key]:[...(p[key]||[]),template]}));
     setFormError(null);
+    setResults(null);
     if(demoPaymentEntries.length > 0) setDemoPaymentEntries([]);
     if(activeScenario!=="Custom") setActiveScenario("Custom");
   };
   const updListItem=(key,idx,field,value)=>{
     setInputs(p=>({...p,[key]:(p[key]||[]).map((item,i)=>i===idx?{...item,[field]:value}:item)}));
     setFormError(null);
+    setResults(null);
     if(demoPaymentEntries.length > 0) setDemoPaymentEntries([]);
     if(activeScenario!=="Custom") setActiveScenario("Custom");
   };
   const removeListItem=(key,idx)=>{
     setInputs(p=>({...p,[key]:(p[key]||[]).filter((_,i)=>i!==idx)}));
     setFormError(null);
+    setResults(null);
     if(demoPaymentEntries.length > 0) setDemoPaymentEntries([]);
     if(activeScenario!=="Custom") setActiveScenario("Custom");
   };
@@ -2816,20 +2858,33 @@ export default function SHADemo() {
       // Calculate sector analysis
       const sectorAnalysis = analyzeSector(assessmentInputs);
       
-      // Calculate fairness metrics
-      const fairnessMetrics = calculateFairnessMetrics(cur, nxt, fraudRisk);
+      // Calculate model output difference
+      const modelOutputDifference = calculateModelOutputDifference(cur, nxt);
+      const fairnessMetrics = modelOutputDifference;
       
       // Create and log audit record (P-77/P-31)
       const auditRecord = createAuditRecord(assessmentInputs, cur, nxt, fraudRisk, "SYSTEM", modelVersions, adminParams);
       logger.audit('assessment_run', { auditRecord });
       
-      setResults({current:cur, next:nxt, modelVersions, adminParamsSnapshot: JSON.parse(JSON.stringify(adminParams)), d: JSON.parse(JSON.stringify(assessmentInputs)), fraudRisk:fraudRisk, sectorAnalysis:sectorAnalysis, fairnessMetrics:fairnessMetrics, auditRecord});
+      setResults({
+        current: cur,
+        next: nxt,
+        modelVersions,
+        adminParamsSnapshot: JSON.parse(JSON.stringify(adminParams)),
+        d: JSON.parse(JSON.stringify(assessmentInputs)),
+        fraudRisk: fraudRisk,
+        sectorAnalysis: sectorAnalysis,
+        fairnessMetrics: fairnessMetrics,
+        modelOutputDifference: modelOutputDifference,
+        auditRecord
+      });
       setClassifying(false);
-      setActiveTab("comparison");
+      setActiveTab("receipt");
     },800);
   };
 
   const TABS=[
+    ["receipt","Calculation Receipt"],
     ["comparison","Financial Comparison"],
     ["models","AGI Model Versions"],
     ["evalLab","Evaluation Lab"],
@@ -2838,7 +2893,7 @@ export default function SHADemo() {
     ["statement","Contribution Statement"],
     ["challenge","Prepare Challenge"],
     ["officer","Officer Review (Demo)"],
-    ["fairness","Fairness Analysis"],
+    ["fairness","Model Output Differences"],
     ["fraud","Fraud Risk Assessment"],
     ["bias","Bias & Compliance"],
     ["shap","Calculation Breakdown"],
@@ -2984,92 +3039,119 @@ export default function SHADemo() {
           {/* Left panel */}
           <div className="left-panel">
 
-            {/* Scenarios */}
-            <div>
-              <Label>Select Demographic Persona</Label>
-              <div style={{display:"grid",gap:10}}>
-                {Object.entries(SCENARIOS).map(([name,sc])=>(
-                  <button key={name} onClick={()=>loadScenario(name)} style={{padding:"14px 16px",border:`2px solid ${activeScenario===name?S.text:S.border}`,borderRadius:10,background:activeScenario===name?S.text:S.surface,cursor:"pointer",textAlign:"left",transition:"all .2s",width:"100%",boxShadow:activeScenario===name?"0 4px 6px rgba(15,23,42,0.3)":"0 1px 2px rgba(0,0,0,0.02)",transform:activeScenario===name?"scale(1.02)":"scale(1)"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                      <div style={{fontSize:14,fontWeight:700,color:activeScenario===name?"#FFF":S.text}}>{name}</div>
-                      <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"3px 8px",borderRadius:4,background:"transparent",border:`1px solid ${activeScenario===name?"rgba(255,255,255,0.4)":sc.badgeColor+"40"}`,color:activeScenario===name?"#FFF":sc.badgeColor,whiteSpace:"nowrap",marginLeft:8}}>{sc.badge}</span>
-                    </div>
-                    <div style={{fontSize:12,color:activeScenario===name?"rgba(255,255,255,0.8)":S.muted,lineHeight:1.5}}>{sc.sub}</div>
-                  </button>
-                ))}
-                
-                {/* Custom Entry Button */}
-                <button onClick={()=>{setActiveScenario("Custom"); setInputs({...DEFAULTS}); setResults(null); setStep(0); setHasAcknowledgedDemo(false);}} style={{padding:"14px 16px",border:`2px dashed ${activeScenario==="Custom"?S.text:S.borderUp}`,borderRadius:10,background:activeScenario==="Custom"?S.text:"transparent",cursor:"pointer",textAlign:"left",transition:"all .2s",width:"100%",boxShadow:activeScenario==="Custom"?"0 4px 6px rgba(15,23,42,0.3)":"none",transform:activeScenario==="Custom"?"scale(1.02)":"scale(1)"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                    <div style={{fontSize:14,fontWeight:700,color:activeScenario==="Custom"?"#FFF":S.text}}>Custom Entry</div>
-                  </div>
-                  <div style={{fontSize:12,color:activeScenario==="Custom"?"rgba(255,255,255,0.8)":S.muted,lineHeight:1.5}}>Enter your own custom household data.</div>
-                </button>
+            {/* Compact Example Household Selector */}
+            <div style={{background:S.surface,borderRadius:12,padding:16,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
+              <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.muted,marginBottom:6}}>
+                Load example household
+              </div>
+              <select
+                aria-label="Load example household"
+                value={activeScenario}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val === "Custom") {
+                    setActiveScenario("Custom");
+                    setInputs({ ...DEFAULTS });
+                    setResults(null);
+                    setStep(0);
+                    setHasAcknowledgedDemo(false);
+                  } else {
+                    loadScenario(val);
+                  }
+                }}
+                style={{
+                  width: "100%",
+                  background: S.surface,
+                  border: `1px solid ${S.borderUp}`,
+                  borderRadius: 6,
+                  color: S.text,
+                  padding: "10px 12px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  fontFamily: "inherit",
+                  cursor: "pointer"
+                }}
+              >
+                <option value="Custom">Custom Household (Empty / Manual entry)</option>
+                <optgroup label="Synthetic demonstration households">
+                  {Object.entries(SCENARIOS).map(([name, sc]) => (
+                    <option key={name} value={name}>
+                      {name} — {sc.badge} ({sc.sub})
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+              <div style={{fontSize:11,color:S.muted,marginTop:6,lineHeight:1.4}}>
+                Synthetic demonstration data only. Preset records are generated test profiles, not real SHA member records.
               </div>
             </div>
 
-            {/* Admin Controls */}
-            <div style={{background:S.surface,borderRadius:12,padding:20,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                <div style={{background:S.blueD,color:S.blue,padding:6,borderRadius:6}}><Settings size={16}/></div>
-                <div style={{fontSize:14,fontWeight:700,color:S.text}}>Algorithm Weights (Admin)</div>
-              </div>
-              <div style={{fontSize:12,color:S.muted,lineHeight:1.5,marginBottom:16}}>These parameters control the core weights in the engine. Adjusting them instantly changes how citizens are classified — proving the system is fully configurable without code changes.</div>
-              <div style={{display:"grid",gap:20}}>
-                <div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
-                    <span style={{fontSize:13,fontWeight:600,color:S.text}}>Car Ownership Base Value</span>
-                    <span style={{fontSize:14,fontWeight:700,color:S.blue}}>KSh {adminParams.carValue.toLocaleString()}</span>
-                  </div>
-                  <div style={{fontSize:11,color:S.muted,marginBottom:8,lineHeight:1.4}}>Base value assigned to a standard older vehicle. The actual impact is multiplied by the citizen's vehicle type (Standard, Luxury, Commercial). Increase to charge car owners more; decrease to reduce the car ownership penalty.</div>
-                  <input type="range" min="50000" max="1000000" step="10000" value={adminParams.carValue} onChange={e=>setAdminParams(p=>({...p,carValue:parseInt(e.target.value)}))} style={{width:"100%"}}/>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:S.borderUp,marginTop:4}}><span>KSh 50K</span><span>KSh 1M</span></div>
-                </div>
-                <div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
-                    <span style={{fontSize:13,fontWeight:600,color:S.text}}>Urban Rent Deduction</span>
-                    <span style={{fontSize:14,fontWeight:700,color:S.blue}}>KSh {adminParams.urbanCostOfLiving.toLocaleString()}</span>
-                  </div>
-                  <div style={{fontSize:11,color:S.muted,marginBottom:8,lineHeight:1.4}}>Monthly cost-of-living deducted for Nairobi/Mombasa residents before taxation. Prevents penalising urban dwellers for paying high rent — their M-Pesa velocity reflects survival, not wealth.</div>
-                  <input type="range" min="0" max="30000" step="1000" value={adminParams.urbanCostOfLiving} onChange={e=>setAdminParams(p=>({...p,urbanCostOfLiving:parseInt(e.target.value)}))} style={{width:"100%"}}/>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:S.borderUp,marginTop:4}}><span>KSh 0</span><span>KSh 30K</span></div>
-                </div>
-                <div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
-                    <span style={{fontSize:13,fontWeight:600,color:S.text}}>Digital Debt Penalty</span>
-                    <span style={{fontSize:14,fontWeight:700,color:S.blue}}>KSh {adminParams.fulizaPenalty.toLocaleString()}</span>
-                  </div>
-                  <div style={{fontSize:11,color:S.muted,marginBottom:8,lineHeight:1.4}}>Amount deducted per active Fuliza/M-Shwari default. Recognises that digital loans are debt, not income — the current system punishes people for being in financial distress.</div>
-                  <input type="range" min="0" max="15000" step="500" value={adminParams.fulizaPenalty} onChange={e=>setAdminParams(p=>({...p,fulizaPenalty:parseInt(e.target.value)}))} style={{width:"100%"}}/>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:S.borderUp,marginTop:4}}><span>KSh 0</span><span>KSh 15K</span></div>
-                </div>
-                <div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
-                    <span style={{fontSize:13,fontWeight:600,color:S.text}}>Tier 1 Rent Cap</span>
-                    <span style={{fontSize:14,fontWeight:700,color:S.blue}}>KSh {adminParams.tier1RentCap.toLocaleString()}</span>
-                  </div>
-                  <div style={{fontSize:11,color:S.muted,marginBottom:8,lineHeight:1.4}}>Maximum allowable rent deduction for Tier 1 cities (Nairobi, Mombasa, Kisumu). Protects vulnerable urban renters while preventing luxury evasion by the wealthy.</div>
-                  <input type="range" min="10000" max="100000" step="5000" value={adminParams.tier1RentCap} onChange={e=>setAdminParams(p=>({...p,tier1RentCap:parseInt(e.target.value)}))} style={{width:"100%"}}/>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:S.borderUp,marginTop:4}}><span>KSh 10K</span><span>KSh 100K</span></div>
-                </div>
-                <div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
-                    <span style={{fontSize:13,fontWeight:600,color:S.text}}>Tier 2 Rent Cap</span>
-                    <span style={{fontSize:14,fontWeight:700,color:S.blue}}>KSh {adminParams.tier2RentCap.toLocaleString()}</span>
-                  </div>
-                  <div style={{fontSize:11,color:S.muted,marginBottom:8,lineHeight:1.4}}>Maximum allowable rent deduction for Tier 2 satellite cities (Nakuru, Kiambu, Machakos, etc.). Prevents high-income commuters from exploiting rural cost-of-living brackets.</div>
-                  <input type="range" min="5000" max="60000" step="1000" value={adminParams.tier2RentCap} onChange={e=>setAdminParams(p=>({...p,tier2RentCap:parseInt(e.target.value)}))} style={{width:"100%"}}/>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:S.borderUp,marginTop:4}}><span>KSh 5K</span><span>KSh 60K</span></div>
-                </div>
-              </div>
-              <div style={{marginTop:16,padding:10,background:S.amberD,borderRadius:6,border:`1px solid ${S.amberBd}`,fontSize:11,color:S.amber,display:"flex",gap:6,alignItems:"flex-start",lineHeight:1.4}}>
-                <AlertTriangle size={14} style={{flexShrink:0,marginTop:1}}/>
-                <span>Changes take effect on the next classification run. Select a persona and click "Run Classification" to see the impact of adjusted weights.</span>
-              </div>
-            </div>
-
-            {/* Form */}
+            {/* Main Assessment Experience */}
             <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasAcknowledgedDemo={hasAcknowledgedDemo} setHasAcknowledgedDemo={setHasAcknowledgedDemo} setInputs={setInputs} setActiveScenario={setActiveScenario} addListItem={addListItem} updListItem={updListItem} removeListItem={removeListItem} formError={formError}/>
+
+            {/* Advanced Research Parameters (Admin - Collapsed) */}
+            <div style={{background:S.surface,borderRadius:12,padding:16,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)"}}>
+              <details style={{cursor:"pointer"}}>
+                <summary style={{fontSize:13,fontWeight:700,color:S.text,display:"flex",alignItems:"center",gap:8}}>
+                  <Settings size={15} color={S.blue}/>
+                  <span>Advanced Research Parameters (Prototype Sliders — Experimental)</span>
+                </summary>
+                <div style={{fontSize:12,color:S.muted,lineHeight:1.5,marginTop:10,marginBottom:16}}>
+                  These experimental parameters test algorithm sensitivity. Default values represent standard baseline calibration. Adjustments apply to subsequent calculation runs in this browser session only.
+                </div>
+                <div style={{display:"grid",gap:18}}>
+                  <div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                      <span style={{fontSize:13,fontWeight:600,color:S.text}}>Car Ownership Base Value</span>
+                      <span style={{fontSize:14,fontWeight:700,color:S.blue}}>KSh {adminParams.carValue.toLocaleString()}</span>
+                    </div>
+                    <div style={{fontSize:11,color:S.muted,marginBottom:8,lineHeight:1.4}}>Base value assigned to a standard older vehicle. Increase to charge car owners more; decrease to reduce car ownership penalty.</div>
+                    <input type="range" min="50000" max="1000000" step="10000" value={adminParams.carValue} onChange={e=>setAdminParams(p=>({...p,carValue:parseInt(e.target.value)}))} style={{width:"100%"}}/>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:S.borderUp,marginTop:4}}><span>KSh 50K</span><span>KSh 1M</span></div>
+                  </div>
+                  <div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                      <span style={{fontSize:13,fontWeight:600,color:S.text}}>Urban Rent Deduction</span>
+                      <span style={{fontSize:14,fontWeight:700,color:S.blue}}>KSh {adminParams.urbanCostOfLiving.toLocaleString()}</span>
+                    </div>
+                    <div style={{fontSize:11,color:S.muted,marginBottom:8,lineHeight:1.4}}>Monthly cost-of-living deducted for Nairobi/Mombasa residents before taxation.</div>
+                    <input type="range" min="0" max="30000" step="1000" value={adminParams.urbanCostOfLiving} onChange={e=>setAdminParams(p=>({...p,urbanCostOfLiving:parseInt(e.target.value)}))} style={{width:"100%"}}/>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:S.borderUp,marginTop:4}}><span>KSh 0</span><span>KSh 30K</span></div>
+                  </div>
+                  <div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                      <span style={{fontSize:13,fontWeight:600,color:S.text}}>Digital Debt Penalty</span>
+                      <span style={{fontSize:14,fontWeight:700,color:S.blue}}>KSh {adminParams.fulizaPenalty.toLocaleString()}</span>
+                    </div>
+                    <div style={{fontSize:11,color:S.muted,marginBottom:8,lineHeight:1.4}}>Amount deducted per active Fuliza/M-Shwari default.</div>
+                    <input type="range" min="0" max="15000" step="500" value={adminParams.fulizaPenalty} onChange={e=>setAdminParams(p=>({...p,fulizaPenalty:parseInt(e.target.value)}))} style={{width:"100%"}}/>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:S.borderUp,marginTop:4}}><span>KSh 0</span><span>KSh 15K</span></div>
+                  </div>
+                  <div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                      <span style={{fontSize:13,fontWeight:600,color:S.text}}>Tier 1 Rent Cap</span>
+                      <span style={{fontSize:14,fontWeight:700,color:S.blue}}>KSh {adminParams.tier1RentCap.toLocaleString()}</span>
+                    </div>
+                    <div style={{fontSize:11,color:S.muted,marginBottom:8,lineHeight:1.4}}>Maximum allowable rent deduction for Tier 1 cities.</div>
+                    <input type="range" min="10000" max="100000" step="5000" value={adminParams.tier1RentCap} onChange={e=>setAdminParams(p=>({...p,tier1RentCap:parseInt(e.target.value)}))} style={{width:"100%"}}/>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:S.borderUp,marginTop:4}}><span>KSh 10K</span><span>KSh 100K</span></div>
+                  </div>
+                  <div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                      <span style={{fontSize:13,fontWeight:600,color:S.text}}>Tier 2 Rent Cap</span>
+                      <span style={{fontSize:14,fontWeight:700,color:S.blue}}>KSh {adminParams.tier2RentCap.toLocaleString()}</span>
+                    </div>
+                    <div style={{fontSize:11,color:S.muted,marginBottom:8,lineHeight:1.4}}>Maximum allowable rent deduction for Tier 2 satellite cities.</div>
+                    <input type="range" min="5000" max="60000" step="1000" value={adminParams.tier2RentCap} onChange={e=>setAdminParams(p=>({...p,tier2RentCap:parseInt(e.target.value)}))} style={{width:"100%"}}/>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:S.borderUp,marginTop:4}}><span>KSh 5K</span><span>KSh 60K</span></div>
+                  </div>
+                </div>
+                <div style={{marginTop:16,padding:10,background:S.amberD,borderRadius:6,border:`1px solid ${S.amberBd}`,fontSize:11,color:S.amber,display:"flex",gap:6,alignItems:"flex-start",lineHeight:1.4}}>
+                  <AlertTriangle size={14} style={{flexShrink:0,marginTop:1}}/>
+                  <span>Changes apply on the next calculation run.</span>
+                </div>
+              </details>
+            </div>
 
           </div>
 
@@ -3080,7 +3162,7 @@ export default function SHADemo() {
                 <div className="empty-state-card">
                   <Fingerprint size={48} color={S.blue} style={{marginBottom:24,opacity:0.8}}/>
                   <div style={{fontFamily:"'Inter',sans-serif",fontSize:24,fontWeight:700,color:S.text,marginBottom:12}}>Awaiting Assessment Data</div>
-                  <div style={{fontSize:15,color:S.muted,lineHeight:1.6}}>Select a demographic persona from the left sidebar or complete the form manually. The demonstration compares an illustrative PMT-style baseline with a deterministic, rules-based Adjusted Gross Income proposal.</div>
+                  <div style={{fontSize:15,color:S.muted,lineHeight:1.6}}>Select an example household or enter data manually. Complete the review stage and confirm details to generate the itemised calculation receipt.</div>
                 </div>
               </div>
             )}
@@ -3108,7 +3190,7 @@ export default function SHADemo() {
                   ))}
                 </div>
 
-
+                {activeTab==="receipt"&&<DemoCalculationReceipt results={results} S={S}/>}
                 {activeTab==="comparison"&&<ComparisonTab results={results} adminParams={adminParams}/>}
                 {activeTab==="models"&&<ModelVersionsTab results={results}/>}
                 {activeTab==="evalLab"&&<EvaluationLabTab results={results}/>}

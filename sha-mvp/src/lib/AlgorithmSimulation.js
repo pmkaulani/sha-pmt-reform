@@ -1697,64 +1697,48 @@ export function analyzeSector(d) {
 }
 
 /**
- * Calculates fairness metrics for comparison
+ * Calculates model output differences between illustrative baseline and proposed models.
+ * Replaces unvalidated fairness/overcharge assertions with transparent comparative metrics.
  */
-export function calculateFairnessMetrics(current, proposed, fraudRisk) {
-  const currentCharge = current.monthly || current.monthlyContribution || 0;
-  const proposedCharge = proposed.monthly || proposed.monthlyContribution || 0;
-  
-  if (currentCharge === 0 || proposedCharge === 0) {
-    return {
-      overchargeAmount: 0,
-      overchargePercent: 0,
-      fairnessScore: 50,
-      equityImprovement: false,
-      fraudRiskLevel: fraudRisk?.severityLevel || 'MEDIUM',
-      recommendation: 'FAIR CHARGE: Assessment aligns with income',
-      equityGap: 0,
-      complianceLikelihood: 50
-    };
-  }
-  
-  const overchargeAmount = currentCharge - proposedCharge;
-  const overchargePercent = ((overchargeAmount / currentCharge) * 100);
-  
-  // P-38 FIX: Pro-poor asymmetric fairness weighting.
-  // Overcharging the poor is penalized heavily; undercharging is rewarded lightly.
-  // This replaces the old symmetric: 100 - (Math.abs(overchargePercent) / 2)
-  let fairnessScore;
-  if (overchargePercent > 0) {
-    // Overcharging: heavy penalty (1:1 deduction from 100)
-    fairnessScore = Math.max(0, 100 - overchargePercent);
-  } else {
-    // Undercharging: light reward (0.5:1 bonus toward 100)
-    fairnessScore = Math.min(100, 100 + (Math.abs(overchargePercent) * 0.5));
-  }
-
-  const equityImprovement = overchargePercent > 0 ? true : false;
-  const fraudRiskLevel = fraudRisk?.severityLevel || 'MEDIUM';
-
-  // P-40: Multi-factor compliance likelihood model
-  const costFactor = 1 - (overchargePercent / 100);
-  const trustFactor = 1 + (fairnessScore / 200);
-  const complianceLikelihood = Math.max(20, Math.min(95, Math.round(50 * costFactor * trustFactor)));
+export function calculateModelOutputDifference(current, proposed) {
+  const currentCharge = current?.monthly || current?.monthlyContribution || 0;
+  const proposedCharge = proposed?.monthly || proposed?.monthlyContribution || 0;
+  const differenceKsh = currentCharge - proposedCharge;
+  const percentageDifference = currentCharge > 0 ? ((differenceKsh / currentCharge) * 100) : 0;
+  const direction = differenceKsh > 0
+    ? 'BASELINE_HIGHER'
+    : differenceKsh < 0
+      ? 'PROPOSED_HIGHER'
+      : 'IDENTICAL';
 
   return {
-    overchargeAmount: overchargeAmount,
-    overchargePercent: overchargePercent,
-    fairnessScore: fairnessScore,
-    equityImprovement: equityImprovement,
-    fraudRiskLevel: fraudRiskLevel,
-    recommendation: overchargePercent > 50 
-      ? 'CRITICAL OVERCHARGE: This household is being substantially overcharged'
-      : overchargePercent > 20
-        ? 'MODERATE OVERCHARGE: This household is paying more than fair'
-        : overchargePercent < -10
-          ? 'POTENTIAL UNDER-CONTRIBUTION: Consider income verification'
-          : 'FAIR CHARGE: Assessment aligns with income',
-    equityGap: overchargePercent,
-    complianceLikelihood: complianceLikelihood
+    evalType: "PROTOTYPE_MODEL_COMPARISON",
+    currentMonthlyContributionKsh: Math.round(currentCharge),
+    proposedMonthlyContributionKsh: Math.round(proposedCharge),
+    differenceKsh: Math.round(differenceKsh),
+    absoluteDifferenceKsh: Math.round(Math.abs(differenceKsh)),
+    percentageDifference: Math.round(percentageDifference * 10) / 10,
+    direction,
+    breakdown: {
+      baselineAnnualAssessedKsh: Math.round(current?.annualIncome || (currentCharge * 12) / 0.0275),
+      proposedAnnualEstimatedKsh: Math.round(proposed?.estimatedAnnualIncome || proposed?.annualIncome || 0),
+      baselineMonthlyFloorApplied: current?.minimumContributionFloorApplied ?? (currentCharge === 300),
+      proposedMonthlyFloorApplied: proposed?.minimumContributionFloorApplied ?? (proposedCharge === 300),
+    },
+    summary: differenceKsh > 0
+      ? `Illustrative baseline calculates KSh ${Math.round(differenceKsh).toLocaleString()} more per month than the proposed model.`
+      : differenceKsh < 0
+        ? `Proposed model calculates KSh ${Math.round(Math.abs(differenceKsh)).toLocaleString()} more per month than the illustrative baseline.`
+        : "Both models calculate identical monthly contributions.",
+    caveat: "Synthetic model comparison only; not a measure of actual overcharge or empirical fairness"
   };
+}
+
+/**
+ * Backward compatibility alias for calculateModelOutputDifference
+ */
+export function calculateFairnessMetrics(current, proposed) {
+  return calculateModelOutputDifference(current, proposed);
 }
 
 /**
@@ -1822,9 +1806,20 @@ export function handleApiFailure(apiName, error, d) {
  * @param {number} minGroupSize - Groups smaller than this are excluded from disparity math (default 30)
  * @returns {Object} { passed: boolean, maxDisparity: number, groupResults: Object, excludedGroups: Array, report: string }
  */
+/**
+ * Descriptive diagnostic of model disagreement across demographic groupings in synthetic data.
+ * Does not assert empirical pass/fail, real-world fairness, or false-positive error rates.
+ */
 export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'county', minGroupSize = 30) {
   if (!assessments || assessments.length === 0) {
-    return { passed: false, maxDisparity: 0, groupResults: {}, excludedGroups: [], report: 'No assessments provided' };
+    return {
+      evaluationType: "SYNTHETIC_ONLY_NOT_VALIDATED",
+      maxDisparity: 0,
+      groupResults: {},
+      excludedGroups: [],
+      report: 'No assessments provided',
+      caveat: 'Descriptive synthetic diagnostic only; ground truth does not exist to establish false positive rates or legal compliance.'
+    };
   }
 
   // Group assessments by the demographic key
@@ -1851,9 +1846,7 @@ export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'co
     const entry = {
       total: data.total,
       disagreements: data.disagreements,
-      disagreementRate: Math.round(rate * 10000) / 100,
-      falsePositives: data.disagreements,
-      falsePositiveRate: Math.round(rate * 10000) / 100 // deprecated alias
+      disagreementRate: Math.round(rate * 10000) / 100
     };
     if (data.total < minGroupSize) {
       excludedGroups.push({ key, ...entry, reason: `Below minGroupSize (${minGroupSize}) — excluded to avoid noise-driven disparity` });
@@ -1866,33 +1859,60 @@ export function testCurrentModelDisparityByCounty(assessments, groupingKey = 'co
 
   const groupCount = Object.keys(groupResults).length;
   if (groupCount === 0) {
-    return { passed: false, maxDisparity: 0, threshold: 3.0, groupResults, excludedGroups, groupCount: 0, report: `No ${groupingKey} group reached minGroupSize (${minGroupSize}); disparity cannot be assessed yet.` };
+    return {
+      evaluationType: "SYNTHETIC_ONLY_NOT_VALIDATED",
+      maxDisparity: 0,
+      groupResults,
+      excludedGroups,
+      groupCount: 0,
+      report: `No ${groupingKey} group reached minGroupSize (${minGroupSize}); disparity cannot be assessed.`,
+      caveat: 'Descriptive synthetic diagnostic only; ground truth does not exist to establish false positive rates or legal compliance.'
+    };
   }
 
   const maxDisparity = Math.round((maxRate - minRate) * 10000) / 100;
-  const passed = maxDisparity <= 3.0; // 3% design target
 
   return {
-    evaluationType: "SYNTHETIC_DEMO_ONLY",
-    passed,
+    evaluationType: "SYNTHETIC_ONLY_NOT_VALIDATED",
     maxDisparity,
-    threshold: 3.0,
     groupResults,
     excludedGroups,
     groupCount,
-    report: passed
-      ? `SYNTHETIC DEMO: Maximum model disagreement disparity across ${groupingKey} groups (N≥${minGroupSize}) is ${maxDisparity}% (≤3% design target)`
-      : `SYNTHETIC DEMO: Maximum model disagreement disparity across ${groupingKey} groups (N≥${minGroupSize}) is ${maxDisparity}% (>3% design target)`
+    report: `Descriptive Diagnostic: Maximum model disagreement disparity across ${groupingKey} groups (N≥${minGroupSize}) is ${maxDisparity}%. (Synthetic diagnostic only; no empirical ground truth or pass/fail verdict).`,
+    caveat: 'Synthetic demonstration only. Real administrative ground truth and representative sampling are required to measure demographic disparity or equalized odds.'
   };
 }
 
 /**
- * P-47 (CAJ BLOCKER): Generates revenue sensitivity analysis across compliance scenarios.
- * Shows projected monthly national revenue at varying compliance rates.
- * Data sources cited: NHIF, ILO, Rwanda CBHI, Ethiopia CBHI.
- * @param {number} totalPopulation - Total eligible informal population (default: ~15.5M informal earners)
- * @param {number} avgContribution - Average monthly contribution in KSh (default: 520)
- * @returns {Object} { scenarios: Array, breakeven: Object, summary: string }
+ * Calculates transparent scenario arithmetic for revenue projections.
+ * Illustrative arithmetic only; does not predict real-world fiscal outcomes or assert unverified subsidy deductions.
+ */
+export function calculateIllustrativeRevenueScenario({
+  eligibleMembers = 15500000,
+  participationRate = 0.60,
+  averageMonthlyContribution = 520
+} = {}) {
+  const activeMembers = Math.round(eligibleMembers * participationRate);
+  const monthlyRevenueKsh = activeMembers * averageMonthlyContribution;
+  const annualRevenueKsh = monthlyRevenueKsh * 12;
+
+  return {
+    scenarioType: "ILLUSTRATIVE_ARITHMETIC_ONLY",
+    eligibleMembers,
+    participationRate,
+    activeMembers,
+    averageMonthlyContribution,
+    monthlyRevenueKsh,
+    annualRevenueKsh,
+    monthlyRevenueBillions: Math.round((monthlyRevenueKsh / 1e9) * 100) / 100,
+    annualRevenueBillions: Math.round((annualRevenueKsh / 1e9) * 100) / 100,
+    citationNotice: "Arithmetic projection only based on stated assumptions. Does not predict real-world fiscal outcomes or incorporate unverified subsidy deductions.",
+  };
+}
+
+/**
+ * Generates illustrative revenue sensitivity analysis across participation scenarios.
+ * Transparent scenario arithmetic without unverified fixed subsidy deductions.
  */
 export function generateRevenueStressTest(totalPopulation = 15500000, avgContribution = 520) {
   const scenarios = [
@@ -1904,45 +1924,29 @@ export function generateRevenueStressTest(totalPopulation = 15500000, avgContrib
   ];
 
   const results = scenarios.map(s => {
-    const enrolledPop = Math.round(totalPopulation * s.rate);
-    const monthlyRevenue = enrolledPop * avgContribution;
-    const annualRevenue = monthlyRevenue * 12;
+    const sc = calculateIllustrativeRevenueScenario({
+      eligibleMembers: totalPopulation,
+      participationRate: s.rate,
+      averageMonthlyContribution: avgContribution
+    });
     return {
       ...s,
-      enrolledPopulation: enrolledPop,
-      monthlyRevenueBillions: Math.round(monthlyRevenue / 1e9 * 100) / 100,
-      annualRevenueBillions: Math.round(annualRevenue / 1e9 * 100) / 100,
+      enrolledPopulation: sc.activeMembers,
+      monthlyRevenueBillions: sc.monthlyRevenueBillions,
+      annualRevenueBillions: sc.annualRevenueBillions,
     };
   });
 
-  // Breakeven analysis: need ~45% to sustain subsidy program
-  // NOTE (audit v2, unresolved — flagging rather than silently fixing):
-  // this is still a static constant, independent of how many people the
-  // AGI model actually reclassifies as indigent vs the current system.
-  // This was Gap D5 in the June 28 audit ("subsidy fiscal tradeoff not
-  // addressed") — a real fix needs a population-reclassification pass
-  // (run both models over a real/synthetic population, count net new
-  // indigent classifications, cost those out) rather than a bigger magic
-  // number. Left as-is; don't cite this figure as dynamically derived.
-  const subsidyCostPerMonth = 3200000000; // ~3.2B KSh/month for indigent subsidies
-  const breakevenRate = Math.ceil((subsidyCostPerMonth / (totalPopulation * avgContribution)) * 100);
-  const breakevenEnrolled = Math.round(totalPopulation * (breakevenRate / 100));
-
   return {
+    scenarioType: "ILLUSTRATIVE_ARITHMETIC_ONLY",
     scenarios: results,
-    breakeven: {
-      requiredComplianceRate: breakevenRate + '%',
-      requiredEnrollment: breakevenEnrolled,
-      monthlyCostToSubsidize: subsidyCostPerMonth,
-      note: `Need ≥${breakevenRate}% compliance to sustain the indigent subsidy program`
-    },
     assumptions: {
       totalEligiblePopulation: totalPopulation,
       averageMonthlyContribution: avgContribution,
       contributionRate: '2.75% of AGI',
-      source: 'KNBS 2024 population estimates + SHA Act 2023 rate'
+      source: 'KNBS 2024 informal population estimates + SHA Act 2023 rate'
     },
-    summary: `At target compliance (60%), projected annual revenue is KSh ${results[2].annualRevenueBillions}B. Breakeven requires ≥${breakevenRate}% compliance.`
+    summary: `At target participation (60%), illustrative annual collection is KSh ${results[2].annualRevenueBillions}B based on transparent arithmetic projection.`
   };
 }
 

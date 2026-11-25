@@ -198,7 +198,7 @@ test("Scenario 5: Invalid and inverted date periods are rejected", () => {
 });
 
 // ─── SCENARIO 6 ───────────────────────────────────────────────────────────────
-test("Scenario 6: Observation periods longer than 12 months are averaged over full window and flagged", () => {
+test("Scenario 6: Observation periods longer than 12 months are blocked from classification and flagged", () => {
   // 18 months: 2025-01-01 to 2026-06-30 (inclusive calendar months)
   const m = calculateMonthsFromDates("2025-01-01", "2026-06-30");
   assert.equal(m, 18);
@@ -217,12 +217,15 @@ test("Scenario 6: Observation periods longer than 12 months are averaged over fu
   assert.equal(calc.isValid, true);
   const line = calc.lines[0];
   assert.equal(line.observationMonths, 18);
-  assert.equal(line.periodStatus, "EXTENDED_PERIOD");
-  // Monthly average: 180,000 / 18 = 10,000
+  assert.equal(line.periodStatus, "BLOCKED_EXTENDED_OBSERVATION_PERIOD");
+  // Monthly average: 180,000 / 18 = 10,000 (retained for review)
   assert.equal(line.averageMonthlyNetKsh, 10000);
-  assert.equal(calc.monthlyEarnedNetKsh, 10000);
-  // Annualised: 10,000 * 12 = 120,000
-  assert.equal(calc.annualisedEarnedNetKsh, 120000);
+  assert.equal(calc.canPopulatePrototypeEarnedIncomeBase, false);
+  assert.equal(calc.monthlyEarnedNetKsh, null);
+  assert.equal(calc.annualisedEarnedNetKsh, null);
+  assert.equal(calc.reviewOnlyMonthlyEarnedNetKsh, 10000);
+  assert.equal(calc.reviewOnlyAnnualisedEarnedNetKsh, 120000);
+  assert.equal(calc.calculationStatus, "BLOCKED_EXTENDED_OBSERVATION_PERIOD");
   assert.ok(calc.reviewFlags.some(f => f.code === "EXTENDED_OBSERVATION_PERIOD"));
 });
 

@@ -175,10 +175,52 @@ export const OPERATING_EXPENSE_CATEGORIES = Object.freeze({
   }
 });
 
+export function createPreviousCompletedTwelveMonthPeriod(asOfDate = new Date()) {
+  const date = asOfDate instanceof Date ? asOfDate : new Date(asOfDate);
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Africa/Nairobi",
+    year: "numeric",
+    month: "numeric",
+  });
+  const parts = formatter.formatToParts(date);
+  const year = parseInt(parts.find(p => p.type === "year").value, 10);
+  const month = parseInt(parts.find(p => p.type === "month").value, 10);
+
+  let endYear = year;
+  let endMonth = month - 1;
+  if (endMonth === 0) {
+    endMonth = 12;
+    endYear -= 1;
+  }
+
+  let startYear = endYear - 1;
+  let startMonth = endMonth + 1;
+  if (startMonth > 12) {
+    startMonth = 1;
+    startYear += 1;
+  }
+
+  const lastDayOfEndMonth = new Date(Date.UTC(endYear, endMonth, 0)).getUTCDate();
+
+  const startStr = `${startYear}-${String(startMonth).padStart(2, "0")}-01`;
+  const endStr = `${endYear}-${String(endMonth).padStart(2, "0")}-${String(lastDayOfEndMonth).padStart(2, "0")}`;
+
+  return Object.freeze({
+    startDate: startStr,
+    endDate: endStr,
+    windowMonths: 12,
+    label: `Previous 12 completed months (${startStr} to ${endStr})`,
+    basis: "COMPLETED_CALENDAR_YEAR_WINDOW",
+    timezone: "Africa/Nairobi"
+  });
+}
+
 export const DEFAULT_COMMON_ASSESSMENT_PERIOD = Object.freeze({
   windowMonths: 12,
   label: "Previous 12 completed months",
-  basis: "MEMBER_REPORTED_ROLLING_12_MONTH_WINDOW"
+  basis: "COMPLETED_CALENDAR_YEAR_WINDOW",
+  startDate: "2025-11-01",
+  endDate: "2026-10-31"
 });
 
 const roundKsh = (value) => Math.round(value);
@@ -239,7 +281,37 @@ export function calculateMonthsFromDates(startDate, endDate) {
   );
 }
 
-export function checkIncomePeriodAlignment(sources) {
+/**
+ * Validates whether a date range represents a complete calendar month window.
+ * Day 1 of start month to last day of end month, matching expectedMonths if provided.
+ */
+export function isCompleteCalendarMonthWindow(startDate, endDate, expectedMonths = 12) {
+  const start = parseDateOnly(startDate);
+  const end = parseDateOnly(endDate);
+
+  if (!start || !end || start > end) {
+    return false;
+  }
+
+  // Must begin on the 1st of the month
+  if (start.getUTCDate() !== 1) {
+    return false;
+  }
+
+  // Must end on the last day of the month (next day is 1st of next month)
+  const nextDay = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate() + 1));
+  if (nextDay.getUTCDate() !== 1) {
+    return false;
+  }
+
+  const months = (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + end.getUTCMonth() - start.getUTCMonth() + 1;
+  if (expectedMonths !== null && expectedMonths !== undefined) {
+    return months === expectedMonths;
+  }
+  return months >= 1;
+}
+
+export function checkIncomePeriodAlignment(sources, commonAssessmentPeriod = null) {
   const activeEarnedSources = sources.filter(source => {
     const rule = INCOME_SOURCE_RULES[source.sourceType];
 
@@ -268,6 +340,14 @@ export function checkIncomePeriodAlignment(sources) {
 
   if (periodKeys.size > 1) {
     return "Earned-income sources cover different date ranges. Use the same assessment reference period before combining them.";
+  }
+
+  if (commonAssessmentPeriod?.enforceReferenceWindow && commonAssessmentPeriod.startDate && commonAssessmentPeriod.endDate) {
+    for (const src of datedSources) {
+      if (src.observationStartDate !== commonAssessmentPeriod.startDate || src.observationEndDate !== commonAssessmentPeriod.endDate) {
+        return `Earned-income sources (${src.observationStartDate} to ${src.observationEndDate}) do not align with the common assessment reference period (${commonAssessmentPeriod.startDate} to ${commonAssessmentPeriod.endDate}).`;
+      }
+    }
   }
 
   return null;
@@ -602,7 +682,7 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = DEFAU
     };
   }
 
-  const periodAlignmentError = checkIncomePeriodAlignment(sources);
+  const periodAlignmentError = checkIncomePeriodAlignment(sources, commonAssessmentPeriod);
 
   if (periodAlignmentError) {
     return {
@@ -758,7 +838,7 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = DEFAU
           overlapAmountKsh: received,
           isPartial: false,
           treatment: "Full duplicate: entire source excluded from earned income.",
-          reason: "Declared as included in parent source"
+          reason: "Member-declared overlap — unverified pending supporting evidence (100% duplicate)"
         });
       } else {
         isDuplicate = false;
@@ -772,8 +852,8 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = DEFAU
           parentSourceLabel: parentLabel,
           overlapAmountKsh: duplicateOverlapAmountKsh,
           isPartial: true,
-          treatment: `Deducted declared partial overlap of KSh ${duplicateOverlapAmountKsh.toLocaleString()}; remaining KSh ${countedReceivedKsh.toLocaleString()} counted.`,
-          reason: "Declared partial overlap with parent source"
+          treatment: `Deducted Member-declared overlap (unverified pending supporting evidence) of KSh ${duplicateOverlapAmountKsh.toLocaleString()}; remaining KSh ${countedReceivedKsh.toLocaleString()} counted.`,
+          reason: "Member-declared overlap — unverified pending supporting evidence"
         });
       }
     } else if (source.alreadyIncludedElsewhere === true) {
@@ -813,7 +893,7 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = DEFAU
         code: "PARTIAL_DUPLICATE_OVERLAP_DEDUCTED",
         sourceId: source.id,
         parentSourceId: parentSourceId,
-        message: `${rule.label} (ID: ${source.id}) declared a partial overlap of KSh ${duplicateOverlapAmountKsh.toLocaleString()} with ${parentName}. Only the unshared amount (KSh ${countedReceivedKsh.toLocaleString()}) was counted in the assessment.`,
+        message: `${rule.label} (ID: ${source.id}) declared a partial overlap of KSh ${duplicateOverlapAmountKsh.toLocaleString()} with ${parentName}. Member-declared overlap — unverified pending supporting evidence. Only the unshared amount (KSh ${countedReceivedKsh.toLocaleString()}) was counted in the assessment.`,
       });
     }
 
@@ -845,11 +925,11 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = DEFAU
       if (inventoryReviewRequired) {
         periodStatus = "INVENTORY_RECONCILIATION_REQUIRED";
       } else if (months > 12) {
-        periodStatus = "EXTENDED_PERIOD";
+        periodStatus = "BLOCKED_EXTENDED_OBSERVATION_PERIOD";
         reviewFlags.push({
           code: "EXTENDED_OBSERVATION_PERIOD",
           sourceId: source.id,
-          message: `${rule.label} covers ${months} observed months (longer than standard 12-month window). Monthly average is calculated over ${months} months and annualised.`,
+          message: `${rule.label} covers ${months} observed months (longer than standard 12-month window). Extended observation periods are blocked from automated annualisation; manual review required.`,
         });
       } else if (requiresFullYear && months < 12) {
         requiresManualReview = true;
@@ -941,28 +1021,53 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = DEFAU
     };
   });
 
-  // Safeguard: Reimbursement double-counting check
-  const hasUnresolvedReimbursements =
-    totalReportedReimbursements > 0 &&
-    totalDeductedBusinessExpenses > 0;
+  // Safeguard: Source-specific reimbursement double-counting check
+  let hasUnresolvedReimbursements = false;
+  const reimbursementLines = lines.filter(l => l.sourceType === "REIMBURSEMENT");
+  const earnedLinesWithExpenses = lines.filter(l => l.isActive && l.bucket === "EARNED" && l.totalReportedCostsKsh > 0);
 
-  if (hasUnresolvedReimbursements) {
-    requiresManualReview = true;
+  if (reimbursementLines.length > 0 && earnedLinesWithExpenses.length > 0) {
+    reimbursementLines.forEach(rLine => {
+      const rawSource = sourceMap.get(rLine.sourceId);
+      const targetSourceId = rawSource?.targetSourceId || rawSource?.reimbursementTargetSourceId;
+      const isPersonal = rawSource?.isPersonalReimbursement === true || rawSource?.reimbursementCategory === "PERSONAL";
 
-    reviewFlags.push({
-      code: "REIMBURSEMENT_RECONCILIATION_REQUIRED",
-      message:
-        "Reported reimbursements coexist with deducted operating expenses. " +
-        "Confirm whether any reimbursed expense has already been deducted " +
-        "before this income assessment can proceed."
-    });
+      if (isPersonal) {
+        return; // Personal reimbursement does not conflict with business expenses
+      }
 
-    lines.forEach(l => {
-      if (l.sourceType === "REIMBURSEMENT") {
-        l.periodStatus = "REIMBURSEMENT_RECONCILIATION_REQUIRED";
+      if (targetSourceId) {
+        const targetLine = lines.find(l => l.sourceId === String(targetSourceId).trim());
+        if (targetLine && targetLine.totalReportedCostsKsh > 0) {
+          hasUnresolvedReimbursements = true;
+          rLine.periodStatus = "REIMBURSEMENT_RECONCILIATION_REQUIRED";
+          reviewFlags.push({
+            code: "REIMBURSEMENT_RECONCILIATION_REQUIRED",
+            sourceId: rLine.sourceId,
+            targetSourceId: targetSourceId,
+            message: `Reimbursement '${rLine.label}' (ID: ${rLine.sourceId}) is linked to business source '${targetLine.label}' (ID: ${targetSourceId}) with deducted operating expenses of KSh ${targetLine.totalReportedCostsKsh.toLocaleString()}. Confirm whether any reimbursed expense was already deducted.`
+          });
+        }
+      } else {
+        // Target source is unspecified while business expenses exist
+        hasUnresolvedReimbursements = true;
+        rLine.periodStatus = "REIMBURSEMENT_RECONCILIATION_REQUIRED";
+        reviewFlags.push({
+          code: "REIMBURSEMENT_RECONCILIATION_REQUIRED",
+          sourceId: rLine.sourceId,
+          message: "Reported reimbursements coexist with deducted business operating expenses, but no specific target source was linked. Confirm whether any reimbursed expense has already been deducted before this income assessment can proceed."
+        });
       }
     });
   }
+
+  if (hasUnresolvedReimbursements) {
+    requiresManualReview = true;
+  }
+
+  const hasExtendedPeriod = lines.some(
+    line => line.periodStatus === "BLOCKED_EXTENDED_OBSERVATION_PERIOD" || line.periodStatus === "EXTENDED_PERIOD"
+  );
 
   const hasProvisionalShortWindowSources = lines.some(
     line => line.periodStatus === "SHORT_WINDOW_PROVISIONAL"
@@ -977,6 +1082,7 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = DEFAU
     !hasProvisionalShortWindowSources &&
     !hasInventoryReview &&
     !hasUnresolvedReimbursements &&
+    !hasExtendedPeriod &&
     !requiresPolicyDecision;
 
   const reviewOnlyMonthlyEarnedNetKsh = roundKsh(monthlyEarnedTotal);
@@ -987,7 +1093,9 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = DEFAU
 
   let calculationStatus = "CALCULATED_STANDARD";
 
-  if (requiresManualReview || hasInventoryReview || hasUnresolvedReimbursements) {
+  if (hasExtendedPeriod) {
+    calculationStatus = "BLOCKED_EXTENDED_OBSERVATION_PERIOD";
+  } else if (requiresManualReview || hasInventoryReview || hasUnresolvedReimbursements) {
     calculationStatus = "BLOCKED_MANUAL_REVIEW";
   } else if (hasProvisionalShortWindowSources) {
     calculationStatus = "BLOCKED_SHORT_WINDOW_REVIEW";
@@ -1034,6 +1142,7 @@ export function calculateHouseholdIncome(sources, commonAssessmentPeriod = DEFAU
 
     reviewFlags,
 
+    hasExtendedPeriod,
     hasProvisionalShortWindowSources,
     hasInventoryReview,
     hasUnresolvedReimbursements,
@@ -1086,6 +1195,7 @@ export function createZeroEarnedIncomeAssessment(commonAssessmentPeriod = null) 
         message: "Household has explicitly declared no earned income from active livelihoods.",
       }
     ],
+    hasExtendedPeriod: false,
     hasProvisionalShortWindowSources: false,
     hasInventoryReview: false,
     hasUnresolvedReimbursements: false,

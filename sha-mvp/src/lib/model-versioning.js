@@ -22,7 +22,7 @@ export const MODEL_VERSION_METADATA = Object.freeze({
     id: "declared-income-agi-v1.1",
     version: "1.1 hardened",
     label: "Hardened declared-income AGI engine",
-    sourceCommit: "recovery/restore-original-agi-v2.1",
+    sourceCommit: "b8095765247dce9751fc4f32bf35f0611f86ce52",
     baseMeaning: "Annualised declared net earned household income from resolved sources. Assets, retained balances, transaction activity and debt are contextual verification signals rather than direct additions to that base.",
     methodology: "Declared monthly net earnings × 12 with strict income ledger integrity; unapproved policy deductions isolated and default-disabled; separation of contribution floor from statutory indigence; contextual asset and liquidity indicators.",
     institutionalApprovalStatus: "RESEARCH_PROTOTYPE_UNAPPROVED",

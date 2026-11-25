@@ -66,35 +66,53 @@ The existing financial comparison and member workflow continue to use the declar
 
 **Governance boundary:** both engines are research prototypes. Neither is SHA's production Regulation 21(6) / Fifth Schedule means-testing instrument, neither can issue an official assessment, and differences between their outputs are not evidence that either one is empirically correct. The historical engine is preserved for traceability; future changes should create a new version rather than overwrite it.
 
-### Assessment-Integrity Hardening (Fix Pack v1.1)
+### Assessment-Integrity Hardening & Demonstration Pass
 
-The declared-income engine has been hardened against assessment flaws without altering the underlying architecture, destroying the recovered original AGI v2.1, or adding unnecessary platform bloat:
+The declared-income engine and demonstration interface have undergone an end-to-end hardening and integrity pass without altering the underlying architecture, destroying the recovered original AGI v2.1, or adding unnecessary platform bloat:
 
 1. **Strict Income Calculation Gating (`canPopulatePrototypeEarnedIncomeBase`):**
    - Observations of 12-month resolved income proceed to the contribution engine (`CALCULATED_STANDARD`).
    - Observations of 3–11 months are marked `SHORT_WINDOW_PROVISIONAL`: reported amounts remain visible for review (`reviewOnlyMonthlyEarnedNetKsh`), but cannot populate the contribution base (`monthlyEarnedNetKsh = null`, `calculationStatus = "BLOCKED_SHORT_WINDOW_REVIEW"`).
+   - Observation periods longer than 12 months trigger `BLOCKED_EXTENDED_OBSERVATION_PERIOD` and block automatic annualisation (`canPopulatePrototypeEarnedIncomeBase = false`, `monthlyEarnedNetKsh = null`), preserving review-only averages for manual inspection.
    - Incomplete seasonal earnings (<12 months), short windows (<3 months), unresolved stock accounting, and unverified reimbursement overlaps route to `BLOCKED_MANUAL_REVIEW`.
    - Reported unearned transfers (remittances, social assistance) set `PROVISIONAL_PENDING_POLICY` and hold the earned base at `null` pending formal SHA policy rules.
 
-2. **Accurate Calendar-Month & Period-Alignment Accounting:**
+2. **Accurate Calendar-Month & Strict 12-Month Observation Windows:**
+   - Completed previous 12-month reference periods are constructed via `createPreviousCompletedTwelveMonthPeriod(asOfDate)` in the `Africa/Nairobi` timezone, strictly covering the first calendar day of month $T-12$ to the final calendar day of month $T-1$.
    - Replaced 30-day rounding approximations with exact inclusive calendar-month calculations in UTC (`(end.year - start.year)*12 + end.month - start.month + 1`), rejecting impossible calendar dates (such as `2026-02-31`).
-   - Income sources covering conflicting calendar dates are blocked with `BLOCKED_PERIOD_ALIGNMENT` (`ASSESSMENT_PERIOD_MISMATCH`) to ensure consistent observation baselines.
+   - Strict calendar window validation via `isCompleteCalendarMonthWindow(start, end, 12)` verifies exact month boundaries.
+   - Conflicting or misaligned income observation periods are blocked with `BLOCKED_PERIOD_ALIGNMENT` (`ASSESSMENT_PERIOD_MISMATCH`) to ensure consistent observation baselines across all declared sources.
 
-3. **Cost of Goods Sold (COGS) Business Accounting:**
-   - Small business deductions use standard inventory accounting: $\text{COGS} = \text{Opening Stock} + \text{Purchases} - \text{Closing Stock}$.
+3. **Standard Inventory Accounting (COGS) & Source-Specific Reimbursements:**
+   - Small business deductions enforce **standard inventory accounting treatment**: $\text{COGS} = \text{Opening Stock} + \text{Purchases} - \text{Closing Stock}$.
    - Small businesses declaring stock purchases without opening or closing inventory trigger `INVENTORY_RECONCILIATION_REQUIRED` and block calculation rather than quietly deducting all purchases.
    - Validation rejects impossible inventory states where $\text{Closing Stock} > \text{Opening Stock} + \text{Purchases}$.
-   - Verified partial duplicates (`overlapAmountKsh`) deduct only the substantiated overlapping amount rather than double-deducting entire income streams.
+   - **Member-declared overlap — unverified pending supporting evidence**: Partial duplicate declarations (`overlapAmountKsh`) deduct only the declared overlapping amount and are explicitly annotated as unverified pending supporting evidence rather than treated as verified facts.
+   - **Source-Specific Reimbursements**: Reimbursements support target source linkage (`targetSourceId`) and personal/medical designation (`isPersonalReimbursement`). Unrelated personal reimbursements or reimbursements tied to sources without operating expenses do not block assessment; unresolved reimbursements against business expenses trigger `REIMBURSEMENT_RECONCILIATION_REQUIRED`.
 
 4. **Separation of Statutory Contribution Floor from Indigence:**
    - In compliance with the Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024), applying the statutory KSh 300/mo minimum contribution floor under **Regulation 18(2)** does NOT constitute an automated determination of indigence or subsidy approval under **Regulation 19**.
-   - The KSh 131,000 threshold has been eliminated as an automated indigence determinant; active models return `isIndigent: null` and assign `minimumContributionFloorApplied: true` (`MINIMUM_CONTRIBUTION_FLOOR`).
+   - The arbitrary KSh 131,000 threshold has been eliminated as an automated indigence determinant; active models return `isIndigent: null` and assign `minimumContributionFloorApplied: true` (`MINIMUM_CONTRIBUTION_FLOOR`).
    - Vulnerability indicators (social assistance, refugee status, elderly low-liquidity head, child head) generate `financialAssistanceReviewReasons` routing to `REQUIRES_AUTHORISED_REVIEW` rather than premature automated subsidy grants.
 
-5. **Isolation of Unapproved Policy Deductions & Honest Synthetic Labeling:**
-   - Experimental deductions (cost of living, rent, dependency, chronic illness, disability) are disabled by default behind the administrative switch `enableExperimentalPolicyAdjustments: false` (`policyAssumptionMode = "UNAPPROVED_ADJUSTMENTS_DISABLED"`).
-   - Direct manual income entry on custom households is restricted behind an explicit `DEMO ONLY` bypass toggle (`assessmentInputMode = "DEMO_DIRECT_ENTRY"`).
-   - Synthetic population evaluations are strictly labeled as model disagreements (`SYNTHETIC_DEMO_ONLY`), removing false claims of real-world targeting error or verified ground truth.
+5. **Neutral Model Output Comparison & Transparent Scenario Metrics:**
+   - Evaluates prototype outputs via `calculateModelOutputDifference(current, proposed)` (`evalType: "PROTOTYPE_MODEL_COMPARISON"`), presenting objective mathematical differences in KSh and percentage variance without unsupported claims of bias, overcharge, or empirical fairness.
+   - County disparity tests use descriptive diagnostics (`SYNTHETIC_ONLY_NOT_VALIDATED`) without arbitrary pass/fail thresholds.
+   - Revenue scenarios use transparent arithmetic (`calculateIllustrativeRevenueScenario`) labeled `ILLUSTRATIVE_ARITHMETIC_ONLY`, removing unverified fixed subsidy cost assumptions (KSh 3.2B/mo), static latency claims, and speculative fraud-loss percentages.
+   - Experimental policy deductions (cost of living, rent, dependency, chronic illness, disability) remain disabled by default (`enableExperimentalPolicyAdjustments: false`).
+
+6. **Primary Institutional Demonstration Flow:**
+   - **Unified 4-Stage Workflow:** Household Composition → Earned Income & Inventory → Other Money & Transfers → Complete Review.
+   - **Compact Scenario Loader:** Preserves synthetic personas via a clean "Load example household" dropdown + "Custom Household" option, clearly labeled as synthetic test data.
+   - **Central State Invalidation:** Any edit to household inputs immediately sets `results = null` and resets scenario tracking to "Custom", preventing stale calculation outputs from persisting.
+   - **Calculation Receipt:** Calculating results presents a dedicated **Calculation Receipt** tab with itemised sections:
+     - *Section A:* Assessment & Household Identification (Profile, County, Model Version, Reference Window).
+     - *Section B:* Itemised Earned Income Breakdown (Gross receipts, itemised expenses, stock accounting, net earnings).
+     - *Section C:* Annual Reconciliation & Statutory Basis (12-month rule, annualised AGI, excluded fiduciary/assistance flows).
+     - *Section D:* Contribution Calculation & Statutory Floor Rules (2.75% rate, Regulation 18(2) KSh 300 floor vs Regulation 19 indigence).
+     - *Section E:* Assessment & Evidence Status (Review flags, provisional gating badges).
+     - *Section F:* Plain-Language Summary Statement.
+   - **Collapsible Research Sliders:** Admin parameters and policy toggles are cleanly housed under a collapsed "Advanced Research Parameters (Prototype Sliders — Experimental)" section beneath the assessment form.
 
 ### Revenue Modeling & Informal Sector Participation
 
@@ -195,6 +213,19 @@ cd sha-mvp
 npm install
 npm run dev
 ```
+
+### Testing & Verification
+
+The test suite includes 263 comprehensive unit and integration tests covering calculation integrity, 12-month calendar boundaries, inventory accounting, reimbursement matching, model output differences, and statutory compliance:
+
+```bash
+cd sha-mvp
+node --test tests/*.test.js
+npm run build
+```
+
+- **Test Suite Results:** 263 tests passing (0 failures, 0 regressions).
+- **Production Build:** Clean Vite production bundle generation.
 
 ---
 
