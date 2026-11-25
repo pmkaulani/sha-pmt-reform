@@ -43,7 +43,7 @@ export const REGISTERED_EVALUATION_MODELS = Object.freeze({
       INDEPENDENT_POVERTY_STATUS: {
         isEligible: false,
         status: MODEL_EVALUATION_STATUSES.NOT_EVALUABLE_INCOMPATIBLE,
-        reason: "Construct mismatch: Minimum contribution floor (KSh 300/mo) is an administrative statutory rule under Regulation 18(2), not an independent statistical poverty classification threshold."
+        reason: "Construct mismatch: Minimum contribution floor (KSh 300/mo) is an administrative statutory rule under Regulation 17(2) (formerly cited as Regulation 18(2)), not an independent statistical poverty classification threshold."
       }
     }
   },

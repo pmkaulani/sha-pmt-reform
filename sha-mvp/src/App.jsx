@@ -8,6 +8,8 @@ import { calculateCurrentModel, calculateCurrentModelContribution, calculateFrau
 import { calculateProposedModelVersions } from "./lib/model-versioning.js";
 import ModelVersionsTab from "./ModelVersionsTab.jsx";
 import DemoCalculationReceipt from "./DemoCalculationReceipt.jsx";
+import DemoProblemStatement from "./presentation/DemoProblemStatement.jsx";
+import ContributionExplainer from "./presentation/ContributionExplainer.jsx";
 import { logger } from "./lib/Logger.js";
 import AppealPreparationTab from "./AppealPreparationTab.jsx";
 import ContributionStatementTab from "./ContributionStatementTab.jsx";
@@ -2572,6 +2574,8 @@ function BiasComplianceTab() {
 
 export default function SHADemo() {
   const [hasAcknowledgedDemo, setHasAcknowledgedDemo] = useState(false);
+  const [viewMode, setViewMode] = useState("guided");
+  const [hasStartedGuided, setHasStartedGuided] = useState(false);
   const [inputs,setInputs]=useState({...DEFAULTS});
   const [step,setStep]=useState(0);
   const [results,setResults]=useState(null);
@@ -2583,6 +2587,7 @@ export default function SHADemo() {
   const [reviewRecords, setReviewRecords] = useState({});
   const [formError, setFormError] = useState(null);
   const [adminParams, setAdminParams] = useState({
+    enableExperimentalPolicyAdjustments: true,
     carValue: 350000,
     urbanCostOfLiving: 12000,
     fulizaPenalty: 5000,
@@ -2635,7 +2640,9 @@ export default function SHADemo() {
     setHasAcknowledgedDemo(true);
     setFormError(null);
     setDemoPaymentEntries([]);
-    setResults(null); setStep(0);
+    setResults(null);
+    setStep(0);
+    setHasStartedGuided(true);
   };
 
   const handleAddDemoPayment = (paymentData) => {
@@ -3027,6 +3034,44 @@ export default function SHADemo() {
             </div>
           </div>
           <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
+            {/* View Mode Toggle */}
+            <div style={{display:"flex",background:S.faint,padding:3,borderRadius:8,border:`1px solid ${S.border}`}}>
+              <button
+                type="button"
+                onClick={() => setViewMode("guided")}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  border: "none",
+                  background: viewMode === "guided" ? S.blue : "transparent",
+                  color: viewMode === "guided" ? "#ffffff" : S.muted,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "all 0.15s"
+                }}
+              >
+                Guided Presentation
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("workspace")}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  border: "none",
+                  background: viewMode === "workspace" ? S.text : "transparent",
+                  color: viewMode === "workspace" ? "#ffffff" : S.muted,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "all 0.15s"
+                }}
+              >
+                Full Workspace
+              </button>
+            </div>
+
             <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.terraD,color:S.terra,whiteSpace:"nowrap"}}>Illustrative baseline · PMT-style</span>
             <span style={{color:S.borderUp,fontSize:16}}>→</span>
             <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.sageD,color:S.sage,whiteSpace:"nowrap"}}>Proposed: AGI rules engine</span>
@@ -3034,7 +3079,161 @@ export default function SHADemo() {
         </div>
 
         {/* Main layout */}
-        <div className="app-container" id="main-content">
+        {viewMode === "guided" ? (
+          <div className="guided-container" id="main-content" style={{minHeight:"calc(100vh - 73px)", padding:"24px 16px", maxWidth:1100, margin:"0 auto"}}>
+            {classifying ? (
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"80px 20px"}}>
+                <div style={{width:48,height:48,border:`4px solid ${S.borderUp}`,borderTopColor:S.blue,borderRadius:"50%",animation:"spin 1s linear infinite",marginBottom:24}}/>
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                <div style={{fontFamily:"'Inter',sans-serif",fontSize:20,fontWeight:600,color:S.text,marginBottom:8}}>Calculating demonstration results</div>
+                <div style={{fontSize:14,color:S.muted}}>Applying the illustrative baseline and proposed AGI rules</div>
+              </div>
+            ) : !hasStartedGuided ? (
+              <DemoProblemStatement
+                onStart={() => {
+                  loadScenario("Wanjiru — Retail Market Trader");
+                  setHasStartedGuided(true);
+                  setStep(0);
+                }}
+                S={S}
+              />
+            ) : results ? (
+              <div>
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12, marginBottom:20, padding:"12px 18px", background:S.surface, border:`1px solid ${S.border}`, borderRadius:10}}>
+                  <div>
+                    <span style={{fontSize:11, fontWeight:700, textTransform:"uppercase", color:S.blue, letterSpacing:"0.5px"}}>
+                      Guided Demonstration · Final Itemised Calculation Receipt & Challenge
+                    </span>
+                    <div style={{fontSize:14, fontWeight:700, color:S.text, marginTop:2}}>
+                      Household Assessment: {inputs.county || "Declared County"} · {inputs.householdSize || 1} Members
+                    </div>
+                  </div>
+                  <div style={{display:"flex", gap:10}}>
+                    <button
+                      type="button"
+                      onClick={() => setResults(null)}
+                      style={{
+                        padding:"8px 14px",
+                        background:S.surface,
+                        border:`1px solid ${S.borderUp}`,
+                        borderRadius:6,
+                        fontSize:12,
+                        fontWeight:600,
+                        color:S.text,
+                        cursor:"pointer"
+                      }}
+                    >
+                      ← Modify Household Inputs
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("workspace")}
+                      style={{
+                        padding:"8px 14px",
+                        background:S.faint,
+                        border:`1px solid ${S.border}`,
+                        borderRadius:6,
+                        fontSize:12,
+                        fontWeight:600,
+                        color:S.blue,
+                        cursor:"pointer"
+                      }}
+                    >
+                      Explore in Full Workspace →
+                    </button>
+                  </div>
+                </div>
+
+                <DemoCalculationReceipt results={results} adminParams={adminParams} S={S} />
+              </div>
+            ) : (
+              <div>
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12, marginBottom:20, padding:"12px 18px", background:S.surface, border:`1px solid ${S.border}`, borderRadius:10}}>
+                  <div>
+                    <span style={{fontSize:11, fontWeight:700, textTransform:"uppercase", color:S.blue, letterSpacing:"0.5px"}}>
+                      Guided Household Assessment · Stage {step + 1} of 4: {MEMBER_ASSESSMENT_STEPS[step]?.title}
+                    </span>
+                    <div style={{fontSize:13, color:S.muted, marginTop:2}}>
+                      Enter or verify household information below, then proceed to the final review and calculation.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHasStartedGuided(false)}
+                    style={{
+                      background:"none",
+                      border:"none",
+                      color:S.muted,
+                      fontSize:12,
+                      textDecoration:"underline",
+                      cursor:"pointer"
+                    }}
+                  >
+                    View Problem Statement
+                  </button>
+                </div>
+
+                <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(340px, 1fr))", gap:24, alignItems:"start"}}>
+                  <div>
+                    {/* Compact Example Household Selector */}
+                    <div style={{background:S.surface,borderRadius:12,padding:16,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)", marginBottom:20}}>
+                      <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.muted,marginBottom:6}}>
+                        Load example household
+                      </div>
+                      <select
+                        aria-label="Load example household"
+                        value={activeScenario}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (val === "Custom") {
+                            setActiveScenario("Custom");
+                            setInputs({ ...DEFAULTS });
+                            setResults(null);
+                            setStep(0);
+                            setHasAcknowledgedDemo(false);
+                          } else {
+                            loadScenario(val);
+                          }
+                        }}
+                        style={{
+                          width: "100%",
+                          background: S.surface,
+                          border: `1px solid ${S.borderUp}`,
+                          borderRadius: 6,
+                          color: S.text,
+                          padding: "10px 12px",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          fontFamily: "inherit",
+                          cursor: "pointer"
+                        }}
+                      >
+                        <option value="Custom">Custom Household (Empty / Manual entry)</option>
+                        <optgroup label="Synthetic demonstration households">
+                          {Object.entries(SCENARIOS).map(([name, sc]) => (
+                            <option key={name} value={name}>
+                              {name} — {sc.badge} ({sc.sub})
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                      <div style={{fontSize:11,color:S.muted,marginTop:6,lineHeight:1.4}}>
+                        Synthetic demonstration data only. Preset records are generated test profiles, not real SHA member records.
+                      </div>
+                    </div>
+
+                    <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasAcknowledgedDemo={hasAcknowledgedDemo} setHasAcknowledgedDemo={setHasAcknowledgedDemo} setInputs={setInputs} setActiveScenario={setActiveScenario} addListItem={addListItem} updListItem={updListItem} removeListItem={removeListItem} formError={formError}/>
+                  </div>
+
+                  <div>
+                    <ContributionExplainer S={S} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="main-layout" id="main-content">
 
           {/* Left panel */}
           <div className="left-panel">
@@ -3190,7 +3389,7 @@ export default function SHADemo() {
                   ))}
                 </div>
 
-                {activeTab==="receipt"&&<DemoCalculationReceipt results={results} S={S}/>}
+                {activeTab==="receipt"&&<DemoCalculationReceipt results={results} adminParams={adminParams} S={S}/>}
                 {activeTab==="comparison"&&<ComparisonTab results={results} adminParams={adminParams}/>}
                 {activeTab==="models"&&<ModelVersionsTab results={results}/>}
                 {activeTab==="evalLab"&&<EvaluationLabTab results={results}/>}
@@ -3216,6 +3415,7 @@ export default function SHADemo() {
             )}
           </div>
         </div>
+        )}
       </div>
     </>
   );

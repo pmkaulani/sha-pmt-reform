@@ -146,12 +146,12 @@ export const OFFICIAL_SHA_BASELINE_SPECIFICATION = Object.freeze({
     maximumContributionMonthly: null, // Removed under SHIF regulations
     scoreBands: null,
     subsidyThresholdPovertyScore: null,
-    notes: "Regulation 18(1) establishes the annual contribution for non-salaried households at 2.75% of household income determined via Regulation 21(6) Fifth Schedule, with Regulation 18(2) providing a KSh 300/mo minimum. Regulation 19 governs financial assistance. The complete operational coefficients, encoding rules, and cutoff algorithms deployed by SHA remain undisclosed."
+    notes: "Regulation 17(1) establishes the annual contribution for non-salaried households at 2.75% of household income determined via Regulation 21, with Regulation 17(2) providing a KSh 300/mo minimum. Regulation 18 governs financial assistance. The complete operational coefficients, encoding rules, and cutoff algorithms deployed by SHA remain undisclosed."
   },
   officialSourceReferences: [
     "Social Health Insurance Act, 2023 (Section 27)",
-    "Social Health Insurance Regulations, 2024 (Regulations 18, 19, and 21(6), Fifth Schedule 'Means Testing')",
-    "Note: While the Fifth Schedule sets out an urban/rural means-testing equation, complete operational parameters, coefficients, and implementation rules remain undisclosed by SHA.",
+    "Social Health Insurance (General) Regulations, 2024 (Regulations 17, 18, and 21, Fifth Schedule 'Means Testing')",
+    "Note: While the Regulations set out an urban/rural means-testing framework, complete operational parameters, coefficients, and implementation rules remain undisclosed by SHA.",
     "Investigative disclosures: Africa Uncensored / Lighthouse Reports / The Guardian (May 2026)"
   ],
   independentTechnicalReviewer: null,

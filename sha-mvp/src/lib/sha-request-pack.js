@@ -60,7 +60,7 @@ export const SHA_REQUEST_ITEMS = [
     itemNumber: 7,
     title: "Score-to-Contribution Tariff Band Cutoffs & Subsidy Rules",
     category: "TARIFF_MAPPING",
-    description: "The numerical score cutoffs determining which households qualify for financial assistance under Regulation 19 versus progressive contribution brackets under Regulation 18(1) and Regulation 21(6).",
+    description: "The numerical score cutoffs determining which households qualify for financial assistance under Regulation 18 (formerly cited as 19) versus progressive contribution brackets under Regulation 17(1) (formerly cited as 18(1)) and Regulation 21(6).",
     rationale: "Allows evaluation of whether the means-testing instrument produces progressive and affordable premium assignments."
   },
   {

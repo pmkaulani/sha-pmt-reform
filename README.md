@@ -91,7 +91,7 @@ The declared-income engine and demonstration interface have undergone an end-to-
    - **Source-Specific Reimbursements**: Reimbursements support target source linkage (`targetSourceId`) and personal/medical designation (`isPersonalReimbursement`). Unrelated personal reimbursements or reimbursements tied to sources without operating expenses do not block assessment; unresolved reimbursements against business expenses trigger `REIMBURSEMENT_RECONCILIATION_REQUIRED`.
 
 4. **Separation of Statutory Contribution Floor from Indigence:**
-   - In compliance with the Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024), applying the statutory KSh 300/mo minimum contribution floor under **Regulation 18(2)** does NOT constitute an automated determination of indigence or subsidy approval under **Regulation 19**.
+   - In compliance with the Social Health Insurance (General) Regulations, 2024 (Legal Notice No. 49 of 2024), applying the statutory KSh 300/mo minimum contribution floor under **Regulation 17(2)** (and the 2.75% rate under **Regulation 17(1)**) does NOT constitute an automated determination of indigence or subsidy approval under **Regulation 18**. Means-testing parameters are established pursuant to **Regulation 21**.
    - The arbitrary KSh 131,000 threshold has been eliminated as an automated indigence determinant; active models return `isIndigent: null` and assign `minimumContributionFloorApplied: true` (`MINIMUM_CONTRIBUTION_FLOOR`).
    - Vulnerability indicators (social assistance, refugee status, elderly low-liquidity head, child head) generate `financialAssistanceReviewReasons` routing to `REQUIRES_AUTHORISED_REVIEW` rather than premature automated subsidy grants.
 
@@ -109,7 +109,7 @@ The declared-income engine and demonstration interface have undergone an end-to-
      - *Section A:* Assessment & Household Identification (Profile, County, Model Version, Reference Window).
      - *Section B:* Itemised Earned Income Breakdown (Gross receipts, itemised expenses, stock accounting, net earnings).
      - *Section C:* Annual Reconciliation & Statutory Basis (12-month rule, annualised AGI, excluded fiduciary/assistance flows).
-     - *Section D:* Contribution Calculation & Statutory Floor Rules (2.75% rate, Regulation 18(2) KSh 300 floor vs Regulation 19 indigence).
+     - *Section D:* Contribution Calculation & Statutory Floor Rules (2.75% rate, Regulation 17(2) KSh 300 floor vs Regulation 18 financial assistance).
      - *Section E:* Assessment & Evidence Status (Review flags, provisional gating badges).
      - *Section F:* Plain-Language Summary Statement.
    - **Collapsible Research Sliders:** Admin parameters and policy toggles are cleanly housed under a collapsed "Advanced Research Parameters (Prototype Sliders — Experimental)" section beneath the assessment form.

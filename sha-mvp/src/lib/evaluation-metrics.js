@@ -381,7 +381,7 @@ export function calculateAffordabilityMetrics(records = []) {
     zeroOrNegativeResourcesCategory: {
       count: zeroOrNegativeCount,
       category: "ZERO_OR_NEGATIVE_RESOURCES",
-      description: "Households with zero or negative disposable income cannot have a finite contribution burden percentage calculated. Under Regulation 18(2), these households remain subject to the KSh 300/mo minimum unless approved for financial assistance under Regulation 19."
+      description: "Households with zero or negative disposable income cannot have a finite contribution burden percentage calculated. Under Regulation 17(2), these households remain subject to the KSh 300/mo minimum unless approved for financial assistance under Regulation 18."
     },
     metrics: {
       medianContributionBurdenRatio: Math.round(medianRatio * 1000) / 1000,

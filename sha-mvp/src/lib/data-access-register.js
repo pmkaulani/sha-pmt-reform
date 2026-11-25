@@ -88,7 +88,7 @@ export const DATA_ACCESS_REGISTER = [
     requestDate: null,
     status: ACCESS_STATUSES.PARTIALLY_RECEIVED,
     dataOwnerContact: "Policy & Planning Directorate, Ministry of Health",
-    provenanceReference: "Regulation 18(1) & (2) (specifies 2.75% annual rate and KSh 300/mo minimum for non-salaried households; Regulation 19 governs financial assistance; Fifth Schedule sets out means testing equation)",
+    provenanceReference: "Regulation 17(1) & 17(2), formerly cited as 18(1) & (2) (specifies 2.75% annual rate and KSh 300/mo minimum for non-salaried households; Regulation 18 governs financial assistance; Fifth Schedule sets out means testing equation)",
     restrictionsAndLimitations: "Published regulations state minimums but omit intermediate bracket mappings.",
     notesAndNextAction: "Request formal score band schedule."
   },

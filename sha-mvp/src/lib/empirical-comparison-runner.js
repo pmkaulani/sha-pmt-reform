@@ -360,7 +360,7 @@ export function runEmpiricalComparison({
     report.zeroOrNegativeResourcesSummary = {
       count: zeroOrNegativeResourcesCount,
       category: "ZERO_OR_NEGATIVE_RESOURCES",
-      note: "Households with zero or negative disposable resources isolated; standard percentage burden is undefined. Under Regulation 18(2), they remain subject to the KSh 300/mo minimum unless approved for financial assistance under Regulation 19."
+      note: "Households with zero or negative disposable resources isolated; standard percentage burden is undefined. Under Regulation 17(2), they remain subject to the KSh 300/mo minimum unless approved for financial assistance under Regulation 18."
     };
 
     report.status = isSynthetic ? "DEMO_ONLY" : "COMPUTED_REQUIRES_REVIEW";

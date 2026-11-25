@@ -1,13 +1,13 @@
 // SHA Means-Testing Evaluation - v2.1 prototype rules engine
 // The 2.75% contribution rate and KSh 300 monthly floor are statutory reference parameters
-// for non-salaried households under Regulation 18(1) & (2) of the Social Health Insurance Regulations, 2024 (Legal Notice No. 49 of 2024).
-// Means testing is conducted pursuant to Regulation 21(6) using the formula set out in the Fifth Schedule ('Means Testing').
-// Note: While the Fifth Schedule sets out an urban/rural means-testing equation, complete operational parameters,
+// for non-salaried households under Regulation 17(1) & (2) of the Social Health Insurance (General) Regulations, 2024 (Legal Notice No. 49 of 2024).
+// Means testing is conducted pursuant to Regulation 21 using the criteria and mechanisms set out under the Regulations.
+// Note: While the Regulations set out an urban/rural means-testing framework, complete operational parameters,
 // coefficients, variable encodings, and production implementation details have not been fully disclosed.
 // Current income estimations, illustrative deductions, and calculation rules are research prototype assumptions
 // that require validation against SHA's official instrument, model parameters, and administrative implementation.
-// Regulation 19 governs households in need of financial assistance (indigent households); applying the KSh 300
-// minimum contribution under Regulation 18(2) does not constitute a statutory indigence determination.
+// Regulation 18 governs households in need of financial assistance (indigent households); applying the KSh 300
+// minimum contribution under Regulation 17(2) does not constitute a statutory indigence determination.
 //
 // IMPORTANT (audit v2, read before citing this file to a technical reviewer):
 // This entire module is a deterministic rules engine (if/else + fixed
@@ -60,14 +60,14 @@ export function validateAssessmentInputs(d) {
 }
 
 export const BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: null, tier: 'Low-Income (Reg. 18(2) Minimum Contribution Rule: KSh 300 Floor)' },
-  { min: 131001, max: 450000, isIndigent: null, tier: 'Standard' }, // Reg. 18(1) 2.75% reference parameter
-  { min: 450001, max: Infinity, isIndigent: null, tier: 'Upper' }, // Reg. 18(1) 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
+  { min: 0, max: 131000, monthly: 300, isIndigent: null, tier: 'Low-Income (Reg. 17(2) Minimum Contribution Rule: KSh 300 Floor)' },
+  { min: 131001, max: 450000, isIndigent: null, tier: 'Standard' }, // Reg. 17(1) 2.75% reference parameter
+  { min: 450001, max: Infinity, isIndigent: null, tier: 'Upper' }, // Reg. 17(1) 2.75% reference parameter — same formula as Standard; kept separate for reporting/tier-label purposes only
 ];
 
 export const PROPOSED_BANDS = [
-  { min: 0, max: 131000, monthly: 300, isIndigent: null }, // Reg. 18(2) reference minimum contribution (KSh 300 floor for non-salaried households)
-  { min: 131001, max: Infinity, isIndigent: null }, // Reg. 18(1) 2.75% rate applied to evaluated AGI
+  { min: 0, max: 131000, monthly: 300, isIndigent: null }, // Reg. 17(2) reference minimum contribution (KSh 300 floor for non-salaried households)
+  { min: 131001, max: Infinity, isIndigent: null }, // Reg. 17(1) 2.75% rate applied to evaluated AGI
 ];
 
 const ASAL_COUNTIES = {
@@ -164,21 +164,39 @@ export function calculateCurrentModel(d) {
  * model already returns.
  */
 export function calculateCurrentModelContribution(annualIncome) {
-  const rawMonthly =
-    (Number(annualIncome) * 0.0275) / 12;
+  const annual = Math.max(0, Number(annualIncome) || 0);
+  const contributionRate = 0.0275;
+  const minimumMonthlyContribution = 300;
+  const annualContributionAtRate = annual * contributionRate;
+  const monthlyEquivalentBeforeFloor = annualContributionAtRate / 12;
+  const roundedMonthlyEquivalentBeforeFloor = Math.round(monthlyEquivalentBeforeFloor);
+  const minimumContributionFloorApplied = monthlyEquivalentBeforeFloor < minimumMonthlyContribution;
+  const monthlyContribution = Math.max(minimumMonthlyContribution, roundedMonthlyEquivalentBeforeFloor);
 
-  const monthly = Math.max(300, Math.round(rawMonthly));
+  const contributionCalculation = {
+    rate: contributionRate,
+    annualContributionAtRate,
+    monthlyEquivalentBeforeFloor,
+    roundedMonthlyEquivalentBeforeFloor,
+    minimumMonthlyFloor: minimumMonthlyContribution,
+    minimumContributionFloorApplied,
+    finalMonthlyEquivalent: monthlyContribution,
+    illustrativeAnnualEquivalent: monthlyContribution * 12
+  };
 
   return {
-    annualIncome,
-    monthly,
-    minimumContributionFloorApplied: rawMonthly < 300,
-    contributionClassification: rawMonthly < 300
+    annualIncome: annual,
+    monthly: monthlyContribution,
+    contributionRate,
+    minimumMonthlyContribution,
+    minimumContributionFloorApplied,
+    contributionCalculation,
+    contributionClassification: minimumContributionFloorApplied
       ? "MINIMUM_CONTRIBUTION_FLOOR"
       : "RATE_BASED_CONTRIBUTION",
     isIndigent: null,
     financialAssistanceStatus: "NOT_ASSESSED",
-    tier: rawMonthly < 300 ? "LOW" : (annualIncome <= 450000 ? "MIDDLE" : "HIGH")
+    tier: minimumContributionFloorApplied ? "LOW" : (annual <= 450000 ? "MIDDLE" : "HIGH")
   };
 }
 
@@ -573,17 +591,25 @@ export function calculateProposedModel(d, adminParams = {}) {
   };
 
   // --- STATUTORY CONTRIBUTION AND FINANCIAL ASSISTANCE ASSESSMENT ---
-  const annualContributionBeforeMinimum =
-    (adjustedGrossIncome * 0.0275) / 12;
+  const contributionRate = 0.0275;
+  const minimumMonthlyContribution = 300;
 
-  const roundedContribution =
-    Math.round(annualContributionBeforeMinimum);
+  const annualContributionAtRate = adjustedGrossIncome * contributionRate;
+  const monthlyEquivalentBeforeFloor = annualContributionAtRate / 12;
+  const roundedMonthlyEquivalentBeforeFloor = Math.round(monthlyEquivalentBeforeFloor);
+  const minimumContributionFloorApplied = monthlyEquivalentBeforeFloor < minimumMonthlyContribution;
+  const monthlyContribution = Math.max(minimumMonthlyContribution, roundedMonthlyEquivalentBeforeFloor);
 
-  const monthlyContribution =
-    Math.max(300, roundedContribution);
-
-  const minimumContributionFloorApplied =
-    annualContributionBeforeMinimum < 300;
+  const contributionCalculation = {
+    rate: contributionRate,
+    annualContributionAtRate,
+    monthlyEquivalentBeforeFloor,
+    roundedMonthlyEquivalentBeforeFloor,
+    minimumMonthlyFloor: minimumMonthlyContribution,
+    minimumContributionFloorApplied,
+    finalMonthlyEquivalent: monthlyContribution,
+    illustrativeAnnualEquivalent: monthlyContribution * 12
+  };
 
   // These circumstances may warrant examination, but they do not
   // automatically establish statutory indigence.
@@ -623,7 +649,7 @@ export function calculateProposedModel(d, adminParams = {}) {
       name: 'Minimum Contribution Rule',
       impact: 'Medium',
       direction: 'down',
-      description: 'Calculated contribution below statutory minimum (KSh 300/mo) under Regulation 18(2) — minimum contribution floor applied',
+      description: 'Calculated contribution below statutory minimum (KSh 300/mo) under Regulation 17(2) — minimum contribution floor applied',
       isFlaw: false
     });
   }
@@ -706,6 +732,7 @@ export function calculateProposedModel(d, adminParams = {}) {
     minimumContributionFloorApplied,
     contributionRate: 0.0275,
     minimumMonthlyContribution: 300,
+    contributionCalculation,
     contributionClassification: minimumContributionFloorApplied
       ? "MINIMUM_CONTRIBUTION_FLOOR"
       : "RATE_BASED_CONTRIBUTION",
@@ -1106,6 +1133,71 @@ export const PRESETS = [
       vehicleType: 'STANDARD_OLD',
       consentWithheld: false
     },
+  },
+  {
+    name: 'Wanjiru — Retail Market Trader',
+    description: 'Retail market trader in Nakuru with 4 dependants, KSh 540k annual turnover, KSh 180k operating expenses.',
+    icon: '🛒',
+    badge: 'Retail Trade',
+    badgeColor: '#0284c7',
+    inputs: {
+      monthlyNetEarnedIncome: 30000,
+      monthlyGrossIncome: 45000,
+      county: 'Nakuru',
+      householdSize: 5,
+      headGender: 'FEMALE',
+      headAge: 38,
+      dwellingType: 'BUNGALOW',
+      wallMaterial: 'STONE',
+      roofMaterial: 'IRON_SHEETS',
+      floorMaterial: 'CEMENT',
+      rooms: 3,
+      ownershipStatus: 'OWNED',
+      monthlyRent: 0,
+      subletIncome: 0,
+      waterSource: 'PUBLIC_TAP',
+      sanitationType: 'PIT_LATRINE',
+      cookingEnergy: 'CHARCOAL',
+      lightingEnergy: 'ELECTRICITY',
+      assets: ['RADIO', 'SMARTPHONE'],
+      motorcycleIsCommercial: false,
+      landAcreage: 0,
+      livestockCount: 0,
+      receivesAid: false,
+      isRefugee: false,
+      grossMpesaMonthly: 45000,
+      avgRetainedBalance: 8000,
+      isSeasonalWorker: false,
+      lowSeasonRetainedBalance: 0,
+      diasporaRemittances: 0,
+      fulizaDefaults: 0,
+      kraPinType: 'NONE',
+      isNtsaVerified: false,
+      hasSaccoAccount: false,
+      hasChronicIllness: false,
+      hasRegisteredDisability: false,
+      isGroupTreasurer: false,
+      vehicleType: 'NONE',
+      consentWithheld: false,
+      incomeSources: [
+        {
+          id: 'src-wanjiru-retail',
+          sourceType: 'SELF_EMPLOYMENT',
+          label: 'Retail Market Trader',
+          amountReceivedKsh: 540000,
+          directCostsKsh: 180000,
+          monthsObserved: 12,
+          observationStartDate: '2025-11-01',
+          observationEndDate: '2026-10-31',
+          expenses: [
+            { id: 'exp-stock', category: 'STOCK_PURCHASES', amountKsh: 120000 },
+            { id: 'exp-ops', category: 'OTHER_OPERATING', amountKsh: 60000 }
+          ],
+          openingStockKsh: 15000,
+          closingStockKsh: 15000
+        }
+      ]
+    }
   }
 ];
 

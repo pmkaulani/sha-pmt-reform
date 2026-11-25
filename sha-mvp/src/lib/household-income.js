@@ -1203,7 +1203,7 @@ export function createZeroEarnedIncomeAssessment(commonAssessmentPeriod = null) 
     allowableCostsPolicyNotice: "Operating expense rules reflect research assumptions. Official deduction allowances require SHA approval.",
     reimbursementReconciliationNotice: "No reimbursements reported.",
     calculationScope: "PROTOTYPE_EARNED_INCOME_SUBTOTAL_ONLY",
-    disclaimer: "Household explicitly declared zero earned income from active livelihoods. Under statutory rules (Regulation 18(2)), the minimum contribution rule of KSh 300/mo applies. This minimum contribution does not constitute a determination of indigence or an approval for financial assistance under Regulation 19."
+    disclaimer: "Household explicitly declared zero earned income from active livelihoods. Under statutory rules (Regulation 17(2), formerly cited as Regulation 18(2)), the minimum contribution rule of KSh 300/mo applies. This minimum contribution does not constitute a determination of indigence or an approval for financial assistance under Regulation 18 (formerly cited as Regulation 19)."
   };
 }
 
