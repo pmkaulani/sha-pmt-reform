@@ -214,10 +214,10 @@ export function buildReceiptViewModel(results) {
     reference:
       results.auditRecord?.localAssessmentId ||
       results.sessionId ||
-      "SHA-DEMO-001",
+      (d.county ? `SHA-DEMO-20261123-${d.county.toUpperCase().replace(/\s+/g, "")}-001` : "SHA-DEMO-20261123-NAKURU-001"),
 
     date:
-      new Date().toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" }),
+      "23 Nov 2026",
 
     household: {
       county: d.county || null,
@@ -225,14 +225,25 @@ export function buildReceiptViewModel(results) {
       dependantCount: d.dependantCount ?? d.dependants ?? null,
       headAge: d.headAge ?? null,
       headGender: d.headGender ?? null,
+      headDescription: d.headAge && d.headGender ? `Head: ${d.headAge} yrs, ${d.headGender === 'F' ? 'Female' : 'Male'}` : null,
+      classification: d.classification || "Standard Assessment Tier",
       dwellingType: d.dwellingType ?? null,
       wallMaterial: d.wallMaterial ?? null,
       waterSource: d.waterSource ?? null,
       lightingEnergy: d.lightingEnergy ?? null,
-      activeScenario: d.activeScenario || "Custom Household Entry",
+      activeScenario: d.activeScenario || "Wanjiru (Market Trader)",
+      profileLabel: d.activeScenario ? (d.activeScenario.includes(" — ") ? d.activeScenario.replace(" — ", " (") + ")" : d.activeScenario) : "Wanjiru (Market Trader)",
       hasVehicle: !!(d.hasVehicle || (Array.isArray(d.vehicles) && d.vehicles.length > 0)),
       landAcreage: d.landAcreage ?? null,
       livestockCount: d.livestockCount ?? null
+    },
+
+    mockPayment: {
+      receiptReference: results.mockPayment?.reference || "DEMO-MPESA-20261123-98421",
+      channel: "M-Pesa Paybill 200222 (Afya Yangu)",
+      amountKsh: contribution.finalMonthlyEquivalent,
+      frequency: `Monthly (Option for KSh ${Math.round(contribution.finalMonthlyEquivalent / 4)}/wk via Lipa Pole Pole)`,
+      status: "UNVERIFIED_DEMO_RECORD (Client-side simulation)"
     },
 
     model: {
