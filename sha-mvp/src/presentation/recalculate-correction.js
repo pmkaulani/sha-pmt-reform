@@ -81,8 +81,14 @@ export function recalculateCorrectedSource({
   }
 
   const originalSourceAmount = Number(selectedSource.amountReceivedKsh || 0);
-  const originalSourceCosts = Number(selectedSource.directCostsKsh || 0) +
-    (Array.isArray(selectedSource.expenses) ? selectedSource.expenses.reduce((s, e) => s + (Number(e.amountKsh) || 0), 0) : 0);
+  const originalSnapLine = originalResults.next?.incomeAssessmentSnapshot?.lines?.find(
+    l => String(l.sourceId) === String(sourceId)
+  );
+  const originalSourceCosts =
+    originalSnapLine?.totalReportedCostsKsh ??
+    (Array.isArray(selectedSource.expenses) && selectedSource.expenses.length > 0
+      ? selectedSource.expenses.reduce((s, e) => s + (Number(e.amountKsh) || 0), 0)
+      : Number(selectedSource.directCostsKsh || 0));
 
   // The corrected value is the total received or costs over this source's observation period
   const updatedSource = {
@@ -96,6 +102,8 @@ export function recalculateCorrectedSource({
   }
   if (hasCosts) {
     updatedSource.directCostsKsh = correctedCosts;
+    updatedSource.openingStockKsh = 0;
+    updatedSource.closingStockKsh = 0;
     updatedSource.expenses = [
       { id: "exp-corrected", category: "OTHER_OPERATING", amountKsh: correctedCosts }
     ];
@@ -193,9 +201,9 @@ export function recalculateCorrectedSource({
         "The corrected amount produced identical net monthly earnings after accounting for expenses and observation periods.";
     }
   } else if (monthlyDifference < 0) {
-    explanationText = `Reducing the reported source amount lowered the household's annual Adjusted Gross Income from KSh ${originalAGI.toLocaleString()} to KSh ${revisedAGI.toLocaleString()}, reducing the calculated monthly contribution by KSh ${Math.abs(monthlyDifference).toLocaleString()} (from KSh ${originalMonthly.toLocaleString()} to KSh ${revisedMonthly.toLocaleString()}).`;
+    explanationText = `Reducing the reported source amount lowered the household's annual Adjusted Gross Income from KSh ${originalAGI.toLocaleString()} to KSh ${revisedAGI.toLocaleString()}, reducing the calculated monthly contribution by KSh ${Math.abs(monthlyDifference).toLocaleString()} (from KSh ${originalMonthly.toLocaleString()} to KSh ${revisedMonthly.toLocaleString()}).${floorStillApplied ? " The Regulation 17(2) statutory minimum floor of KSh 300/month was applied." : ""}`;
   } else {
-    explanationText = `Increasing the reported source amount increased the household's annual Adjusted Gross Income from KSh ${originalAGI.toLocaleString()} to KSh ${revisedAGI.toLocaleString()}, increasing the calculated monthly contribution by KSh ${monthlyDifference.toLocaleString()} (from KSh ${originalMonthly.toLocaleString()} to KSh ${revisedMonthly.toLocaleString()}).`;
+    explanationText = `Increasing the reported source amount increased the household's annual Adjusted Gross Income from KSh ${originalAGI.toLocaleString()} to KSh ${revisedAGI.toLocaleString()}, increasing the calculated monthly contribution by KSh ${monthlyDifference.toLocaleString()} (from KSh ${originalMonthly.toLocaleString()} to KSh ${revisedMonthly.toLocaleString()}).${floorStillApplied ? " The Regulation 17(2) statutory minimum floor of KSh 300/month still applies." : ""}`;
   }
 
   // Construct a full results object for the revised state
@@ -212,6 +220,13 @@ export function recalculateCorrectedSource({
     modelVersions: correctedVersions
   };
 
+  const correctedSnapLine = correctedSnapshot.lines?.find(
+    l => String(l.sourceId) === String(sourceId)
+  );
+  const correctedSourceCostsFinal =
+    correctedSnapLine?.totalReportedCostsKsh ??
+    (hasCosts ? correctedCosts : originalSourceCosts);
+
   return {
     sourceId,
     explanation,
@@ -226,8 +241,8 @@ export function recalculateCorrectedSource({
       sourceDifference: (hasGross ? correctedAmount : originalSourceAmount) - originalSourceAmount,
 
       originalSourceCosts,
-      correctedSourceCosts: hasCosts ? correctedCosts : originalSourceCosts,
-      costsDifference: (hasCosts ? correctedCosts : originalSourceCosts) - originalSourceCosts,
+      correctedSourceCosts: correctedSourceCostsFinal,
+      costsDifference: correctedSourceCostsFinal - originalSourceCosts,
 
       originalNetMonthly,
       revisedNetMonthly,

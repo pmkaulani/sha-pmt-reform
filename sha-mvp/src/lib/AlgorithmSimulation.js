@@ -1141,10 +1141,12 @@ export const PRESETS = [
     badge: 'Retail Trade',
     badgeColor: '#0284c7',
     inputs: {
+      householdHead: 'Wanjiru',
       monthlyNetEarnedIncome: 30000,
       monthlyGrossIncome: 45000,
       county: 'Nakuru',
       householdSize: 5,
+      dependantCount: 4,
       headGender: 'FEMALE',
       headAge: 38,
       dwellingType: 'BUNGALOW',

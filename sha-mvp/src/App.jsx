@@ -8,8 +8,7 @@ import { calculateCurrentModel, calculateCurrentModelContribution, calculateFrau
 import { calculateProposedModelVersions } from "./lib/model-versioning.js";
 import ModelVersionsTab from "./ModelVersionsTab.jsx";
 import DemoCalculationReceipt from "./DemoCalculationReceipt.jsx";
-import DemoProblemStatement from "./presentation/DemoProblemStatement.jsx";
-import ContributionExplainer from "./presentation/ContributionExplainer.jsx";
+import PresentationV3 from "./presentation/PresentationV3.jsx";
 import { logger } from "./lib/Logger.js";
 import AppealPreparationTab from "./AppealPreparationTab.jsx";
 import ContributionStatementTab from "./ContributionStatementTab.jsx";
@@ -52,6 +51,8 @@ import {
 const COUNTIES = ["Baringo","Bomet","Bungoma","Busia","Elgeyo Marakwet","Embu","Garissa","Homa Bay","Isiolo","Kajiado","Kakamega","Kericho","Kiambu","Kilifi","Kirinyaga","Kisii","Kisumu","Kitui","Kwale","Laikipia","Lamu","Machakos","Makueni","Mandera","Marsabit","Meru","Migori","Mombasa","Murang'a","Nairobi","Nakuru","Nandi","Narok","Nyandarua","Nyamira","Nyeri","Samburu","Siaya","Taita Taveta","Tana River","Tharaka-Nithi","Trans Nzoia","Turkana","Uasin Gishu","Vihiga","Wajir","West Pokot"];
 
 const DEFAULTS = {
+  householdHead: "",
+  dependantCount: null,
   hasNoEarnedIncome: false,
   monthlyNetEarnedIncome: null,
   incomeSources: [],
@@ -2572,22 +2573,27 @@ function BiasComplianceTab() {
 // ROOT COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 
+const DEFAULT_SCENARIO = "Wanjiru — Retail Market Trader";
+
 export default function SHADemo() {
-  const [hasAcknowledgedDemo, setHasAcknowledgedDemo] = useState(false);
+  const [hasAcknowledgedDemo, setHasAcknowledgedDemo] = useState(true);
   const [viewMode, setViewMode] = useState("guided");
-  const [hasStartedGuided, setHasStartedGuided] = useState(false);
-  const [inputs,setInputs]=useState({...DEFAULTS});
+  const [inputs, setInputs] = useState(() => ({
+    ...DEFAULTS,
+    ...(SCENARIOS[DEFAULT_SCENARIO]?.d || {}),
+    activeScenario: DEFAULT_SCENARIO
+  }));
   const [step,setStep]=useState(0);
   const [results,setResults]=useState(null);
   const [activeTab,setActiveTab]=useState("comparison");
   const [classifying,setClassifying]=useState(false);
-  const [activeScenario,setActiveScenario]=useState("Mama Wanjiku");
+  const [activeScenario,setActiveScenario]=useState(DEFAULT_SCENARIO);
   const [demoPaymentEntries, setDemoPaymentEntries] = useState([]);
   const [challengeDrafts, setChallengeDrafts] = useState([]);
   const [reviewRecords, setReviewRecords] = useState({});
   const [formError, setFormError] = useState(null);
-  const [adminParams, setAdminParams] = useState({
-    enableExperimentalPolicyAdjustments: true,
+  const [adminParams, setAdminParamsState] = useState({
+    enableExperimentalPolicyAdjustments: false,
     carValue: 350000,
     urbanCostOfLiving: 12000,
     fulizaPenalty: 5000,
@@ -2595,6 +2601,11 @@ export default function SHADemo() {
     tier2RentCap: 20000,
     triangulationOffline: false
   });
+
+  const setAdminParams = (updater) => {
+    setAdminParamsState(updater);
+    setResults(null);
+  };
 
   const upd=(k,v)=>{
     setInputs(p=>({...p,[k]:v}));
@@ -2636,13 +2647,22 @@ export default function SHADemo() {
 
   const loadScenario=(name)=>{
     setActiveScenario(name);
-    setInputs({...DEFAULTS, ...SCENARIOS[name].d});
+    setInputs({...DEFAULTS, ...SCENARIOS[name].d, activeScenario: name});
     setHasAcknowledgedDemo(true);
     setFormError(null);
     setDemoPaymentEntries([]);
     setResults(null);
     setStep(0);
-    setHasStartedGuided(true);
+  };
+
+  const selectCustomScenario = () => {
+    setActiveScenario("Custom");
+    setInputs({ ...DEFAULTS, activeScenario: "Custom" });
+    setResults(null);
+    setStep(0);
+    setFormError(null);
+    setDemoPaymentEntries([]);
+    setHasAcknowledgedDemo(false);
   };
 
   const handleAddDemoPayment = (paymentData) => {
@@ -2746,7 +2766,7 @@ export default function SHADemo() {
     });
   };
 
-  const classify=()=>{
+  const classify=(onComplete)=>{
     let assessmentInputs = { ...inputs };
     let incomeAssessment = null;
 
@@ -2887,7 +2907,10 @@ export default function SHADemo() {
       });
       setClassifying(false);
       setActiveTab("receipt");
-    },800);
+      if (typeof onComplete === "function") {
+        onComplete();
+      }
+    },450);
   };
 
   const TABS=[
@@ -2913,10 +2936,12 @@ export default function SHADemo() {
       <link rel="preconnect" href="https://fonts.googleapis.com"/>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
       <style>{`
+        ${viewMode === "workspace" ? `
         *{box-sizing:border-box;margin:0;padding:0;}
-        body{background:${S.bg};font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
         select,input,button{font-family:'Inter',sans-serif;}
         select option{background:${S.surface};color:${S.text};}
+        ` : ""}
+        body{margin:0;background:${viewMode === "guided" ? "#f4f2ec" : S.bg};font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
         ::-webkit-scrollbar{width:8px;height:8px;}
         ::-webkit-scrollbar-track{background:transparent;}
         ::-webkit-scrollbar-thumb{background:${S.borderUp};border-radius:4px;}
@@ -3019,10 +3044,11 @@ export default function SHADemo() {
       `}</style>
 
 
-      <div style={{background:S.bg,color:S.text,minHeight:"100vh"}} role="application" aria-label="SHA Algorithm Reform Assessment Tool">
+      <div style={{background:viewMode === "guided" ? "#f4f2ec" : S.bg,color:S.text,minHeight:"100vh"}} role="application" aria-label="SHA Algorithm Reform Assessment Tool">
         <a href="#main-content" style={{position:'absolute',left:'-9999px',top:'auto',width:'1px',height:'1px',overflow:'hidden',zIndex:999}} onFocus={e=>{e.target.style.left='10px';e.target.style.width='auto';e.target.style.height='auto';}} onBlur={e=>{e.target.style.left='-9999px';}}>Skip to main content</a>
 
-        {/* Header */}
+        {/* Header (Workspace mode only; PresentationV3 renders its own header) */}
+        {viewMode === "workspace" && (
         <div className="header-layout" style={{borderBottom:`1px solid ${S.border}`,position:"sticky",top:0,background:S.surface,zIndex:20,boxShadow:"0 1px 2px rgba(0,0,0,0.03)"}}>
           <div style={{display:"flex",alignItems:"center",gap:16}}>
             <div style={{width:36,height:36,borderRadius:8,background:S.blueD,border:`1px solid ${S.blueBd}`,display:"flex",alignItems:"center",justifyContent:"center",color:S.blue,flexShrink:0}}>
@@ -3077,160 +3103,38 @@ export default function SHADemo() {
             <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",padding:"6px 12px",borderRadius:6,background:S.sageD,color:S.sage,whiteSpace:"nowrap"}}>Proposed: AGI rules engine</span>
           </div>
         </div>
+        )}
 
         {/* Main layout */}
         {viewMode === "guided" ? (
-          <div className="guided-container" id="main-content" style={{minHeight:"calc(100vh - 73px)", padding:"24px 16px", maxWidth:1100, margin:"0 auto"}}>
-            {classifying ? (
-              <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"80px 20px"}}>
-                <div style={{width:48,height:48,border:`4px solid ${S.borderUp}`,borderTopColor:S.blue,borderRadius:"50%",animation:"spin 1s linear infinite",marginBottom:24}}/>
-                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-                <div style={{fontFamily:"'Inter',sans-serif",fontSize:20,fontWeight:600,color:S.text,marginBottom:8}}>Calculating demonstration results</div>
-                <div style={{fontSize:14,color:S.muted}}>Applying the illustrative baseline and proposed AGI rules</div>
-              </div>
-            ) : !hasStartedGuided ? (
-              <DemoProblemStatement
-                onStart={() => {
-                  loadScenario("Wanjiru — Retail Market Trader");
-                  setHasStartedGuided(true);
-                  setStep(0);
-                }}
-                S={S}
-              />
-            ) : results ? (
-              <div>
-                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12, marginBottom:16, padding:"8px 14px", background:"#ffffff", border:`1px solid #cbd5e1`, borderRadius:4}}>
-                  <div style={{display:"flex", alignItems:"center", gap:8}}>
-                    <span style={{fontSize:11, fontWeight:700, textTransform:"uppercase", color:S.muted, letterSpacing:"0.5px"}}>
-                      Household:
-                    </span>
-                    <span style={{fontSize:12, fontWeight:700, color:S.text}}>
-                      {inputs.activeScenario || "Custom Household Entry"}
-                    </span>
-                  </div>
-                  <div style={{display:"flex", gap:8}}>
-                    <button
-                      type="button"
-                      onClick={() => setResults(null)}
-                      style={{
-                        padding:"6px 12px",
-                        background:"#ffffff",
-                        border:`1px solid #cbd5e1`,
-                        borderRadius:4,
-                        fontSize:11,
-                        fontWeight:600,
-                        color:S.text,
-                        cursor:"pointer"
-                      }}
-                    >
-                      ← Modify Household Inputs
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("workspace")}
-                      style={{
-                        padding:"6px 12px",
-                        background:"#f8fafc",
-                        border:`1px solid #cbd5e1`,
-                        borderRadius:4,
-                        fontSize:11,
-                        fontWeight:600,
-                        color:S.blue,
-                        cursor:"pointer"
-                      }}
-                    >
-                      Return to Full Workspace →
-                    </button>
-                  </div>
-                </div>
-
-                <DemoCalculationReceipt results={results} adminParams={adminParams} S={S} />
-              </div>
-            ) : (
-              <div>
-                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12, marginBottom:20, padding:"12px 18px", background:S.surface, border:`1px solid ${S.border}`, borderRadius:10}}>
-                  <div>
-                    <span style={{fontSize:11, fontWeight:700, textTransform:"uppercase", color:S.blue, letterSpacing:"0.5px"}}>
-                      Guided Household Assessment · Stage {step + 1} of 4: {MEMBER_ASSESSMENT_STEPS[step]?.title}
-                    </span>
-                    <div style={{fontSize:13, color:S.muted, marginTop:2}}>
-                      Enter or verify household information below, then proceed to the final review and calculation.
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setHasStartedGuided(false)}
-                    style={{
-                      background:"none",
-                      border:"none",
-                      color:S.muted,
-                      fontSize:12,
-                      textDecoration:"underline",
-                      cursor:"pointer"
-                    }}
-                  >
-                    View Problem Statement
-                  </button>
-                </div>
-
-                <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(340px, 1fr))", gap:24, alignItems:"start"}}>
-                  <div>
-                    {/* Compact Example Household Selector */}
-                    <div style={{background:S.surface,borderRadius:12,padding:16,border:`1px solid ${S.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.02)", marginBottom:20}}>
-                      <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.5px",textTransform:"uppercase",color:S.muted,marginBottom:6}}>
-                        Load example household
-                      </div>
-                      <select
-                        aria-label="Load example household"
-                        value={activeScenario}
-                        onChange={e => {
-                          const val = e.target.value;
-                          if (val === "Custom") {
-                            setActiveScenario("Custom");
-                            setInputs({ ...DEFAULTS });
-                            setResults(null);
-                            setStep(0);
-                            setHasAcknowledgedDemo(false);
-                          } else {
-                            loadScenario(val);
-                          }
-                        }}
-                        style={{
-                          width: "100%",
-                          background: S.surface,
-                          border: `1px solid ${S.borderUp}`,
-                          borderRadius: 6,
-                          color: S.text,
-                          padding: "10px 12px",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          fontFamily: "inherit",
-                          cursor: "pointer"
-                        }}
-                      >
-                        <option value="Custom">Custom Household (Empty / Manual entry)</option>
-                        <optgroup label="Synthetic demonstration households">
-                          {Object.entries(SCENARIOS).map(([name, sc]) => (
-                            <option key={name} value={name}>
-                              {name} — {sc.badge} ({sc.sub})
-                            </option>
-                          ))}
-                        </optgroup>
-                      </select>
-                      <div style={{fontSize:11,color:S.muted,marginTop:6,lineHeight:1.4}}>
-                        Synthetic demonstration data only. Preset records are generated test profiles, not real SHA member records.
-                      </div>
-                    </div>
-
-                    <FormPanel d={inputs} upd={upd} toggleAsset={toggleAsset} step={step} setStep={setStep} onClassify={classify} classifying={classifying} hasAcknowledgedDemo={hasAcknowledgedDemo} setHasAcknowledgedDemo={setHasAcknowledgedDemo} setInputs={setInputs} setActiveScenario={setActiveScenario} addListItem={addListItem} updListItem={updListItem} removeListItem={removeListItem} formError={formError}/>
-                  </div>
-
-                  <div>
-                    <ContributionExplainer S={S} />
-                  </div>
-                </div>
-              </div>
-            )}
+          <div id="main-content">
+            <PresentationV3
+              inputs={inputs}
+              upd={upd}
+              toggleAsset={toggleAsset}
+              addListItem={addListItem}
+              updListItem={updListItem}
+              removeListItem={removeListItem}
+              setInputs={(updater) => {
+                setInputs(updater);
+                setResults(null);
+                setFormError(null);
+              }}
+              activeScenario={activeScenario}
+              scenarios={SCENARIOS}
+              loadScenario={loadScenario}
+              onSelectCustom={selectCustomScenario}
+              adminParams={adminParams}
+              setAdminParams={setAdminParams}
+              results={results}
+              onRunCalculation={classify}
+              classifying={classifying}
+              formError={formError}
+              setFormError={setFormError}
+              setHasAcknowledgedDemo={setHasAcknowledgedDemo}
+              onSwitchToWorkspace={() => setViewMode("workspace")}
+              counties={COUNTIES}
+            />
           </div>
         ) : (
           <div className="main-layout" id="main-content">
@@ -3249,11 +3153,7 @@ export default function SHADemo() {
                 onChange={e => {
                   const val = e.target.value;
                   if (val === "Custom") {
-                    setActiveScenario("Custom");
-                    setInputs({ ...DEFAULTS });
-                    setResults(null);
-                    setStep(0);
-                    setHasAcknowledgedDemo(false);
+                    selectCustomScenario();
                   } else {
                     loadScenario(val);
                   }
@@ -3299,6 +3199,17 @@ export default function SHADemo() {
                   These experimental parameters test algorithm sensitivity. Default values represent standard baseline calibration. Adjustments apply to subsequent calculation runs in this browser session only.
                 </div>
                 <div style={{display:"grid",gap:18}}>
+                  <div style={{padding:12,background:S.faint,borderRadius:8,border:`1px solid ${S.border}`}}>
+                    <label style={{display:"flex",alignItems:"flex-start",gap:8,cursor:"pointer",fontSize:12,fontWeight:600,color:S.text}}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(adminParams.enableExperimentalPolicyAdjustments)}
+                        onChange={e=>setAdminParams(p=>({...p,enableExperimentalPolicyAdjustments:e.target.checked}))}
+                        style={{marginTop:2}}
+                      />
+                      <span>Enable Experimental Household Deductions (COL, Dependency, CHE, Disability) — OFF by default</span>
+                    </label>
+                  </div>
                   <div>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
                       <span style={{fontSize:13,fontWeight:600,color:S.text}}>Car Ownership Base Value</span>

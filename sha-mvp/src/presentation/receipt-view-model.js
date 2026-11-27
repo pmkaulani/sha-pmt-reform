@@ -45,6 +45,9 @@ export function buildReceiptViewModel(results) {
           label: line.label,
           grossReceivedKsh: line.totalReceivedKsh ?? line.grossReceivedKsh ?? 0,
           costsKsh: line.totalReportedCostsKsh ?? line.costsKsh ?? 0,
+          openingStockKsh: line.openingStockKsh ?? null,
+          closingStockKsh: line.closingStockKsh ?? null,
+          stockPurchasesKsh: line.stockPurchasesKsh ?? 0,
           costOfGoodsSoldKsh: line.costOfGoodsSoldKsh ?? 0,
           operatingCostsKsh: line.otherOperatingCostsKsh ?? 0,
           overlapKsh: line.overlapAmountKsh ?? 0,
@@ -220,17 +223,28 @@ export function buildReceiptViewModel(results) {
       "23 Nov 2026",
 
     household: {
+      headName: d.householdHead ?? null,
       county: d.county || null,
       size: d.householdSize ?? null,
       dependantCount: d.dependantCount ?? d.dependants ?? null,
       headAge: d.headAge ?? null,
       headGender: d.headGender ?? null,
-      headDescription: d.headAge && d.headGender ? `Head: ${d.headAge} yrs, ${d.headGender === 'F' ? 'Female' : 'Male'}` : null,
+      headDescription: d.headAge && d.headGender ? `Head: ${d.headAge} yrs, ${d.headGender === 'F' ? 'Female' : (d.headGender === 'FEMALE' ? 'Female' : (d.headGender === 'M' || d.headGender === 'MALE' ? 'Male' : d.headGender))}` : null,
       classification: d.classification || "Standard Assessment Tier",
       dwellingType: d.dwellingType ?? null,
+      ownershipStatus: d.ownershipStatus ?? null,
       wallMaterial: d.wallMaterial ?? null,
+      roofMaterial: d.roofMaterial ?? null,
       waterSource: d.waterSource ?? null,
       lightingEnergy: d.lightingEnergy ?? null,
+      cookingEnergy: d.cookingEnergy ?? null,
+      assets: Array.isArray(d.assets) ? d.assets : [],
+      receivesAid: Boolean(d.receivesAid),
+      grossMpesaMonthly: d.grossMpesaMonthly ?? null,
+      avgRetainedBalance: d.avgRetainedBalance ?? null,
+      diasporaRemittances: d.diasporaRemittances ?? null,
+      fulizaDefaults: d.fulizaDefaults ?? null,
+      hasSaccoAccount: Boolean(d.hasSaccoAccount),
       activeScenario: d.activeScenario || "Wanjiru (Market Trader)",
       profileLabel: d.activeScenario ? (d.activeScenario.includes(" — ") ? d.activeScenario.replace(" — ", " (") + ")" : d.activeScenario) : "Wanjiru (Market Trader)",
       hasVehicle: !!(d.hasVehicle || (Array.isArray(d.vehicles) && d.vehicles.length > 0)),
@@ -249,7 +263,9 @@ export function buildReceiptViewModel(results) {
     model: {
       name: next.modelName || "Declared-income research prototype",
       version: next.modelVersion || "declared-income-agi-v1.1",
-      sourceCommit: "3c8c3ae"
+      sourceCommit: "3c8c3ae",
+      policyAssumptionMode: next.policyAssumptionMode || "UNAPPROVED_ADJUSTMENTS_DISABLED",
+      enableExperimentalPolicyAdjustments: results.adminParamsSnapshot?.enableExperimentalPolicyAdjustments === true
     },
 
     status:
@@ -306,11 +322,26 @@ export function buildReceiptViewModel(results) {
     reviewFlags:
       snapshot.reviewFlags || [],
 
+    duplicateRelationships:
+      snapshot.duplicateRelationships || [],
+
+    hasUnresolvedReimbursements:
+      snapshot.hasUnresolvedReimbursements === true,
+
+    hasInventoryReview:
+      snapshot.hasInventoryReview === true,
+
     requiresManualReview:
       snapshot.requiresManualReview === true,
 
     requiresPolicyDecision:
       snapshot.requiresPolicyDecision === true,
+
+    financialAssistanceStatus:
+      next.financialAssistanceStatus || "NOT_ASSESSED",
+
+    financialAssistanceReviewReasons:
+      Array.isArray(next.financialAssistanceReviewReasons) ? next.financialAssistanceReviewReasons : [],
 
     minimumFloorApplied:
       contribution.minimumContributionFloorApplied === true,
